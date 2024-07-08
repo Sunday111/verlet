@@ -1,0 +1,11 @@
+{
+    "ModuleType": "GitClone",
+    "GitUrl": "https://gitlab.com/libeigen/eigen",
+    "GitTag": "master",
+    "TargetName": "eigen",
+    "LocalPath": "eigen",
+    "Dependencies": {
+        "Public": [],
+        "Private": []
+    }
+}

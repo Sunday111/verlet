@@ -1,0 +1,6 @@
+{
+    "name": "Verlet",
+    "cpp": {
+        "standard": "26"
+    }
+}

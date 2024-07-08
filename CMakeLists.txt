@@ -1,8 +1,8 @@
 cmake_minimum_required(VERSION 3.20)
 
-project(YAE)
+project(Verlet)
 
-set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD 26)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
@@ -34,6 +34,12 @@ add_subdirectory(deps/yae/cloned_repositories/fmt/10_1_1 SYSTEM)
 
 # https://github.com/Sunday111/CppReflection for_yae
 add_subdirectory(deps/yae/cloned_repositories/CppReflection SYSTEM)
+
+# https://gitlab.com/libeigen/eigen master
+add_subdirectory(deps/yae/cloned_repositories/eigen SYSTEM)
+
+# https://github.com/raysan5/raylib master
+add_subdirectory(deps/yae/cloned_repositories/raylib SYSTEM)
 
 # --------------------------------- Own Modules ----------------------------------
 add_subdirectory(deps/yae/modules/examples/ecs)
