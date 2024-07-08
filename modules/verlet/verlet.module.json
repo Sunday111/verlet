@@ -1,0 +1,11 @@
+{
+    "ModuleType": "Executable",
+    "Dependencies": {
+        "Public": [],
+        "Private": [
+            "yae_example_header_only",
+            "yae_example_library",
+            "fmtlib"
+        ]
+    }
+}
