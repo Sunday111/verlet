@@ -105,38 +105,44 @@ public:
 
 struct VerletObjects
 {
-    std::span<Vec2f> position;
-    std::span<Vec2f> old_position;
-    std::span<Vec2f> acceleration;
-    std::span<Eigen::Vector3<uint8_t>> color;
-    std::span<float> radius;
-};
+    VerletObjects() = default;
+    VerletObjects(const VerletObjects&) = delete;
+    VerletObjects(VerletObjects&&) = delete;
 
-struct VerletObject
-{
-    Vec2f position = Vec2f::Zero();
-    Vec2f old_position = Vec2f::Zero();
-    Vec2f acceleration = Vec2f::Zero();
-    Eigen::Vector3<uint8_t> color = {255, 0, 0};
-    float radius = 0.05f;
+    std::vector<Vec2f> position;
+    std::vector<Vec2f> old_position;
+    std::vector<Eigen::Vector3<uint8_t>> color;
+    std::vector<float> radius;
 
-    void UpdatePosition(float dt)
+    void UpdatePosition(const size_t index, float dt, const Vec2f& acceleration)
     {
-        const Vec2f velocity = position - old_position;
+        const Vec2f velocity = position[index] - old_position[index];
 
         // Save current position
-        old_position = position;
+        old_position[index] = position[index];
 
         // Perform Verlet integration
-        position += velocity + acceleration * dt * dt;
-
-        // Reset acceleration
-        acceleration = Vec2f::Zero();
+        position[index] += velocity + acceleration * dt * dt;
     }
 
-    void Accelerate(const Vec2f& acc)
+    [[nodiscard]] size_t Add()
     {
-        acceleration += acc;
+        size_t index = Size();
+        position.emplace_back(Vec2f::Zero());
+        old_position.emplace_back(Vec2f::Zero());
+        color.push_back({255, 0, 0});
+        radius.push_back(1.f);
+        return index;
+    }
+
+    [[nodiscard]] size_t Size() const
+    {
+        return position.size();
+    }
+
+    [[nodiscard]] auto Indices() const
+    {
+        return std::views::iota(0uz, Size());
     }
 };
 
@@ -153,60 +159,53 @@ struct VerletSolver
     size_t sub_steps = 8;
     float collision_response = 0.75f;
 
-    void Update(std::span<VerletObject> objects, const float dt) const
+    void Update(VerletObjects& objects, const float dt) const
     {
         const float sub_dt = dt / static_cast<float>(sub_steps);
         for ([[maybe_unused]] const size_t index : std::views::iota(0uz, sub_steps))
         {
-            ApplyGravity(objects);
             ApplyConstraint(objects);
             SolveCollisions(objects);
-            UpdatePositions(objects, sub_dt);
+            UpdatePosition(objects, sub_dt);
         }
     }
 
-    void UpdatePositions(std::span<VerletObject> objects, const float dt) const
+    void UpdatePosition(VerletObjects& objects, const float dt) const
     {
-        for (VerletObject& obj : objects)
+        for (const size_t index : objects.Indices())
         {
-            obj.UpdatePosition(dt);
+            objects.UpdatePosition(index, dt, gravity);
         }
     }
 
-    void ApplyGravity(std::span<VerletObject> objects) const
+    void ApplyConstraint(VerletObjects& objects) const
     {
-        for (VerletObject& obj : objects)
+        for (const size_t index : objects.Indices())
         {
-            obj.Accelerate(gravity);
-        }
-    }
-
-    void ApplyConstraint(std::span<VerletObject> objects) const
-    {
-        for (VerletObject& obj : objects)
-        {
-            const float min_dist = constraint_radius - obj.radius;
-            const float dist_sq = obj.position.squaredNorm();
+            const float min_dist = constraint_radius - objects.radius[index];
+            const float dist_sq = objects.position[index].squaredNorm();
             if (dist_sq > Sqr(min_dist))
             {
                 const float dist = std::sqrt(dist_sq);
-                const Vec2f direction = obj.position / dist;
-                obj.position = direction * (constraint_radius - obj.radius);
+                const Vec2f direction = objects.position[index] / dist;
+                objects.position[index] = direction * (constraint_radius - objects.radius[index]);
             }
         }
     }
 
-    void SolveCollisions(std::span<VerletObject> objects) const
+    void SolveCollisions(VerletObjects& objects) const
     {
-        const size_t objects_count = objects.size();
+        const size_t objects_count = objects.Size();
         for (const size_t i : std::views::iota(0uz, objects_count))
         {
-            auto& a = objects[i];
+            const auto a_r = objects.radius[i];
+            auto& a_pos = objects.position[i];
             for (const size_t j : std::views::iota(i + 1, objects_count))
             {
-                auto& b = objects[j];
-                const float min_dist = a.radius + b.radius;
-                const Vec2f rel = a.position - b.position;
+                const auto b_r = objects.radius[j];
+                auto& b_pos = objects.position[j];
+                const float min_dist = a_r + b_r;
+                const Vec2f rel = a_pos - b_pos;
                 const float dist_sq = rel.squaredNorm();
                 if (dist_sq < Sqr(min_dist))
                 {
@@ -214,11 +213,11 @@ struct VerletSolver
                     const Vec2f dir = rel / dist;
                     const float delta = 0.5f * collision_response * (min_dist - dist);
 
-                    const float ka = a.radius / min_dist;
-                    a.position += ka * delta * dir;
+                    const float ka = a_r / min_dist;
+                    a_pos += ka * delta * dir;
 
-                    const float kb = b.radius / min_dist;
-                    b.position -= kb * delta * dir;
+                    const float kb = b_r / min_dist;
+                    b_pos -= kb * delta * dir;
                 }
             }
         }
@@ -260,7 +259,11 @@ inline constexpr T kPI = static_cast<T>(M_PI);
 
 int main()
 {
-    std::vector<VerletObject> objects;
+    VerletObjects objects;
+    objects.position.reserve(3000);
+    objects.old_position.reserve(3000);
+    objects.color.reserve(3000);
+    objects.radius.reserve(3000);
 
     InitWindow(1000, 1000, "raylib [core] example - basic window");
 
@@ -314,12 +317,11 @@ int main()
         const float dt = GetFrameTime();
         auto spawn_at = [&](const Vec2f& position, const Vec2f& velocity, const float radius)
         {
-            objects.push_back({
-                .position = position,
-                .old_position = solver.MakePreviousPosition(position, velocity, dt),
-                .color = GetRainbow(time),
-                .radius = radius,
-            });
+            const size_t index = objects.Add();
+            objects.position[index] = position;
+            objects.old_position[index] = solver.MakePreviousPosition(position, velocity, dt);
+            objects.color[index] = GetRainbow(time);
+            objects.radius[index] = radius;
         };
 
         if (IsMouseButtonPressed(MOUSE_BUTTON_RIGHT))
@@ -356,14 +358,15 @@ int main()
                     DrawCircleV({position.x(), position.y()}, radius, BLACK);
                 }
 
-                for (const VerletObject& object : objects)
+                for (const size_t index : std::views::iota(0uz, objects.Size()))
                 {
-                    const auto screen_pos = to_screen_coord(object.position);
-                    const auto screen_size = transform_vector(world_to_screen, {object.radius, 0.0f});
+                    const auto screen_pos = to_screen_coord(objects.position[index]);
+                    const auto screen_size = transform_vector(world_to_screen, {objects.radius[index], 0.0f});
+                    const auto& color = objects.color[index];
                     DrawCircleV(
                         {screen_pos.x(), screen_pos.y()},
                         screen_size.x(),
-                        Color{object.color.x(), object.color.y(), object.color.z(), 255});
+                        Color{color.x(), color.y(), color.z(), 255});
                 }
 
                 EndDrawing();
@@ -373,7 +376,7 @@ int main()
         {
             last_duration_print_time = time;
             fmt::print("Perf stats:\n");
-            fmt::print("    Objects count: {}\n", objects.size());
+            fmt::print("    Objects count: {}\n", objects.Size());
             fmt::print("    Solver update duration: {}\n", update_duration);
             fmt::print("    Render duration: {}\n", render_duration);
             fmt::println("");
