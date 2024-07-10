@@ -1036,4 +1036,4 @@ Build/
 ThirdParty/
 *.gcov
 
-cloned_repositories/
+cloned_modules/

@@ -1,6 +1,8 @@
 {
     "name": "Verlet",
+    "modules_dir": "src",
     "cpp": {
         "standard": "26"
-    }
+    },
+    "cloned_modules_dir": "cloned_modules"
 }
