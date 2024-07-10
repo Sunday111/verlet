@@ -1,107 +1,13 @@
 #include <fmt/chrono.h>
 #include <fmt/format.h>
 
-#include <Eigen/Dense>
-#include <concepts>
 #include <ranges>
-#include <span>
 
+#include "float_range.hpp"
+#include "math.hpp"
+#include "matrix.hpp"
 #include "measure_time.hpp"
-#include "raylib.h"
-
-// Next position = Position + Velocity * dt
-// Velocity is deduced from the previous time step
-
-using Vec2f = Eigen::Vector2f;
-using Vec2i = Eigen::Vector2i;
-using Vec3f = Eigen::Vector3f;
-using Mat3f = Eigen::Matrix3f;
-
-// returns true if begin <= x < end, i.e x in [begin; end)
-template <std::integral T>
-[[nodiscard]] constexpr bool InRange(const T& x, const T& begin, const T& end)
-{
-    return x >= begin and x < end;
-}
-
-template <std::integral T>
-class IntRange
-{
-public:
-    [[nodiscard]] constexpr bool Contains(const T& value) const noexcept
-    {
-        return InRange(value, begin, end);
-    }
-
-    T begin = std::numeric_limits<T>::lowest();
-    T end = std::numeric_limits<T>::max();
-};
-
-template <std::integral T>
-class IntRange2D
-{
-public:
-    [[nodiscard]] constexpr bool Contains(const std::tuple<T, T>& p) const noexcept
-    {
-        return x.Contains(std::get<0>(p)) && y.Contains(std::get<1>(p));
-    }
-    [[nodiscard]] constexpr bool Contains(const T& vx, const T& vy) const noexcept
-    {
-        return x.Contains(vx) && y.Contains(vy);
-    }
-
-    IntRange<T> x{};
-    IntRange<T> y{};
-};
-
-template <std::floating_point T>
-class FloatRange
-{
-public:
-    [[nodiscard]] constexpr T Extent() const
-    {
-        return end - begin;
-    }
-
-    T begin = std::numeric_limits<T>::lowest();
-    T end = std::numeric_limits<T>::max();
-};
-
-template <std::floating_point T>
-class FloatRange2D
-{
-public:
-    [[nodiscard]] constexpr bool Contains(const std::tuple<T, T>& p) const noexcept
-    {
-        return x.Contains(std::get<0>(p)) && y.Contains(std::get<1>(p));
-    }
-    [[nodiscard]] constexpr bool Contains(const T& vx, const T& vy) const noexcept
-    {
-        return x.Contains(vx) && y.Contains(vy);
-    }
-    [[nodiscard]] constexpr Vec2f Extent() const noexcept
-    {
-        return Vec2f{x.Extent(), y.Extent()};
-    }
-
-    [[nodiscard]] constexpr Vec2f Min() const noexcept
-    {
-        return {x.begin, y.begin};
-    }
-
-    [[nodiscard]] constexpr Vec2f Uniform(const float v) const noexcept
-    {
-        return Uniform(Vec2f{v, v});
-    }
-
-    [[nodiscard]] constexpr Vec2f Uniform(const Vec2f& v) const noexcept
-    {
-        return Min() + Vec2f(v.array().cwiseProduct(Extent().array()));
-    }
-
-    FloatRange<T> x{};
-    FloatRange<T> y{};
-};
+#include "wrap_raylib.hpp"
 
 struct VerletObjects
 {
@@ -111,26 +17,15 @@ struct VerletObjects
 
     std::vector<Vec2f> position;
     std::vector<Vec2f> old_position;
-    std::vector<Eigen::Vector3<uint8_t>> color;
+    std::vector<Vector3<uint8_t>> color;
     std::vector<float> radius;
-
-    void UpdatePosition(const size_t index, float dt, const Vec2f& acceleration)
-    {
-        const Vec2f velocity = position[index] - old_position[index];
-
-        // Save current position
-        old_position[index] = position[index];
-
-        // Perform Verlet integration
-        position[index] += velocity + acceleration * dt * dt;
-    }
 
     [[nodiscard]] size_t Add()
     {
         size_t index = Size();
-        position.emplace_back(Vec2f::Zero());
-        old_position.emplace_back(Vec2f::Zero());
-        color.push_back({255, 0, 0});
+        position.emplace_back(Vec2f{});
+        old_position.emplace_back(Vec2f{});
+        color.push_back({{255, 0, 0}});
         radius.push_back(1.f);
         return index;
     }
@@ -145,12 +40,6 @@ struct VerletObjects
         return std::views::iota(0uz, Size());
     }
 };
-
-template <typename T>
-[[nodiscard]] inline constexpr T Sqr(T x)
-{
-    return x * x;
-}
 
 struct VerletSolver
 {
@@ -174,7 +63,13 @@ struct VerletSolver
     {
         for (const size_t index : objects.Indices())
         {
-            objects.UpdatePosition(index, dt, gravity);
+            const Vec2f velocity = objects.position[index] - objects.old_position[index];
+
+            // Save current position
+            objects.old_position[index] = objects.position[index];
+
+            // Perform Verlet integration
+            objects.position[index] += velocity + gravity * dt * dt;
         }
     }
 
@@ -183,8 +78,8 @@ struct VerletSolver
         for (const size_t index : objects.Indices())
         {
             const float min_dist = constraint_radius - objects.radius[index];
-            const float dist_sq = objects.position[index].squaredNorm();
-            if (dist_sq > Sqr(min_dist))
+            const float dist_sq = objects.position[index].SquaredLength();
+            if (dist_sq > Math::Sqr(min_dist))
             {
                 const float dist = std::sqrt(dist_sq);
                 const Vec2f direction = objects.position[index] / dist;
@@ -206,8 +101,8 @@ struct VerletSolver
                 auto& b_pos = objects.position[j];
                 const float min_dist = a_r + b_r;
                 const Vec2f rel = a_pos - b_pos;
-                const float dist_sq = rel.squaredNorm();
-                if (dist_sq < Sqr(min_dist))
+                const float dist_sq = rel.SquaredLength();
+                if (dist_sq < Math::Sqr(min_dist))
                 {
                     const float dist = std::sqrt(dist_sq);
                     const Vec2f dir = rel / dist;
@@ -229,34 +124,6 @@ struct VerletSolver
     }
 };
 
-Mat3f MakeTransform(const FloatRange2D<float>& from, const FloatRange2D<float>& to)
-{
-    Mat3f uniform_to_canvas = Mat3f::Identity();
-    const float tx = -from.x.begin;
-    const float ty = -from.y.begin;
-    const float sx = to.x.Extent() / from.x.Extent();
-    const float sy = to.y.Extent() / from.y.Extent();
-    uniform_to_canvas.coeffRef(0, 0) = sx;
-    uniform_to_canvas.coeffRef(1, 1) = sy;
-    uniform_to_canvas.coeffRef(0, 2) = tx * sx + to.x.begin;
-    uniform_to_canvas.coeffRef(1, 2) = ty * sy + to.y.begin;
-    return uniform_to_canvas;
-}
-
-template <std::floating_point T>
-inline constexpr T kPI = static_cast<T>(M_PI);
-
-[[nodiscard]] constexpr Eigen::Vector3<uint8_t> GetRainbow(const float t)
-{
-    const float r = std::sin(t);
-    const float g = std::sin(t + 0.33f * 2.0f * kPI<float>);
-    const float b = std::sin(t + 0.66f * 2.0f * kPI<float>);
-    return {
-        static_cast<uint8_t>(255.0f * r * r),
-        static_cast<uint8_t>(255.0f * g * g),
-        static_cast<uint8_t>(255.0f * b * b)};
-}
-
 int main()
 {
     VerletObjects objects;
@@ -265,12 +132,11 @@ int main()
     objects.color.reserve(3000);
     objects.radius.reserve(3000);
 
-    InitWindow(1000, 1000, "raylib [core] example - basic window");
-
-    SetTargetFPS(60);  // Set our game to run at 60 frames-per-second
+    raylib::InitWindow(1000, 1000, "raylib [core] example - basic window");
+    raylib::SetTargetFPS(60);
 
     const FloatRange2D<float> world_range{.x = {-100.f, 100.f}, .y = {-100.f, 100.f}};
-    const Vec2f emitter_pos = world_range.Uniform({0.5, 0.85});
+    const Vec2f emitter_pos = world_range.Uniform({0.5, 0.85f});
     const VerletSolver solver{
         .gravity = Vec2f{0.f, -world_range.y.Extent() / 1.f},
         .constraint_radius = world_range.Extent().x() / 2.f,
@@ -278,24 +144,24 @@ int main()
     float last_emit_time = 0.0;
     float last_duration_print_time = 0.0;
 
-    while (!WindowShouldClose())
+    while (!raylib::WindowShouldClose())
     {
         const FloatRange2D<float> screen_range{
-            .x = {0, static_cast<float>(GetScreenWidth())},
-            .y = {0, static_cast<float>(GetScreenHeight())}};
-        const Mat3f world_to_screen = MakeTransform(world_range, screen_range);
-        [[maybe_unused]] const Mat3f screen_to_world = MakeTransform(screen_range, world_range);
+            .x = {0, raylib::GetScreenWidthF()},
+            .y = {0, raylib::GetScreenHeightF()}};
+        const Mat3f world_to_screen = Math::MakeTransform(world_range, screen_range);
+        [[maybe_unused]] const Mat3f screen_to_world = Math::MakeTransform(screen_range, world_range);
 
         auto transform_pos = [](const Mat3f& mat, const Vec2f& pos)
         {
-            Vec3f v3 = mat * Vec3f(pos.x(), pos.y(), 1.f);
-            return Vec2f{v3.x(), v3.y()};
+            Vec3f v3 = mat.MatMul(Vec3f{{pos.x(), pos.y(), 1.f}});
+            return Vec2f{{v3.x(), v3.y()}};
         };
 
         auto transform_vector = [](const Mat3f& mat, const Vec2f& vec)
         {
-            Vec3f v3 = mat * Vec3f(vec.x(), vec.y(), 0.f);
-            return Vec2f{v3.x(), v3.y()};
+            Vec3f v3 = mat.MatMul(Vec3f{{vec.x(), vec.y(), 0.f}});
+            return Vec2f{{v3.x(), v3.y()}};
         };
 
         auto to_screen_coord = [&](const Vec2f& plot_pos)
@@ -307,24 +173,24 @@ int main()
 
         auto get_world_mouse_pos = [&]()
         {
-            auto [x, y] = GetMousePosition();
+            auto [x, y] = raylib::GetMousePos();
             y = screen_range.y.Extent() - y;
             auto world_pos = transform_pos(screen_to_world, Vec2f{x, y});
             return world_pos;
         };
 
-        const float time = static_cast<float>(GetTime());
-        const float dt = GetFrameTime();
+        const float time = static_cast<float>(raylib::GetTime());
+        const float dt = raylib::GetFrameTime();
         auto spawn_at = [&](const Vec2f& position, const Vec2f& velocity, const float radius)
         {
             const size_t index = objects.Add();
             objects.position[index] = position;
             objects.old_position[index] = solver.MakePreviousPosition(position, velocity, dt);
-            objects.color[index] = GetRainbow(time);
+            objects.color[index] = Math::GetRainbowColors(time);
             objects.radius[index] = radius;
         };
 
-        if (IsMouseButtonPressed(MOUSE_BUTTON_RIGHT))
+        if (raylib::IsMouseButtonPressed(raylib::MouseButton::Left))
         {
             spawn_at(get_world_mouse_pos(), {0.f, 0.f}, 1.f);
         }
@@ -345,8 +211,8 @@ int main()
                 solver.Update(objects, dt);
             });
 
-        BeginDrawing();
-        ClearBackground({255, 245, 153, 255});
+        raylib::BeginDrawing();
+        raylib::ClearBackground(255, 245, 153);
 
         const auto [render_duration] = MeasureTime<std::chrono::milliseconds>(
             [&]
@@ -355,7 +221,7 @@ int main()
                 {
                     const auto radius = transform_vector(world_to_screen, {solver.constraint_radius, 0.0f}).x();
                     const Vec2f position = screen_range.Extent() / 2;
-                    DrawCircleV({position.x(), position.y()}, radius, BLACK);
+                    raylib::DrawCircle({position.x(), position.y()}, radius, raylib::kBlack);
                 }
 
                 for (const size_t index : std::views::iota(0uz, objects.Size()))
@@ -363,13 +229,13 @@ int main()
                     const auto screen_pos = to_screen_coord(objects.position[index]);
                     const auto screen_size = transform_vector(world_to_screen, {objects.radius[index], 0.0f});
                     const auto& color = objects.color[index];
-                    DrawCircleV(
+                    raylib::DrawCircle(
                         {screen_pos.x(), screen_pos.y()},
                         screen_size.x(),
-                        Color{color.x(), color.y(), color.z(), 255});
+                        {color.x(), color.y(), color.z(), 255});
                 }
 
-                EndDrawing();
+                raylib::EndDrawing();
             });
 
         if (time - last_duration_print_time > 1.f)
@@ -383,5 +249,5 @@ int main()
         }
     }
 
-    CloseWindow();
+    raylib::CloseWindow();
 }
