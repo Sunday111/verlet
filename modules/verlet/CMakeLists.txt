@@ -13,8 +13,7 @@ set(module_source_files
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/wrap_raylib.hpp)
 add_executable(verlet ${module_source_files})
 set_generic_compiler_options(verlet PRIVATE)
-target_link_libraries(verlet PRIVATE eigen
-                                     raylib
+target_link_libraries(verlet PRIVATE raylib
                                      fmt)
 target_include_directories(verlet PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/code/public)
 target_include_directories(verlet PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/code/private)

@@ -1,0 +1,19 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "YAE: Generate",
+            "type": "shell",
+            "command": "/usr/bin/python3",
+            "args": [
+                "${workspaceFolder}/deps/yae/scripts/make_project_files.py",
+                "--project_dir=${workspaceFolder}"
+            ]
+        },
+        {
+           "label": "YAE: Generate and Configure",
+            "dependsOrder": "sequence",
+            "dependsOn": ["YAE: Generate", "CMake: configure"]
+        }
+    ]
+}

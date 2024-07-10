@@ -3,7 +3,6 @@
     "Dependencies": {
         "Public": [],
         "Private": [
-            "eigen",
             "raylib",
             "fmtlib"
         ]
