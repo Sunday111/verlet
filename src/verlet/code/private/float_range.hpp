@@ -66,6 +66,11 @@ public:
         return Min() + v * Extent();
     }
 
+    [[nodiscard]] static constexpr FloatRange2D FromMinMax(const Vec2f& min, const Vec2f max)
+    {
+        return {{min.x(), max.x()}, {min.y(), max.y()}};
+    }
+
     void Enlarge(const float value)
     {
         x.Enlarge(value);

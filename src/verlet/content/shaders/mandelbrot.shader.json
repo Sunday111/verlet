@@ -1,0 +1,41 @@
+{
+    "vertex": "mandelbrot.vert",
+    "fragment": "mandelbrot.frag",
+    "glsl_version": "330 core",
+    "definitions": [
+    ],
+    "definitions_sample": [
+        {
+            "name": "cv_abmbient",
+            "type": "vec3",
+            "default": {
+                "x": 0.1,
+                "y": 0.1,
+                "z": 0.1
+            }
+        },
+        {
+            "name": "cv_specular",
+            "type": "vec3",
+            "default": {
+                "x": 0.5,
+                "y": 0.5,
+                "z": 0.5
+            }
+        },
+        {
+            "name": "cv_diffuse",
+            "type": "vec3",
+            "default": {
+                "x": 0.5,
+                "y": 0.5,
+                "z": 0.5
+            }
+        },
+        {
+            "name": "cv_shininess",
+            "type": "float",
+            "default": 32.0
+        }
+    ]
+}

@@ -8,12 +8,17 @@
             "args": [
                 "${workspaceFolder}/deps/yae/scripts/make_project_files.py",
                 "--project_dir=${workspaceFolder}"
-            ]
+            ],
+            "problemMatcher": []
         },
         {
-           "label": "YAE: Generate and Configure",
+            "label": "YAE: Generate and Configure",
             "dependsOrder": "sequence",
-            "dependsOn": ["YAE: Generate", "CMake: configure"]
+            "dependsOn": [
+                "YAE: Generate",
+                "CMake: configure"
+            ],
+            "problemMatcher": []
         }
     ]
 }

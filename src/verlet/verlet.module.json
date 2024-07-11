@@ -1,10 +1,17 @@
 {
     "ModuleType": "Executable",
+    "CopyDirectoriesAfterBuild": [
+        "content"
+    ],
     "Dependencies": {
         "Public": [],
         "Private": [
-            "raylib",
-            "fmtlib"
+            "fmtlib",
+            "CppReflection",
+            "nlohmann_json",
+            "glad",
+            "glfw",
+            "imgui_glfw_cmake"
         ]
     }
 }

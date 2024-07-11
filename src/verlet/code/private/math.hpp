@@ -40,7 +40,7 @@ public:
     }
 
     // Get rainbow colors by time t
-    [[nodiscard]] static constexpr Vector3<uint8_t> GetRainbowColors(const float t)
+    [[nodiscard]] static constexpr Vec3<uint8_t> GetRainbowColors(const float t)
     {
         return {
             static_cast<uint8_t>(255.0f * Sqr(std::sin(t + 0.00f * 2.0f * kPI<float>))),

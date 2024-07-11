@@ -46,11 +46,29 @@ public:
         return std::forward<Self>(self)[2];
     }
 
+    template <typename Self, typename PureSelf = std::decay_t<Self>>
+        requires(PureSelf::IsVector() && PureSelf::Size() > 2)
+    [[nodiscard]] constexpr auto&& w(this Self&& self)
+    {
+        return std::forward<Self>(self)[3];
+    }
+
     template <typename Self>
         requires(std::decay_t<Self>::IsVector())
     [[nodiscard]] constexpr auto&& operator[](this Self&& self, const size_t index)
     {
         return std::forward<Self>(self).data_[index];
+    }
+
+    template <std::convertible_to<T> U>
+    [[nodiscard]] constexpr Matrix<U, num_rows, num_columns> Cast() const
+    {
+        Matrix<U, num_rows, num_columns> result;
+        for (size_t index = 0; index != data_.size(); ++index)
+        {
+            result.data_[index] = static_cast<U>(data_[index]);
+        }
+        return result;
     }
 
     [[nodiscard]] static constexpr Matrix Identity() noexcept
@@ -113,6 +131,16 @@ public:
         }};
     }
 
+    [[nodiscard]] constexpr T* data()
+    {
+        return data_.data();
+    }
+
+    [[nodiscard]] const T* data() const
+    {
+        return data_.data();
+    }
+
     // Two-dimensional "cross product". A hack to obtain a magnitude of 3-dimensional cross product
     template <size_t other_rows, size_t other_columns>
         requires(kVectorsWithSameSize<Matrix<T, other_rows, other_columns>, Matrix> && Size() == 2)
@@ -140,7 +168,7 @@ public:
         return std::views::iota(0uz, NumRows());
     }
 
-    [[nodiscard]] constexpr auto ColumnsIndices() const
+    [[nodiscard]] constexpr auto ColumnIndices() const
     {
         return std::views::iota(0uz, NumColumns());
     }
@@ -160,10 +188,10 @@ public:
 
         for (const size_t r : result.RowIndices())
         {
-            for (const size_t c : result.ColumnsIndices())
+            for (const size_t c : result.ColumnIndices())
             {
                 auto& cell = result(r, c);
-                for (const size_t k : ColumnsIndices())
+                for (const size_t k : ColumnIndices())
                 {
                     cell += this->operator()(r, k) * other(k, c);
                 }
@@ -312,17 +340,85 @@ public:
         return data_ == other.data_;
     }
 
+    [[nodiscard]] constexpr Matrix<T, num_rows, 1> GetColumn(const size_t column_index) const
+    {
+        Matrix<T, num_rows, 1> column;
+        for (const size_t row_index : RowIndices())
+        {
+            column(row_index, 0) = this->operator()(row_index, column_index);
+        }
+
+        return column;
+    }
+
+    template <size_t other_rows, size_t other_columns>
+        requires(Matrix<T, other_rows, other_columns>::IsVector())
+    void SetColumn(const size_t column_index, const Matrix<T, other_rows, other_columns>& values)
+    {
+        for (const size_t row_index : RowIndices())
+        {
+            (*this)(row_index, column_index) = values(column_index);
+        }
+    }
+
+    [[nodiscard]] constexpr Matrix<T, 1, num_columns> GetRow(const size_t row_index) const
+    {
+        Matrix<T, 1, num_columns> row;
+        for (const size_t column_index : ColumnIndices())
+        {
+            row(0, column_index) = this->operator()(row_index, column_index);
+        }
+
+        return row;
+    }
+
+    template <size_t other_rows, size_t other_columns>
+        requires(Matrix<T, other_rows, other_columns>::IsVector())
+    void SetRow(const size_t row_index, const Matrix<T, other_rows, other_columns>& values)
+    {
+        for (const size_t column_index : ColumnIndices())
+        {
+            (*this)(row_index, column_index) = values[column_index];
+        }
+    }
+
+    [[nodiscard]] constexpr Matrix<T, num_columns, num_rows> Transposed() const
+    {
+        Matrix<T, num_columns, num_rows> r;
+        for (const size_t row : RowIndices())
+        {
+            for (const size_t column : ColumnIndices())
+            {
+                r(column, row) = (*this)(row, column);
+            }
+        }
+
+        return r;
+    }
+
     std::array<T, Size()> data_{};
 };
 
 template <typename T>
-using Vector3 = Matrix<T, 3, 1>;
+using Vec2 = Matrix<T, 2, 1>;
 
 template <typename T>
-using Vector2 = Matrix<T, 2, 1>;
+using Vec3 = Matrix<T, 3, 1>;
 
-using Vec2f = Vector2<float>;
-using Vec2i = Vector2<int>;
-using Vec3f = Vector3<float>;
-using Vec3i = Vector3<int>;
-using Mat3f = Matrix<float, 3, 3>;
+template <typename T>
+using Vec4 = Matrix<T, 4, 1>;
+
+template <typename T>
+using Mat3 = Matrix<T, 3, 3>;
+
+template <typename T>
+using Mat4 = Matrix<T, 4, 4>;
+
+using Vec2f = Vec2<float>;
+using Vec2i = Vec2<int>;
+using Vec3f = Vec3<float>;
+using Vec3i = Vec3<int>;
+using Vec4f = Vec4<float>;
+using Vec4i = Vec4<int>;
+using Mat3f = Mat3<float>;
+using Mat4f = Mat4<float>;

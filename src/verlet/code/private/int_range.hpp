@@ -13,6 +13,11 @@ public:
         return InRange(value, begin, end);
     }
 
+    [[nodiscard]] constexpr T Extent() const
+    {
+        return end - begin;
+    }
+
     T begin = std::numeric_limits<T>::lowest();
     T end = std::numeric_limits<T>::max();
 };

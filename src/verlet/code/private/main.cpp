@@ -1,13 +1,24 @@
 #include <fmt/chrono.h>
 #include <fmt/format.h>
+#include <imgui.h>
 
+#include <functional>
 #include <ranges>
+#include <tuple>
+#include <utility>
 
 #include "float_range.hpp"
+#include "int_range.hpp"
+#include "klgl/application.hpp"
+#include "klgl/mesh/mesh_data.hpp"
+#include "klgl/opengl/debug/annotations.hpp"
+#include "klgl/reflection/matrix_reflect.hpp"
+#include "klgl/shader/shader.hpp"
+#include "klgl/window.hpp"
 #include "math.hpp"
 #include "matrix.hpp"
 #include "measure_time.hpp"
-#include "wrap_raylib.hpp"
+#include "mesh_vertex.hpp"
 
 struct VerletObjects
 {
@@ -17,7 +28,7 @@ struct VerletObjects
 
     std::vector<Vec2f> position;
     std::vector<Vec2f> old_position;
-    std::vector<Vector3<uint8_t>> color;
+    std::vector<Vec3<uint8_t>> color;
     std::vector<float> radius;
 
     [[nodiscard]] size_t Add()
@@ -124,130 +135,383 @@ struct VerletSolver
     }
 };
 
-int main()
+class CirclePainter
 {
+public:
+    static constexpr GLuint kVertexAttribLoc = 0;       // not instanced
+    static constexpr GLuint kColorAttribLoc = 1;        // instanced
+    static constexpr GLuint kTranslationAttribLoc = 2;  // instanced
+    static constexpr GLuint kScaleAttribLoc = 3;        // instanced
+
+    struct CirclesBatch
+    {
+        CirclesBatch() = default;
+        CirclesBatch(const CirclesBatch&) = delete;
+        CirclesBatch(CirclesBatch&&) noexcept = default;
+
+        static constexpr size_t kBatchSize = 128;
+
+        template <typename ValueType>
+        static void UpdateVBO(
+            std::optional<GLuint>& vbo,
+            const GLuint location,
+            const std::array<ValueType, kBatchSize>& values,
+            const IntRange<size_t> elements_to_update)
+        {
+            const bool must_initialize = !vbo.has_value();
+            if (must_initialize) vbo = klgl::OpenGl::GenBuffer();
+
+            using GlTypeTraits = klgl::TypeToGlType<ValueType>;
+
+            klgl::OpenGl::BindBuffer(GL_ARRAY_BUFFER, *vbo);
+            if (must_initialize)
+            {
+                // Have to copy the whole array first time to initialize the buffer and specify usage
+                klgl::OpenGl::BufferData(GL_ARRAY_BUFFER, std::span{values}, GL_DYNAMIC_DRAW);
+            }
+            else
+            {
+                glBufferSubData(
+                    GL_ARRAY_BUFFER,
+                    static_cast<GLintptr>(elements_to_update.begin * sizeof(ValueType)),
+                    static_cast<GLintptr>(elements_to_update.Extent() * sizeof(ValueType)),
+                    &values[elements_to_update.begin]);
+            }
+            klgl::OpenGl::BindBuffer(GL_ARRAY_BUFFER, 0);
+
+            klgl::OpenGl::EnableVertexAttribArray(location);
+            klgl::OpenGl::BindBuffer(GL_ARRAY_BUFFER, *vbo);
+            klgl::OpenGl::VertexAttribPointer(
+                location,
+                GlTypeTraits::Size,
+                GlTypeTraits::Type,
+                false,
+                sizeof(ValueType),
+                nullptr);
+            klgl::OpenGl::BindBuffer(GL_ARRAY_BUFFER, 0);
+            glVertexAttribDivisor(
+                location,
+                1);  // IMPORTANT - use 1 element from offsets array for one rendered instance
+        }
+
+        void UpdateColorsVBO(const IntRange<size_t> elements_to_update = IntRange{0uz, kBatchSize});
+        std::optional<GLuint> opt_color_vbo{};
+        std::array<Vec3f, kBatchSize> color{};
+
+        void UpdateTranslationsVBO(const IntRange<size_t> elements_to_update = IntRange{0uz, kBatchSize});
+        std::optional<GLuint> opt_translation_vbo{};
+        std::array<Vec2f, kBatchSize> translation{};
+
+        void UpdateScaleVBO(const IntRange<size_t> elements_to_update = IntRange{0uz, kBatchSize});
+        std::optional<GLuint> opt_scale_vbo{};
+        std::array<Vec2f, kBatchSize> scale{};
+    };
+
+    void SetCircle(const size_t index, const Vec2f& translation, const Vec3f& color, const Vec2f scale)
+    {
+        SetColor(index, color);
+        SetScale(index, scale);
+        SetTranslation(index, translation);
+    }
+
+    void SetColor(const size_t index, const Vec3f& color)
+    {
+        auto [batch, index_in_batch] = DecomposeIndex(index);
+        assert(
+            index >= num_initialized_ ||
+            color == batch.color[index_in_batch]);  // In this app color for circle is immutable
+        batch.color[index_in_batch] = color;
+    }
+
+    void SetScale(const size_t index, const Vec2f& scale)
+    {
+        auto [batch, index_in_batch] = DecomposeIndex(index);
+        assert(
+            index >= num_initialized_ ||
+            scale == batch.scale[index_in_batch]);  // In this app scale for circle is immutable
+        batch.scale[index_in_batch] = scale;
+    }
+
+    void SetTranslation(const size_t index, const Vec2f& translation)
+    {
+        auto [batch, index_in_batch] = DecomposeIndex(index);
+        batch.translation[index_in_batch] = translation;
+    }
+
+    void Initialize()
+    {
+        const std::array<MeshVertex, 4> vertices{
+            {{.position = {1.0f, 1.0f}},
+             {.position = {1.0f, -1.0f}},
+             {.position = {-1.0f, -1.0f}},
+             {.position = {-1.0f, 1.0f}}}};
+        const std::array<uint32_t, 6> indices{0, 1, 3, 1, 2, 3};
+
+        circle_mesh_ = klgl::MeshOpenGL::MakeFromData<MeshVertex>(std::span{vertices}, std::span{indices});
+        circle_mesh_->Bind();
+        RegisterAttribute<&MeshVertex::position>(0, false);
+    }
+
+    void Render()
+    {
+        circle_mesh_->Bind();
+        for (const size_t batch_index : std::views::iota(0uz, batches_.size()))
+        {
+            auto& batch = batches_[batch_index];
+            // number of circles initialized for the current batch
+            const size_t num_locally_initialized = num_initialized_ % batch.kBatchSize;
+            const size_t num_locally_used = std::min(num_circles_ - batch_index * batch.kBatchSize, batch.kBatchSize);
+
+            // if we have new elements since last render - send color and scale for new elements
+            if (num_locally_used > num_locally_initialized)
+            {
+                const IntRange update_range{num_locally_initialized, num_locally_used};
+                batch.UpdateColorsVBO(update_range);
+                batch.UpdateScaleVBO(update_range);
+            }
+            else
+            {
+                klgl::OpenGl::EnableVertexAttribArray(kColorAttribLoc);
+                klgl::OpenGl::BindBuffer(GL_ARRAY_BUFFER, *batch.opt_color_vbo);
+                klgl::OpenGl::EnableVertexAttribArray(kScaleAttribLoc);
+                klgl::OpenGl::BindBuffer(GL_ARRAY_BUFFER, *batch.opt_scale_vbo);
+            }
+
+            // Update all offsets
+            batch.UpdateTranslationsVBO({0, num_locally_used});
+            circle_mesh_->DrawInstanced(num_locally_used);
+        }
+    }
+
+    std::tuple<CirclesBatch&, size_t> DecomposeIndex(const size_t index)
+    {
+        const size_t batch_index = index / CirclesBatch::kBatchSize;
+        const size_t index_in_batch = index % CirclesBatch::kBatchSize;
+        num_circles_ = std::max(num_circles_, index + 1);
+        batches_.resize(std::max(batches_.size(), batch_index + 1));
+        return {batches_[batch_index], index_in_batch};
+    }
+
+    std::unique_ptr<klgl::MeshOpenGL> circle_mesh_;
+    std::vector<CirclesBatch> batches_;
+    size_t num_initialized_ = 0;
+    size_t num_circles_ = 0;
+};
+
+void CirclePainter::CirclesBatch::UpdateColorsVBO(const IntRange<size_t> elements_to_update)
+{
+    UpdateVBO(opt_color_vbo, kColorAttribLoc, color, elements_to_update);
+}
+
+void CirclePainter::CirclesBatch::UpdateTranslationsVBO(const IntRange<size_t> elements_to_update)
+{
+    UpdateVBO(opt_translation_vbo, kTranslationAttribLoc, translation, elements_to_update);
+}
+
+void CirclePainter::CirclesBatch::UpdateScaleVBO(const IntRange<size_t> elements_to_update)
+{
+    UpdateVBO(opt_scale_vbo, kScaleAttribLoc, scale, elements_to_update);
+}
+
+class VerletApp : public klgl::Application
+{
+public:
+    using Clock = std::chrono::high_resolution_clock;
+    using TimePoint = typename Clock::time_point;
+    using Super = klgl::Application;
+
+    void Initialize() override;
+    void InitializeRendering();
+    void Tick(const float dt) override
+    {
+        Super::Tick(dt);
+        UpdateSimulation(dt);
+        Render(dt);
+    }
+    void PostTick(const float dt) override;
+
+    static constexpr FloatRange2D<float> world_range{.x = {-100.f, 100.f}, .y = {-100.f, 100.f}};
+    static constexpr Vec2f emitter_pos = world_range.Uniform({0.5, 0.85f});
+    static constexpr VerletSolver solver{
+        .gravity = Vec2f{0.f, -world_range.y.Extent() / 1.f},
+        .constraint_radius = world_range.Extent().x() / 2.f,
+    };
+
+    void UpdateSimulation(float dt);
+    void Render(float dt);
+    void RenderWorld();
+    void RenderGUI(const float dt);
+
+    [[nodiscard]] static constexpr Vec2f TransformPos(const Mat3f& mat, const Vec2f& pos)
+    {
+        Vec3f v3 = mat.MatMul(Vec3f{{pos.x(), pos.y(), 1.f}});
+        return Vec2f{{v3.x(), v3.y()}};
+    }
+
+    [[nodiscard]] static constexpr Vec2f TransformVector(const Mat3f& mat, const Vec2f& vec)
+    {
+        Vec3f v3 = mat.MatMul(Vec3f{{vec.x(), vec.y(), 0.f}});
+        return Vec2f{{v3.x(), v3.y()}};
+    };
+
+    Vec2f GetMousePositionInWorldCoordinates() const
+    {
+        const auto window_size = GetWindow().GetSize().Cast<float>();
+        const auto window_range = FloatRange2D<float>::FromMinMax({}, window_size);
+        const auto window_to_world = Math::MakeTransform(window_range, world_range);
+
+        auto [x, y] = ImGui::GetMousePos();
+        y = window_range.y.Extent() - y;
+        auto world_pos = TransformPos(window_to_world, Vec2f{x, y});
+        return world_pos;
+    }
+
     VerletObjects objects;
+    float last_emit_time = 0.0;
+    TimePoint start_time;
+
+    // Rendering
+    std::unique_ptr<klgl::Shader> shader_;
+
+    template <typename... Args>
+    const char* FormatTemp(const fmt::format_string<Args...> fmt, Args&&... args)
+    {
+        temp_string_for_formatting_.clear();
+        fmt::format_to(std::back_inserter(temp_string_for_formatting_), fmt, std::forward<Args>(args)...);
+        return temp_string_for_formatting_.data();
+    }
+
+    std::string temp_string_for_formatting_{};
+    CirclePainter circle_painter_{};
+    std::chrono::milliseconds last_sim_update_duration_{};
+};
+
+void VerletApp::Initialize()
+{
+    Super::Initialize();
+    InitializeRendering();
+
+    start_time = Clock::now();
+
     objects.position.reserve(3000);
     objects.old_position.reserve(3000);
     objects.color.reserve(3000);
     objects.radius.reserve(3000);
+}
 
-    raylib::InitWindow(1000, 1000, "raylib [core] example - basic window");
-    raylib::SetTargetFPS(60);
+void VerletApp::InitializeRendering()
+{
+    klgl::OpenGl::SetClearColor({255, 245, 153, 255});
+    GetWindow().SetSize(1000, 1000);
+    GetWindow().SetTitle("Verlet");
 
-    const FloatRange2D<float> world_range{.x = {-100.f, 100.f}, .y = {-100.f, 100.f}};
-    const Vec2f emitter_pos = world_range.Uniform({0.5, 0.85f});
-    const VerletSolver solver{
-        .gravity = Vec2f{0.f, -world_range.y.Extent() / 1.f},
-        .constraint_radius = world_range.Extent().x() / 2.f,
-    };
-    float last_emit_time = 0.0;
-    float last_duration_print_time = 0.0;
+    const auto content_dir = GetExecutableDir() / "content";
+    const auto shaders_dir = content_dir / "shaders";
+    klgl::Shader::shaders_dir_ = shaders_dir;
 
-    while (!raylib::WindowShouldClose())
+    shader_ = std::make_unique<klgl::Shader>("just_color.shader.json");
+    shader_->Use();
+
+    circle_painter_.Initialize();
+}
+
+void VerletApp::UpdateSimulation(float delta_time)
+{
+    // Update viewport size
+
+    const TimePoint current_time = Clock::now();
+    const float relative_time =
+        std::chrono::duration_cast<std::chrono::duration<float>>(current_time - start_time).count();
+
+    auto spawn_at = [&](const Vec2f& position, const Vec2f& velocity, const float radius)
     {
-        const FloatRange2D<float> screen_range{
-            .x = {0, raylib::GetScreenWidthF()},
-            .y = {0, raylib::GetScreenHeightF()}};
-        const Mat3f world_to_screen = Math::MakeTransform(world_range, screen_range);
-        [[maybe_unused]] const Mat3f screen_to_world = Math::MakeTransform(screen_range, world_range);
+        const size_t index = objects.Add();
+        objects.position[index] = position;
+        objects.old_position[index] = solver.MakePreviousPosition(position, velocity, delta_time);
+        objects.color[index] = Math::GetRainbowColors(relative_time);
+        objects.radius[index] = radius;
+    };
 
-        auto transform_pos = [](const Mat3f& mat, const Vec2f& pos)
-        {
-            Vec3f v3 = mat.MatMul(Vec3f{{pos.x(), pos.y(), 1.f}});
-            return Vec2f{{v3.x(), v3.y()}};
-        };
-
-        auto transform_vector = [](const Mat3f& mat, const Vec2f& vec)
-        {
-            Vec3f v3 = mat.MatMul(Vec3f{{vec.x(), vec.y(), 0.f}});
-            return Vec2f{{v3.x(), v3.y()}};
-        };
-
-        auto to_screen_coord = [&](const Vec2f& plot_pos)
-        {
-            Vec2f ipos = transform_pos(world_to_screen, plot_pos);
-            ipos.y() = screen_range.y.Extent() - ipos.y();
-            return ipos;
-        };
-
-        auto get_world_mouse_pos = [&]()
-        {
-            auto [x, y] = raylib::GetMousePos();
-            y = screen_range.y.Extent() - y;
-            auto world_pos = transform_pos(screen_to_world, Vec2f{x, y});
-            return world_pos;
-        };
-
-        const float time = static_cast<float>(raylib::GetTime());
-        const float dt = raylib::GetFrameTime();
-        auto spawn_at = [&](const Vec2f& position, const Vec2f& velocity, const float radius)
-        {
-            const size_t index = objects.Add();
-            objects.position[index] = position;
-            objects.old_position[index] = solver.MakePreviousPosition(position, velocity, dt);
-            objects.color[index] = Math::GetRainbowColors(time);
-            objects.radius[index] = radius;
-        };
-
-        if (raylib::IsMouseButtonPressed(raylib::MouseButton::Left))
-        {
-            spawn_at(get_world_mouse_pos(), {0.f, 0.f}, 1.f);
-        }
-
-        // Emitter
-        if (time - last_emit_time > 0.05f)
-        {
-            last_emit_time = time;
-            constexpr float velocity_mag = 0.015f;
-            constexpr float emitter_rotation_speed = 4.0f;
-            const Vec2f direction{std::cos(emitter_rotation_speed * time), std::sin(emitter_rotation_speed * time)};
-            spawn_at(emitter_pos, direction * velocity_mag, 1.f);
-        }
-
-        const auto [update_duration] = MeasureTime<std::chrono::milliseconds>(
-            [&]
-            {
-                solver.Update(objects, dt);
-            });
-
-        raylib::BeginDrawing();
-        raylib::ClearBackground(255, 245, 153);
-
-        const auto [render_duration] = MeasureTime<std::chrono::milliseconds>(
-            [&]
-            {
-                // Draw constraint
-                {
-                    const auto radius = transform_vector(world_to_screen, {solver.constraint_radius, 0.0f}).x();
-                    const Vec2f position = screen_range.Extent() / 2;
-                    raylib::DrawCircle({position.x(), position.y()}, radius, raylib::kBlack);
-                }
-
-                for (const size_t index : std::views::iota(0uz, objects.Size()))
-                {
-                    const auto screen_pos = to_screen_coord(objects.position[index]);
-                    const auto screen_size = transform_vector(world_to_screen, {objects.radius[index], 0.0f});
-                    const auto& color = objects.color[index];
-                    raylib::DrawCircle(
-                        {screen_pos.x(), screen_pos.y()},
-                        screen_size.x(),
-                        {color.x(), color.y(), color.z(), 255});
-                }
-
-                raylib::EndDrawing();
-            });
-
-        if (time - last_duration_print_time > 1.f)
-        {
-            last_duration_print_time = time;
-            fmt::print("Perf stats:\n");
-            fmt::print("    Objects count: {}\n", objects.Size());
-            fmt::print("    Solver update duration: {}\n", update_duration);
-            fmt::print("    Render duration: {}\n", render_duration);
-            fmt::println("");
-        }
+    if (ImGui::IsMouseClicked(ImGuiMouseButton_Left) && !ImGui::GetIO().WantCaptureMouse)
+    {
+        spawn_at(GetMousePositionInWorldCoordinates(), {0.f, 0.f}, 1.f);
     }
 
-    raylib::CloseWindow();
+    // Emitter
+    if (relative_time - last_emit_time > 0.05f)
+    {
+        last_emit_time = relative_time;
+        constexpr float velocity_mag = 0.015f;
+        constexpr float emitter_rotation_speed = 4.0f;
+        const Vec2f direction{
+            std::cos(emitter_rotation_speed * relative_time),
+            std::sin(emitter_rotation_speed * relative_time)};
+        spawn_at(emitter_pos, direction * velocity_mag, 1.f);
+    }
+
+    const auto [update_duration] = MeasureTime<std::chrono::milliseconds>(
+        [&]
+        {
+            solver.Update(objects, delta_time);
+        });
+    last_sim_update_duration_ = update_duration;
+}
+
+void VerletApp::PostTick(float delta_time)
+{
+    Super::PostTick(delta_time);
+}
+
+void VerletApp::Render(const float dt)
+{
+    RenderWorld();
+    RenderGUI(dt);
+}
+
+void VerletApp::RenderWorld()
+{
+    const klgl::ScopeAnnotation annotation("Render World");
+
+    const FloatRange2D<float> screen_range{.x = {-1, 1}, .y = {-1, 1}};
+    const Mat3f world_to_screen = Math::MakeTransform(world_range, screen_range);
+
+    [[maybe_unused]] auto to_screen_coord = [&](const Vec2f& plot_pos)
+    {
+        return TransformPos(world_to_screen, plot_pos);
+    };
+
+    size_t circle_index = 0;
+
+    // Draw constraint
+    circle_painter_.SetCircle(circle_index++, Vec2f{}, Vec3f{}, 2 * solver.constraint_radius / world_range.Extent());
+
+    for (const size_t index : objects.Indices())
+    {
+        const auto screen_pos = to_screen_coord(objects.position[index]);
+        const auto screen_size = TransformVector(world_to_screen, objects.radius[index] + Vec2f{});
+        const auto& color = objects.color[index];
+
+        circle_painter_.SetCircle(circle_index++, screen_pos, color.Cast<float>() / 255, screen_size);
+    }
+
+    shader_->Use();
+    circle_painter_.Render();
+}
+
+void VerletApp::RenderGUI(const float)
+{
+    const klgl::ScopeAnnotation annotation("Render GUI");
+    ImGui::Begin("Parameters");
+    shader_->DrawDetails();
+    ImGui::Text("%s", FormatTemp("Framerate: {}", ImGui::GetIO().Framerate));            // NOLINT
+    ImGui::Text("%s", FormatTemp("Objects count: {}", objects.Size()));                  // NOLINT
+    ImGui::Text("%s", FormatTemp("Sim update duration {}", last_sim_update_duration_));  // NOLINT
+    ImGui::End();
+}
+
+int main()
+{
+    VerletApp app;
+    app.Run();
+    return 0;
 }

@@ -1,9 +1,9 @@
 {
     "ModuleType": "GitClone",
-    "GitUrl": "https://gitlab.com/libeigen/eigen",
+    "GitUrl": "https://github.com/glfw/glfw",
     "GitTag": "master",
-    "TargetName": "eigen",
-    "LocalPath": "eigen",
+    "TargetName": "glfw",
+    "LocalPath": "glfw",
     "Dependencies": {
         "Public": [],
         "Private": []

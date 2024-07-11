@@ -66,9 +66,10 @@ static_assert(
     {
         // clang-format off
         Matrix<int, 4, 3> a{{
-            0, 1, 2, 3,
-            4, 5, 6, 7,
-            8, 9, 10, 11
+            0, 1, 2,
+            3, 4, 5,
+            6, 7, 8,
+            9, 10, 11
         }};
         Matrix<int, 3, 5> b{{
             14, 13, 12, 11, 10,
@@ -91,13 +92,73 @@ static_assert(
 static_assert(
     []
     {
+        // clang-format off
+        Matrix<int, 3, 4> m{{
+            0, 1, 2, 3,
+            4, 5, 6, 7,
+            8, 9, 10, 11
+        }};
+        Matrix<int, 1, 4> expected{{
+            4, 5, 6, 7,
+        }};
+        // clang-format on
+
+        Matrix<int, 1, 4> actual = m.GetRow(1);
+        return actual == expected;
+    }(),
+    "GetRow Test");
+
+static_assert(
+    []
+    {
+        // clang-format off
+        Matrix<int, 3, 4> m{{
+            0, 1, 2, 3,
+            4, 5, 6, 7,
+            8, 9, 10, 11
+        }};
+        Matrix<int, 3, 1> expected{{
+            1, 5, 9
+        }};
+        // clang-format on
+
+        Matrix<int, 3, 1> actual = m.GetColumn(1);
+        return actual == expected;
+    }(),
+    "GetColumn Test");
+
+static_assert(
+    []
+    {
+        // clang-format off
+        Matrix<int, 3, 4> m{{
+            0, 1, 2, 3,
+            4, 5, 6, 7,
+            8, 9, 10, 11
+        }};
+        Matrix<int, 4, 3> expected{{
+            0, 4, 8,
+            1, 5, 9,
+            2, 6, 10,
+            3, 7, 11
+        }};
+        // clang-format on
+
+        Matrix<int, 4, 3> actual = m.Transposed();
+        return actual == expected;
+    }(),
+    "Transposed Test");
+
+static_assert(
+    []
+    {
         Matrix<int, 5, 3> a{{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14}};
 
         auto b = a + 10;
 
         for (const size_t row : b.RowIndices())
         {
-            for (const size_t column : b.ColumnsIndices())
+            for (const size_t column : b.ColumnIndices())
             {
                 if (b(row, column) != static_cast<int>(row * b.NumColumns() + column) + 10)
                 {
@@ -119,7 +180,7 @@ static_assert(
 
         for (const size_t row : b.RowIndices())
         {
-            for (const size_t column : b.ColumnsIndices())
+            for (const size_t column : b.ColumnIndices())
             {
                 if (b(row, column) != static_cast<int>(row * b.NumColumns() + column) + 10)
                 {
@@ -141,7 +202,7 @@ static_assert(
 
         for (const size_t row : b.RowIndices())
         {
-            for (const size_t column : b.ColumnsIndices())
+            for (const size_t column : b.ColumnIndices())
             {
                 if (b(row, column) != static_cast<int>(row * b.NumColumns() + column) - 10)
                 {
@@ -163,7 +224,7 @@ static_assert(
 
         for (const size_t row : b.RowIndices())
         {
-            for (const size_t column : b.ColumnsIndices())
+            for (const size_t column : b.ColumnIndices())
             {
                 if (b(row, column) != 10uz - (row * b.NumColumns() + column))
                 {
@@ -185,7 +246,7 @@ static_assert(
 
         for (const size_t row : b.RowIndices())
         {
-            for (const size_t column : b.ColumnsIndices())
+            for (const size_t column : b.ColumnIndices())
             {
                 if (b(row, column) != static_cast<int>(row * b.NumColumns() + column) * 10)
                 {
@@ -207,7 +268,7 @@ static_assert(
 
         for (const size_t row : b.RowIndices())
         {
-            for (const size_t column : b.ColumnsIndices())
+            for (const size_t column : b.ColumnIndices())
             {
                 if (b(row, column) != 10 * static_cast<int>(row * b.NumColumns() + column))
                 {
@@ -229,7 +290,7 @@ static_assert(
 
         for (const size_t row : b.RowIndices())
         {
-            for (const size_t column : b.ColumnsIndices())
+            for (const size_t column : b.ColumnIndices())
             {
                 if (b(row, column) != static_cast<int>(row * b.NumColumns() + column) / 10)
                 {
@@ -251,7 +312,7 @@ static_assert(
 
         for (const size_t row : b.RowIndices())
         {
-            for (const size_t column : b.ColumnsIndices())
+            for (const size_t column : b.ColumnIndices())
             {
                 if (b(row, column) != 10 / static_cast<int>(row * b.NumColumns() + column + 1))
                 {

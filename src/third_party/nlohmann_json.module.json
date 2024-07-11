@@ -1,0 +1,11 @@
+{
+    "ModuleType": "GitClone",
+    "GitUrl": "https://github.com/nlohmann/json",
+    "GitTag": "develop",
+    "TargetName": "nlohmann_json",
+    "LocalPath": "nlohmann/json",
+    "Dependencies": {
+        "Public": [],
+        "Private": []
+    }
+}

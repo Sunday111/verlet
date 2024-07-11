@@ -1,0 +1,13 @@
+{
+    "ModuleType": "GitClone",
+    "GitUrl": "https://github.com/Sunday111/imgui_glfw_cmake",
+    "GitTag": "main",
+    "TargetName": "imgui_glfw_cmake",
+    "LocalPath": "imgui_glfw_cmake",
+    "Dependencies": {
+        "Public": [
+            "glfw"
+        ],
+        "Private": []
+    }
+}

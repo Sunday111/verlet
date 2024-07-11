@@ -35,11 +35,17 @@ add_subdirectory(cloned_modules/fmt/10_1_1 SYSTEM)
 # https://github.com/Sunday111/CppReflection for_yae
 add_subdirectory(cloned_modules/CppReflection SYSTEM)
 
-# https://gitlab.com/libeigen/eigen master
-add_subdirectory(cloned_modules/eigen SYSTEM)
+# https://github.com/Sunday111/glad main
+add_subdirectory(cloned_modules/glad SYSTEM)
 
-# https://github.com/raysan5/raylib master
-add_subdirectory(cloned_modules/raylib SYSTEM)
+# https://github.com/glfw/glfw master
+add_subdirectory(cloned_modules/glfw SYSTEM)
+
+# https://github.com/Sunday111/imgui_glfw_cmake main
+add_subdirectory(cloned_modules/imgui_glfw_cmake SYSTEM)
+
+# https://github.com/nlohmann/json develop
+add_subdirectory(cloned_modules/nlohmann/json SYSTEM)
 
 # --------------------------------- Own Modules ----------------------------------
 add_subdirectory(deps/yae/modules/examples/ecs)
