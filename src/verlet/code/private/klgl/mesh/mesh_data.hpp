@@ -5,7 +5,6 @@
 #include <vector>
 
 #include "klgl/opengl/gl_api.hpp"
-#include "matrix.hpp"
 
 namespace klgl
 {

@@ -14,7 +14,7 @@
 #include <string_view>
 
 #include "CppReflection/GetStaticTypeInfo.hpp"
-#include "matrix.hpp"
+#include "klgl/common.hpp"
 
 namespace klgl
 {

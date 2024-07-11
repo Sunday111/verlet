@@ -4,11 +4,13 @@
 #include "klgl/template/class_member_traits.hpp"
 #include "klgl/template/member_offset.hpp"
 #include "klgl/template/type_to_gl_type.hpp"
-#include "matrix.hpp"
+
+namespace verlet
+{
 
 struct MeshVertex
 {
-    Vec2f position{};
+    edt::Vec2f position{};
 };
 
 template <auto MemberVariablePtr>
@@ -27,3 +29,4 @@ void RegisterAttribute(const GLuint location, const bool normalized)
         vertex_stride,
         reinterpret_cast<void*>(member_stride));  // NOLINT
 }
+}  // namespace verlet

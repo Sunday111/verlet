@@ -2,23 +2,21 @@
 #include <fmt/format.h>
 #include <imgui.h>
 
-#include <functional>
 #include <ranges>
 #include <tuple>
 #include <utility>
 
-#include "float_range.hpp"
-#include "int_range.hpp"
+#include "common.hpp"
 #include "klgl/application.hpp"
 #include "klgl/mesh/mesh_data.hpp"
 #include "klgl/opengl/debug/annotations.hpp"
-#include "klgl/reflection/matrix_reflect.hpp"
 #include "klgl/shader/shader.hpp"
 #include "klgl/window.hpp"
-#include "math.hpp"
-#include "matrix.hpp"
 #include "measure_time.hpp"
 #include "mesh_vertex.hpp"
+
+namespace verlet
+{
 
 struct VerletObjects
 {
@@ -90,7 +88,7 @@ struct VerletSolver
         {
             const float min_dist = constraint_radius - objects.radius[index];
             const float dist_sq = objects.position[index].SquaredLength();
-            if (dist_sq > Math::Sqr(min_dist))
+            if (dist_sq > edt::Math::Sqr(min_dist))
             {
                 const float dist = std::sqrt(dist_sq);
                 const Vec2f direction = objects.position[index] / dist;
@@ -113,7 +111,7 @@ struct VerletSolver
                 const float min_dist = a_r + b_r;
                 const Vec2f rel = a_pos - b_pos;
                 const float dist_sq = rel.SquaredLength();
-                if (dist_sq < Math::Sqr(min_dist))
+                if (dist_sq < edt::Math::Sqr(min_dist))
                 {
                     const float dist = std::sqrt(dist_sq);
                     const Vec2f dir = rel / dist;
@@ -135,7 +133,7 @@ struct VerletSolver
     }
 };
 
-class CirclePainter
+class InstancedPainter
 {
 public:
     static constexpr GLuint kVertexAttribLoc = 0;       // not instanced
@@ -247,14 +245,14 @@ public:
              {.position = {-1.0f, 1.0f}}}};
         const std::array<uint32_t, 6> indices{0, 1, 3, 1, 2, 3};
 
-        circle_mesh_ = klgl::MeshOpenGL::MakeFromData<MeshVertex>(std::span{vertices}, std::span{indices});
-        circle_mesh_->Bind();
+        mesh_ = klgl::MeshOpenGL::MakeFromData<MeshVertex>(std::span{vertices}, std::span{indices});
+        mesh_->Bind();
         RegisterAttribute<&MeshVertex::position>(0, false);
     }
 
     void Render()
     {
-        circle_mesh_->Bind();
+        mesh_->Bind();
         for (const size_t batch_index : std::views::iota(0uz, batches_.size()))
         {
             auto& batch = batches_[batch_index];
@@ -279,7 +277,7 @@ public:
 
             // Update all offsets
             batch.UpdateTranslationsVBO({0, num_locally_used});
-            circle_mesh_->DrawInstanced(num_locally_used);
+            mesh_->DrawInstanced(num_locally_used);
         }
     }
 
@@ -292,23 +290,23 @@ public:
         return {batches_[batch_index], index_in_batch};
     }
 
-    std::unique_ptr<klgl::MeshOpenGL> circle_mesh_;
+    std::unique_ptr<klgl::MeshOpenGL> mesh_;
     std::vector<CirclesBatch> batches_;
     size_t num_initialized_ = 0;
     size_t num_circles_ = 0;
 };
 
-void CirclePainter::CirclesBatch::UpdateColorsVBO(const IntRange<size_t> elements_to_update)
+void InstancedPainter::CirclesBatch::UpdateColorsVBO(const IntRange<size_t> elements_to_update)
 {
     UpdateVBO(opt_color_vbo, kColorAttribLoc, color, elements_to_update);
 }
 
-void CirclePainter::CirclesBatch::UpdateTranslationsVBO(const IntRange<size_t> elements_to_update)
+void InstancedPainter::CirclesBatch::UpdateTranslationsVBO(const IntRange<size_t> elements_to_update)
 {
     UpdateVBO(opt_translation_vbo, kTranslationAttribLoc, translation, elements_to_update);
 }
 
-void CirclePainter::CirclesBatch::UpdateScaleVBO(const IntRange<size_t> elements_to_update)
+void InstancedPainter::CirclesBatch::UpdateScaleVBO(const IntRange<size_t> elements_to_update)
 {
     UpdateVBO(opt_scale_vbo, kScaleAttribLoc, scale, elements_to_update);
 }
@@ -322,13 +320,13 @@ public:
 
     void Initialize() override;
     void InitializeRendering();
-    void Tick(const float dt) override
+    void Tick() override
     {
-        Super::Tick(dt);
-        UpdateSimulation(dt);
-        Render(dt);
+        Super::Tick();
+        UpdateSimulation();
+        Render();
     }
-    void PostTick(const float dt) override;
+    void PostTick() override;
 
     static constexpr FloatRange2D<float> world_range{.x = {-100.f, 100.f}, .y = {-100.f, 100.f}};
     static constexpr Vec2f emitter_pos = world_range.Uniform({0.5, 0.85f});
@@ -337,10 +335,10 @@ public:
         .constraint_radius = world_range.Extent().x() / 2.f,
     };
 
-    void UpdateSimulation(float dt);
-    void Render(float dt);
+    void UpdateSimulation();
+    void Render();
     void RenderWorld();
-    void RenderGUI(const float dt);
+    void RenderGUI();
 
     [[nodiscard]] static constexpr Vec2f TransformPos(const Mat3f& mat, const Vec2f& pos)
     {
@@ -358,7 +356,7 @@ public:
     {
         const auto window_size = GetWindow().GetSize().Cast<float>();
         const auto window_range = FloatRange2D<float>::FromMinMax({}, window_size);
-        const auto window_to_world = Math::MakeTransform(window_range, world_range);
+        const auto window_to_world = edt::Math::MakeTransform(window_range, world_range);
 
         auto [x, y] = ImGui::GetMousePos();
         y = window_range.y.Extent() - y;
@@ -382,7 +380,7 @@ public:
     }
 
     std::string temp_string_for_formatting_{};
-    CirclePainter circle_painter_{};
+    InstancedPainter circle_painter_{};
     std::chrono::milliseconds last_sim_update_duration_{};
 };
 
@@ -415,10 +413,9 @@ void VerletApp::InitializeRendering()
     circle_painter_.Initialize();
 }
 
-void VerletApp::UpdateSimulation(float delta_time)
+void VerletApp::UpdateSimulation()
 {
-    // Update viewport size
-
+    const float dt = GetLastFrameDurationSeconds();
     const TimePoint current_time = Clock::now();
     const float relative_time =
         std::chrono::duration_cast<std::chrono::duration<float>>(current_time - start_time).count();
@@ -427,8 +424,8 @@ void VerletApp::UpdateSimulation(float delta_time)
     {
         const size_t index = objects.Add();
         objects.position[index] = position;
-        objects.old_position[index] = solver.MakePreviousPosition(position, velocity, delta_time);
-        objects.color[index] = Math::GetRainbowColors(relative_time);
+        objects.old_position[index] = solver.MakePreviousPosition(position, velocity, dt);
+        objects.color[index] = edt::Math::GetRainbowColors(relative_time);
         objects.radius[index] = radius;
     };
 
@@ -438,34 +435,34 @@ void VerletApp::UpdateSimulation(float delta_time)
     }
 
     // Emitter
-    if (relative_time - last_emit_time > 0.05f)
+    if (relative_time - last_emit_time > 0.1f)
     {
         last_emit_time = relative_time;
-        constexpr float velocity_mag = 0.015f;
-        constexpr float emitter_rotation_speed = 4.0f;
+        constexpr float velocity_mag = 0.001f;
+        constexpr float emitter_rotation_speed = 3.0f;
         const Vec2f direction{
             std::cos(emitter_rotation_speed * relative_time),
             std::sin(emitter_rotation_speed * relative_time)};
-        spawn_at(emitter_pos, direction * velocity_mag, 1.f);
+        spawn_at(emitter_pos, direction * velocity_mag, 2.f + std::sin(3 * relative_time));
     }
 
     const auto [update_duration] = MeasureTime<std::chrono::milliseconds>(
         [&]
         {
-            solver.Update(objects, delta_time);
+            solver.Update(objects, dt);
         });
     last_sim_update_duration_ = update_duration;
 }
 
-void VerletApp::PostTick(float delta_time)
+void VerletApp::PostTick()
 {
-    Super::PostTick(delta_time);
+    Super::PostTick();
 }
 
-void VerletApp::Render(const float dt)
+void VerletApp::Render()
 {
     RenderWorld();
-    RenderGUI(dt);
+    RenderGUI();
 }
 
 void VerletApp::RenderWorld()
@@ -473,7 +470,7 @@ void VerletApp::RenderWorld()
     const klgl::ScopeAnnotation annotation("Render World");
 
     const FloatRange2D<float> screen_range{.x = {-1, 1}, .y = {-1, 1}};
-    const Mat3f world_to_screen = Math::MakeTransform(world_range, screen_range);
+    const Mat3f world_to_screen = edt::Math::MakeTransform(world_range, screen_range);
 
     [[maybe_unused]] auto to_screen_coord = [&](const Vec2f& plot_pos)
     {
@@ -498,20 +495,22 @@ void VerletApp::RenderWorld()
     circle_painter_.Render();
 }
 
-void VerletApp::RenderGUI(const float)
+void VerletApp::RenderGUI()
 {
     const klgl::ScopeAnnotation annotation("Render GUI");
     ImGui::Begin("Parameters");
     shader_->DrawDetails();
-    ImGui::Text("%s", FormatTemp("Framerate: {}", ImGui::GetIO().Framerate));            // NOLINT
+    ImGui::Text("%s", FormatTemp("Framerate: {}", GetFramerate()));                      // NOLINT
     ImGui::Text("%s", FormatTemp("Objects count: {}", objects.Size()));                  // NOLINT
     ImGui::Text("%s", FormatTemp("Sim update duration {}", last_sim_update_duration_));  // NOLINT
     ImGui::End();
 }
 
+}  // namespace verlet
+
 int main()
 {
-    VerletApp app;
+    verlet::VerletApp app;
     app.Run();
     return 0;
 }

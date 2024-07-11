@@ -1,8 +1,6 @@
 #pragma once
 
 #include "klgl/opengl/gl_api.hpp"
-#include "matrix.hpp"
-
 
 namespace klgl
 {
@@ -18,7 +16,7 @@ struct TypeToGlType<float>
 };
 
 template <typename T, int N>
-struct TypeToGlType<Matrix<T, N, 1>>
+struct TypeToGlType<edt::Matrix<T, N, 1>>
 {
     static constexpr size_t Size = static_cast<size_t>(N);
     static constexpr GLenum Type = TypeToGlType<T>::Type;

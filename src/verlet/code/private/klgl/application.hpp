@@ -19,9 +19,9 @@ public:
 
     virtual void Initialize();
     virtual void Run();
-    virtual void PreTick(float dt);
-    virtual void Tick(float dt);
-    virtual void PostTick(float dt);
+    virtual void PreTick();
+    virtual void Tick();
+    virtual void PostTick();
     virtual void MainLoop();
     virtual void InitializeReflectionTypes();
 
@@ -29,6 +29,18 @@ public:
     const Window& GetWindow() const;
 
     const std::filesystem::path& GetExecutableDir() const;
+
+    // Current time. Relative to app start
+    float GetTimeSeconds() const;
+
+    // Time (in seconds) when the current fame started. Relative to app start
+    float GetCurrentFrameStartTime() const;
+
+    // How many ticks app does per second (on average among last 128 ticks)
+    float GetFramerate() const;
+
+    // Duration of the previous tick (in seconds)
+    float GetLastFrameDurationSeconds() const;
 
 private:
     std::unique_ptr<State> state_;

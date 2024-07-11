@@ -4,6 +4,7 @@
 
 #include "CppReflection/GetStaticTypeInfo.hpp"
 #include "CppReflection/TypeRegistry.hpp"
+#include "klgl/common.hpp"
 #include "klgl/reflection/matrix_reflect.hpp"
 #include "klgl/wrap/wrap_imgui.hpp"
 
@@ -34,7 +35,7 @@ bool ScalarProperty(
 template <typename T, size_t N>
 bool VectorProperty(
     std::string_view title,
-    Matrix<T, N, 1>& value,
+    edt::Matrix<T, N, 1>& value,
     T min = std::numeric_limits<T>::lowest(),
     T max = std::numeric_limits<T>::max()) noexcept
 {
@@ -58,7 +59,7 @@ bool VectorProperty(edt::GUID type_guid, std::string_view name, void* address, b
 template <typename T, size_t num_rows, size_t num_columns>
 bool MatrixProperty(
     const std::string_view title,
-    Matrix<T, num_rows, num_columns>& value,
+    edt::Matrix<T, num_rows, num_columns>& value,
     T min = std::numeric_limits<T>::lowest(),
     T max = std::numeric_limits<T>::max()) noexcept
 {
@@ -67,7 +68,7 @@ bool MatrixProperty(
     {
         for (size_t row_index = 0; row_index != num_rows; ++row_index)
         {
-            Matrix<T, num_columns, 1> row = value.GetRow(row_index).Transposed();
+            edt::Matrix<T, num_columns, 1> row = value.GetRow(row_index).Transposed();
             ImGui::PushID(static_cast<int>(row_index));
             const bool row_changed = ImGui::DragScalarN(
                 "",

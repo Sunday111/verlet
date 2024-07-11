@@ -1,6 +1,8 @@
 #include "application.hpp"
 
 #include <chrono>
+#include <concepts>
+#include <utility>
 
 #include "klgl/opengl/debug/annotations.hpp"
 #include "klgl/opengl/debug/gl_debug_messenger.hpp"
@@ -15,9 +17,53 @@ namespace klgl
 
 struct Application::State
 {
+    using Clock = std::chrono::high_resolution_clock;
+    using TimePoint = Clock::time_point;
+
     GlfwState glfw_;
     std::unique_ptr<Window> window_;
     std::filesystem::path executable_dir_;
+
+    void InitTime()
+    {
+        app_start_time_ = GetTime();
+        std::ranges::fill(frame_start_time_history_, app_start_time_);
+    }
+
+    void RegisterFrameStartTime()
+    {
+        const TimePoint previous_frame_start_time = frame_start_time_history_[current_frame_time_index_];
+        current_frame_time_index_ = (current_frame_time_index_ + 1) % frame_start_time_history_.size();
+        const TimePoint current_frame_start_time = Clock::now();
+        const TimePoint oldest_frame_start_time =
+            std::exchange(frame_start_time_history_[current_frame_time_index_], current_frame_start_time);
+
+        framerate_ = static_cast<float>(
+            static_cast<double>(frame_start_time_history_.size()) /
+            DurationToSeconds<double>(current_frame_start_time - oldest_frame_start_time));
+
+        last_frame_duration_seconds_ = DurationToSeconds<float>(current_frame_start_time - previous_frame_start_time);
+    }
+
+    static TimePoint GetTime()
+    {
+        return Clock::now();
+    }
+
+    template <std::floating_point Result = float, typename Duration>
+    static Result DurationToSeconds(Duration&& duration)
+    {
+        return std::chrono::duration_cast<std::chrono::duration<Result, std::chrono::seconds::period>>(
+                   std::forward<Duration>(duration))
+            .count();
+    }
+
+    TimePoint app_start_time_{};
+    static constexpr size_t kFrameTimeHistorySize = 128;
+    std::array<TimePoint, kFrameTimeHistorySize> frame_start_time_history_{};
+    float last_frame_duration_seconds_ = 0.f;
+    float framerate_ = 0.0f;
+    uint8_t current_frame_time_index_ = kFrameTimeHistorySize - 1;
 };
 
 Application::Application()
@@ -95,6 +141,8 @@ void Application::Initialize()
         font_config.SizePixels = 13 * xscale;
         io.Fonts->AddFontDefault(&font_config);
     }
+
+    state_->InitTime();
 }
 
 void Application::Run()
@@ -103,7 +151,7 @@ void Application::Run()
     MainLoop();
 }
 
-void Application::PreTick([[maybe_unused]] float dt)
+void Application::PreTick()
 {
     OpenGl::Viewport(
         0,
@@ -118,9 +166,9 @@ void Application::PreTick([[maybe_unused]] float dt)
     ImGui::NewFrame();
 }
 
-void Application::Tick([[maybe_unused]] float dt) {}
+void Application::Tick() {}
 
-void Application::PostTick([[maybe_unused]] float dt)
+void Application::PostTick()
 {
     {
         ScopeAnnotation imgui_render("ImGUI");
@@ -134,19 +182,14 @@ void Application::PostTick([[maybe_unused]] float dt)
 
 void Application::MainLoop()
 {
-    auto prev_frame_time = std::chrono::high_resolution_clock::now();
     while (!state_->window_->ShouldClose())
     {
         ScopeAnnotation frame_annotation("Frame");
-        const auto current_frame_time = std::chrono::high_resolution_clock::now();
-        const auto frame_delta_time =
-            std::chrono::duration<float, std::chrono::seconds::period>(current_frame_time - prev_frame_time).count();
+        state_->RegisterFrameStartTime();
 
-        PreTick(frame_delta_time);
-        Tick(frame_delta_time);
-        PostTick(frame_delta_time);
-
-        prev_frame_time = current_frame_time;
+        PreTick();
+        Tick();
+        PostTick();
     }
 }
 
@@ -168,6 +211,27 @@ const Window& Application::GetWindow() const
 const std::filesystem::path& Application::GetExecutableDir() const
 {
     return state_->executable_dir_;
+}
+
+float Application::GetTimeSeconds() const
+{
+    return State::DurationToSeconds(State::GetTime() - state_->app_start_time_);
+}
+
+float Application::GetCurrentFrameStartTime() const
+{
+    return State::DurationToSeconds(
+        state_->frame_start_time_history_[state_->current_frame_time_index_] - state_->app_start_time_);
+}
+
+float Application::GetFramerate() const
+{
+    return state_->framerate_;
+}
+
+float Application::GetLastFrameDurationSeconds() const
+{
+    return state_->last_frame_duration_seconds_;
 }
 
 }  // namespace klgl

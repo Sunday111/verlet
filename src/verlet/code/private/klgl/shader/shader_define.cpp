@@ -4,7 +4,9 @@
 
 #include "CppReflection/GetStaticTypeInfo.hpp"
 #include "EverydayTools/GUID_fmtlib.hpp"
+#include "klgl/common.hpp"
 #include "klgl/reflection/matrix_reflect.hpp"
+
 
 namespace klgl
 {
