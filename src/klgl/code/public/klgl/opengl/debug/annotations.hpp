@@ -8,7 +8,7 @@ namespace klgl
 class ScopeAnnotation
 {
 public:
-    ScopeAnnotation(std::string_view scope_name, size_t id = 0) noexcept;
+    explicit ScopeAnnotation(std::string_view scope_name, size_t id = 0) noexcept;
     ScopeAnnotation(ScopeAnnotation&&) = delete;
     ScopeAnnotation(const ScopeAnnotation&) = delete;
     ~ScopeAnnotation() noexcept;

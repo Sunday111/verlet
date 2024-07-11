@@ -3,13 +3,13 @@
 #include <stdexcept>
 
 #include "CppReflection/GetStaticTypeInfo.hpp"
-#include "EverydayTools/GUID_fmtlib.hpp"
-#include "klgl/common.hpp"
-#include "klgl/reflection/matrix_reflect.hpp"
-
+#include "EverydayTools/GUID_fmtlib.hpp"       // IWYU pragma: keep (formatter for guids)
+#include "klgl/reflection/matrix_reflect.hpp"  // IWYU pragma: keep (provides reflection for matrices)
+#include "nlohmann/json.hpp"
 
 namespace klgl
 {
+using namespace edt::lazy_matrix_aliases;  // NOLINT
 
 ShaderDefine::ShaderDefine(ShaderDefine&& another) noexcept
 {
@@ -77,7 +77,7 @@ inline static std::span<const uint8_t> MakeValueSpan(const T& value) noexcept
 ShaderDefine ShaderDefine::ReadFromJson(const nlohmann::json& json)
 {
     ShaderDefine def;
-    def.name = std::string(json.at("name"));
+    def.name = Name(json.at("name"));
 
     auto& default_value_json = json.at("default");
     std::string type_name = json.at("type");

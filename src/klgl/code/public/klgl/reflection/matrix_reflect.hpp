@@ -2,7 +2,7 @@
 
 #include "CppReflection/ReflectionProvider.hpp"
 #include "CppReflection/StaticType/class.hpp"
-#include "EverydayTools/Math/matrix.hpp"
+#include "EverydayTools/Math/Matrix.hpp"
 
 namespace cppreflection
 {

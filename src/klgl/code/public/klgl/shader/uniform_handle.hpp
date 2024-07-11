@@ -9,7 +9,7 @@ class UniformHandle
 {
 public:
     uint32_t index = 0;
-    Name name;
+    Name name{};
 };
 
 }  // namespace klgl

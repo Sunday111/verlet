@@ -14,10 +14,12 @@
 #include <string_view>
 
 #include "CppReflection/GetStaticTypeInfo.hpp"
-#include "klgl/common.hpp"
+#include "EverydayTools/Math/Matrix.hpp"
 
 namespace klgl
 {
+
+using namespace edt::lazy_matrix_aliases;  // NOLINT
 
 enum class GlPolygonMode : uint8_t
 {

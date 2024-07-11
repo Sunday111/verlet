@@ -1,7 +1,8 @@
 cmake_minimum_required(VERSION 3.20)
 include(set_compiler_options)
 set(module_source_files
-    ${CMAKE_CURRENT_SOURCE_DIR}/code/private/common.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/code/private/instance_painter.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/code/private/instance_painter.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/main.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/measure_time.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/mesh_vertex.hpp

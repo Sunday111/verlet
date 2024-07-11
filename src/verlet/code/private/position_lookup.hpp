@@ -4,8 +4,7 @@
 #include <limits>
 #include <vector>
 
-#include "float_range.hpp"
-#include "math.hpp"
+#include "EverydayTools/Math/Math.hpp"
 
 class PositionLookup
 {
@@ -23,14 +22,14 @@ public:
         // Index of the first RegionElement in this region
         uint16_t first = kInvalidIndex;
 
-        FloatRange2D<float> range;
+        edt::FloatRange2D<float> range;
     };
 
-    PositionLookup(const FloatRange2D<float>& world_range, const uint8_t num_side_regions)
+    PositionLookup(const edt::FloatRange2D<float>& world_range, const uint8_t num_side_regions)
         : world_range_(world_range),
           region_size_{world_range.Extent() / num_side_regions},
           num_side_regions_(num_side_regions),
-          regions_(Math::Sqr(num_side_regions))
+          regions_(edt::Math::Sqr(num_side_regions))
     {
         // Initialize regions ranges
         for (uint8_t xi = 0; xi != GetDimSize(); ++xi)

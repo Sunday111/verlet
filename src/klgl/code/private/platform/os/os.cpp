@@ -1,4 +1,4 @@
-#include "klgl/os/os.hpp"
+#include "klgl/platform/os/os.hpp"
 
 #if defined(WIN32) || defined(_WIN32) || defined(__WIN32) && !defined(__CYGWIN__)
 #undef APIENTRY
@@ -27,7 +27,7 @@ namespace klgl::os
 {
 std::filesystem::path GetExecutableDir()
 {
-    char path[1024];
+    char path[1024];  // NOLINT
     readlink("/proc/self/exe", path, sizeof(path) - 1);
     const size_t index = std::string_view(path).find_last_of("\\/");
     path[index] = '\0';

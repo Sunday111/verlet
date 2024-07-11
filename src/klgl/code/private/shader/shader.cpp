@@ -1,5 +1,7 @@
 #include "klgl/shader/shader.hpp"
 
+#include <imgui.h>
+
 #include <array>
 #include <cassert>
 #include <filesystem>
@@ -10,7 +12,7 @@
 #include "CppReflection/TypeRegistry.hpp"
 #include "fmt/core.h"
 #include "klgl/read_file.hpp"
-#include "klgl/reflection/matrix_reflect.hpp"
+#include "klgl/reflection/matrix_reflect.hpp"  // IWYU pragma: keep (provides reflection for matrices)
 #include "klgl/shader/sampler_uniform.hpp"
 #include "klgl/shader/shader.hpp"
 #include "klgl/shader/shader_define.hpp"
@@ -18,7 +20,6 @@
 #include "klgl/template/on_scope_leave.hpp"
 #include "klgl/texture/texture.hpp"
 #include "klgl/type_id_widget.hpp"
-#include "klgl/wrap/wrap_imgui.hpp"
 #include "nlohmann/json.hpp"
 
 namespace klgl
@@ -250,7 +251,7 @@ void Shader::DrawDetails()
     }
 
     constexpr size_t stack_val_bytes = 64;
-    uint64_t stack_val_arr[stack_val_bytes / 8];
+    std::array<uint64_t, stack_val_bytes / 8> stack_val_arr{};
 
     if (ImGui::TreeNode("Dynamic Variables"))
     {
@@ -259,11 +260,13 @@ void Shader::DrawDetails()
             auto type_info = cppreflection::GetTypeRegistry()->FindType(uniform.GetTypeGUID());
 
             type_info->GetSpecialMembers().copyConstructor(
-                reinterpret_cast<void*>(stack_val_arr),
+                stack_val_arr.data(),  // NOLINT
                 uniform.GetValue().data());
             assert(stack_val_bytes >= type_info->GetInstanceSize());
 
-            std::span<uint8_t> val_view(reinterpret_cast<uint8_t*>(stack_val_arr), type_info->GetInstanceSize());
+            std::span<uint8_t> val_view(
+                reinterpret_cast<uint8_t*>(stack_val_arr.data()),  // NOLINT
+                type_info->GetInstanceSize());
 
             bool value_changed = false;
             SimpleTypeWidget(uniform.GetTypeGUID(), uniform.GetName().GetView(), val_view.data(), value_changed);
@@ -554,19 +557,12 @@ void Shader::UpdateUniforms()
         auto get_or_add = [&uniforms, &cpp_type, this](std::string_view name)
         {
             // find existing variable
-            auto found_uniform_it = std::find_if(
-                uniforms_.begin(),
-                uniforms_.end(),
-                [&](const ShaderUniform& u)
-                {
-                    return u.GetName() == name;
-                });
-
-            if (found_uniform_it != uniforms_.end())
+            if (auto existing_uniform = std::ranges::find(uniforms_, name, &ShaderUniform::GetNameView);
+                existing_uniform != uniforms_.end())
             {
-                uniforms.push_back(std::move(*found_uniform_it));
+                uniforms.push_back(std::move(*existing_uniform));
                 // the previous value can be saved only if variable has the same type
-                if (*cpp_type != found_uniform_it->GetTypeGUID())
+                if (*cpp_type != existing_uniform->GetTypeGUID())
                 {
                     uniforms.back().SetType(*cpp_type);
                 }

@@ -1,7 +1,5 @@
 #pragma once
 
-#include <memory>
-
 #include "CppReflection/GetStaticTypeInfo.hpp"
 #include "klgl/opengl/gl_api.hpp"
 

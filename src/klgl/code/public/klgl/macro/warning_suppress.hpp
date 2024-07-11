@@ -1,7 +1,5 @@
 #pragma once
 
-#include "klgl/macro/to_string.hpp"
-
 // clang-format off
 #ifdef __clang__
     #define warning_push _Pragma("GCC diagnostic push")

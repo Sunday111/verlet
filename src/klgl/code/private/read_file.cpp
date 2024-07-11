@@ -1,6 +1,7 @@
 #include "klgl/read_file.hpp"
 
 #include <fmt/format.h>
+#include <fmt/std.h>
 
 #include <fstream>
 
@@ -13,8 +14,7 @@ void ReadFile(const std::filesystem::path& path, std::vector<char>& buffer)
 
     [[unlikely]] if (!file.is_open())
     {
-        auto message = fmt::format("failed to open file {}", path.string());
-        throw std::runtime_error(std::move(message));
+        throw std::runtime_error(fmt::format("failed to open file {}", path));
     }
     const std::streamsize size = file.tellg();
     file.seekg(0, std::ios::beg);
@@ -22,8 +22,7 @@ void ReadFile(const std::filesystem::path& path, std::vector<char>& buffer)
 
     [[unlikely]] if (!file.read(buffer.data(), size))
     {
-        auto message = fmt::format("failed to read {} bytes from file {}", size, path.string());
-        throw std::runtime_error(std::move(message));
+        throw std::runtime_error(fmt::format("failed to read {} bytes from file {}", size, path));
     }
 }
 

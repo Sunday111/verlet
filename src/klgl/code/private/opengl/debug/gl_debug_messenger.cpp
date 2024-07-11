@@ -1,7 +1,8 @@
 #include "klgl/opengl/debug/gl_debug_messenger.hpp"
 
+#include "EverydayTools/Preprocessor/Stringify.hpp"
 #include "fmt/core.h"
-#include "klgl/macro/to_string.hpp"
+
 
 namespace klgl
 {

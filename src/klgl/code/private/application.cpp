@@ -1,16 +1,20 @@
 #include "klgl/application.hpp"
 
+#include <backends/imgui_impl_glfw.h>
+#include <backends/imgui_impl_opengl3.h>
+#include <imgui.h>
+
 #include <chrono>
 #include <concepts>
 #include <utility>
 
 #include "klgl/opengl/debug/annotations.hpp"
 #include "klgl/opengl/debug/gl_debug_messenger.hpp"
-#include "klgl/os/os.hpp"
+#include "klgl/platform/os/os.hpp"
 #include "klgl/reflection/register_types.hpp"
 #include "klgl/window.hpp"
-#include "klgl/wrap/wrap_glfw.hpp"
-#include "klgl/wrap/wrap_imgui.hpp"
+#include "platform/glfw/glfw_state.hpp"
+
 
 namespace klgl
 {

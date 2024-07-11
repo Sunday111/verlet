@@ -1,15 +1,62 @@
 #include "klgl/type_id_widget.hpp"
 
+#include <imgui.h>
+
 #include <limits>
 
 #include "CppReflection/GetStaticTypeInfo.hpp"
 #include "CppReflection/TypeRegistry.hpp"
-#include "klgl/common.hpp"
-#include "klgl/reflection/matrix_reflect.hpp"
-#include "klgl/wrap/wrap_imgui.hpp"
+#include "klgl/reflection/matrix_reflect.hpp"  // IWYU pragma: keep
 
 namespace klgl
 {
+
+using namespace edt::lazy_matrix_aliases;  // NOLINT
+
+template <typename T>
+static constexpr ImGuiDataType_ CastDataType() noexcept
+{
+    if constexpr (std::is_same_v<T, int8_t>)
+    {
+        return ImGuiDataType_S8;
+    }
+    if constexpr (std::is_same_v<T, uint8_t>)
+    {
+        return ImGuiDataType_U8;
+    }
+    if constexpr (std::is_same_v<T, int16_t>)
+    {
+        return ImGuiDataType_S16;
+    }
+    if constexpr (std::is_same_v<T, uint16_t>)
+    {
+        return ImGuiDataType_U16;
+    }
+    if constexpr (std::is_same_v<T, int32_t>)
+    {
+        return ImGuiDataType_S32;
+    }
+    if constexpr (std::is_same_v<T, uint32_t>)
+    {
+        return ImGuiDataType_U32;
+    }
+    if constexpr (std::is_same_v<T, int64_t>)
+    {
+        return ImGuiDataType_S64;
+    }
+    if constexpr (std::is_same_v<T, uint64_t>)
+    {
+        return ImGuiDataType_U64;
+    }
+    if constexpr (std::is_same_v<T, float>)
+    {
+        return ImGuiDataType_Float;
+    }
+    if constexpr (std::is_same_v<T, double>)
+    {
+        return ImGuiDataType_Double;
+    }
+}
 
 template <typename T>
 bool ScalarProperty(

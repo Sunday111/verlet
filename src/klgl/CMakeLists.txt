@@ -8,7 +8,8 @@ set(module_source_files
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/opengl/debug/annotations.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/opengl/debug/gl_debug_messenger.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/opengl/gl_api.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/code/private/os/os.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/code/private/platform/glfw/glfw_state.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/code/private/platform/os/os.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/read_file.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/shader/shader.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/shader/shader_define.cpp
@@ -17,8 +18,6 @@ set(module_source_files
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/type_id_widget.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/window.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/application.hpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/common.hpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/macro/to_string.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/macro/warning_suppress.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/mesh/mesh_data.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/name_cache/name.hpp
@@ -26,7 +25,7 @@ set(module_source_files
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/opengl/debug/annotations.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/opengl/debug/gl_debug_messenger.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/opengl/gl_api.hpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/os/os.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/platform/os/os.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/read_file.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/reflection/glm_reflect.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/reflection/matrix_reflect.hpp
@@ -45,9 +44,7 @@ set(module_source_files
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/template/type_to_gl_type.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/texture/texture.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/type_id_widget.hpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/window.hpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/wrap/wrap_glfw.hpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/wrap/wrap_imgui.hpp)
+    ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/window.hpp)
 add_library(klgl STATIC ${module_source_files})
 set_generic_compiler_options(klgl PRIVATE)
 target_link_libraries(klgl PUBLIC edt

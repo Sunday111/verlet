@@ -1,13 +1,12 @@
 #pragma once
 
-#include <memory>
+#include <nlohmann/json_fwd.hpp>
 #include <span>
 #include <string>
 #include <vector>
 
 #include "EverydayTools/GUID.hpp"
 #include "klgl/name_cache/name.hpp"
-#include "nlohmann/json.hpp"
 
 namespace klgl
 {

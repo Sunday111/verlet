@@ -1,11 +1,13 @@
 #pragma once
 
-#include "klgl/common.hpp"
+#include "EverydayTools/Math/Matrix.hpp"
 
 struct GLFWwindow;
 
 namespace klgl
 {
+
+using namespace edt::lazy_matrix_aliases;  // NOLINT
 
 class Window
 {

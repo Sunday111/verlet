@@ -1,10 +1,8 @@
 #pragma once
 
 #include <filesystem>
-#include <memory>
 #include <optional>
 #include <span>
-#include <string_view>
 #include <vector>
 
 #include "CppReflection/GetStaticTypeInfo.hpp"
@@ -22,7 +20,7 @@ class Texture;
 class Shader
 {
 public:
-    Shader(std::filesystem::path path);
+    explicit Shader(std::filesystem::path path);
     ~Shader();
 
     void Use();
@@ -44,7 +42,7 @@ public:
         SetUniform(
             handle,
             cppreflection::GetStaticTypeInfo<T>().guid,
-            std::span<const uint8_t>(reinterpret_cast<const uint8_t*>(&value), sizeof(T)));
+            std::span<const uint8_t>(reinterpret_cast<const uint8_t*>(&value), sizeof(T)));  // NOLINT
     }
 
     void SendUniforms();
@@ -64,7 +62,7 @@ public:
         SetDefineValue(
             handle,
             cppreflection::GetStaticTypeInfo<T>().guid,
-            std::span<const uint8_t>(reinterpret_cast<const uint8_t*>(&value), sizeof(T)));
+            std::span<const uint8_t>(reinterpret_cast<const uint8_t*>(&value), sizeof(T)));  // NOLINT
     }
 
     std::optional<GLuint> GetProgram() const
@@ -84,7 +82,7 @@ protected:
     {
         std::span<const uint8_t> view = GetUniformValueViewRaw(handle, cppreflection::GetStaticTypeInfo<T>().guid);
         assert(view.size() == sizeof(T));
-        return *reinterpret_cast<const T*>(view.data());
+        return *reinterpret_cast<const T*>(view.data());  // NOLINT
     }
 
 private:
@@ -109,7 +107,7 @@ const T& Shader::GetDefineValue(DefineHandle& handle) const
 {
     constexpr edt::GUID type_guid = cppreflection::GetStaticTypeInfo<T>().guid;
     auto value_view = GetDefineValue(handle, type_guid);
-    return *reinterpret_cast<const T*>(value_view.data());
+    return *reinterpret_cast<const T*>(value_view.data());  // NOLINT
 }
 
 }  // namespace klgl

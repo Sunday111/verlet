@@ -1,7 +1,6 @@
 #pragma once
 
 #include <span>
-#include <string>
 #include <vector>
 
 #include "EverydayTools/GUID.hpp"
@@ -32,6 +31,11 @@ public:
     void EnsureTypeMatch(edt::GUID type_guid) const;
 
     [[nodiscard]] bool IsEmpty() const noexcept;
+    [[nodiscard]] std::string_view GetNameView()
+    {
+        return GetName().GetView();
+    }
+
     [[nodiscard]] Name GetName() const noexcept
     {
         return name_;

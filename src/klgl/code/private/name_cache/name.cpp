@@ -13,8 +13,7 @@ Name::Name(const std::string& string) : Name(std::string_view(string)) {}
 
 Name::Name(const std::string_view& view)
 {
-    using namespace name_cache_impl;
-    id_ = NameCache::Get().GetId(view);
+    id_ = name_cache_impl::NameCache::Get().GetId(view);
 }
 
 [[nodiscard]] bool Name::IsValid() const noexcept
@@ -24,13 +23,11 @@ Name::Name(const std::string_view& view)
 
 std::string_view Name::GetView() const
 {
-    using namespace name_cache_impl;
     [[unlikely]] if (!IsValid())
     {
         return "";
     }
-    auto maybe_str = NameCache::Get().FindView(id_);
-    [[likely]] if (maybe_str)
+    [[likely]] if (auto maybe_str = name_cache_impl::NameCache::Get().FindView(id_))
     {
         return *maybe_str;
     }

@@ -1,7 +1,5 @@
 #include "klgl/name_cache/name_cache.hpp"
 
-#include <stdexcept>
-
 namespace klgl::name_cache_impl
 {
 NameId NameCache::GetId(std::string_view view)

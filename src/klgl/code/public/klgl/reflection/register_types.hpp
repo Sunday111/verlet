@@ -2,8 +2,7 @@
 
 #include "CppReflection/GetTypeInfo.hpp"
 #include "CppReflection/TypeRegistry.hpp"
-#include "EverydayTools/GUID_fmtlib.hpp"
-#include "klgl/reflection/matrix_reflect.hpp"
+#include "klgl/reflection/matrix_reflect.hpp"  // IWYU pragma: keep (provides reflection for matrices)
 #include "klgl/shader/sampler_uniform.hpp"
 
 namespace klgl
@@ -11,7 +10,7 @@ namespace klgl
 
 inline void RegisterReflectionTypes()
 {
-    [[maybe_unused]] const cppreflection::Type* t;
+    [[maybe_unused]] const cppreflection::Type* t{};
     t = cppreflection::GetTypeInfo<float>();
     t = cppreflection::GetTypeInfo<int8_t>();
     t = cppreflection::GetTypeInfo<int16_t>();
