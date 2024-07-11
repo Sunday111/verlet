@@ -35,6 +35,9 @@ add_subdirectory(cloned_modules/fmt/10_1_1 SYSTEM)
 # https://github.com/Sunday111/CppReflection for_yae
 add_subdirectory(cloned_modules/CppReflection SYSTEM)
 
+# https://github.com/nlohmann/json develop
+add_subdirectory(cloned_modules/nlohmann/json SYSTEM)
+
 # https://github.com/Sunday111/glad main
 add_subdirectory(cloned_modules/glad SYSTEM)
 
@@ -43,9 +46,6 @@ add_subdirectory(cloned_modules/glfw SYSTEM)
 
 # https://github.com/Sunday111/imgui_glfw_cmake main
 add_subdirectory(cloned_modules/imgui_glfw_cmake SYSTEM)
-
-# https://github.com/nlohmann/json develop
-add_subdirectory(cloned_modules/nlohmann/json SYSTEM)
 
 # --------------------------------- Own Modules ----------------------------------
 add_subdirectory(deps/yae/modules/examples/ecs)
@@ -58,6 +58,7 @@ add_subdirectory(deps/yae/modules/examples/yae_example_benchmark)
 add_subdirectory(deps/yae/modules/examples/yae_example_benchmark_main)
 add_subdirectory(deps/yae/modules/examples/ecs_benchmark)
 add_subdirectory(deps/yae/modules/examples/yae_example_executable)
+add_subdirectory(src/klgl)
 add_subdirectory(src/verlet)
 
 enable_testing()

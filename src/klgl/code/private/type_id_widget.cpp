@@ -1,4 +1,4 @@
-#include "type_id_widget.hpp"
+#include "klgl/type_id_widget.hpp"
 
 #include <limits>
 

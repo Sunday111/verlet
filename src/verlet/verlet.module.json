@@ -6,13 +6,7 @@
     "Dependencies": {
         "Public": [],
         "Private": [
-            "edt",
-            "fmtlib",
-            "CppReflection",
-            "nlohmann_json",
-            "glad",
-            "glfw",
-            "imgui_glfw_cmake"
+            "klgl"
         ]
     }
 }
