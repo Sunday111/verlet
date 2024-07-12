@@ -1,23 +1,32 @@
 #include "klgl/mesh/mesh_data.hpp"
 
-#include <algorithm>
-#include <array>
+#include "klgl/error_handling.hpp"
 
 namespace klgl
 {
-MeshData MeshData::MakeIndexedQuad()
+
+void MeshOpenGL::ValidateIndicesCountForTopology(const GLuint topology, const size_t num_indices)
 {
-    const std::array<Vec2f, 4> qvertices{{{1.0f, 1.0f}, {1.0f, -1.0f}, {-1.0f, -1.0f}, {-1.0f, 1.0f}}};
-    const std::array<Vec3i, 2> qindices{{{0, 1, 3}, {1, 2, 3}}};
+    switch (topology)
+    {
+    case GL_TRIANGLES:
+        ErrorHandling::Ensure(
+            num_indices % 3 == 0,
+            "Topology is GL_TRIANGLES but the number of indices is not a multiple of 3 ({} % 3 != 0)",
+            num_indices);
+        break;
 
-    MeshData data{};
-    data.vertices.resize(qvertices.size());
-    data.indices.resize(qindices.size());
+    case GL_TRIANGLE_FAN:
+        ErrorHandling::Ensure(
+            num_indices > 2,
+            "Topology is GL_TRIANGLE_FAN but the number of indices is less than 3 ({})",
+            num_indices);
+        break;
 
-    std::ranges::copy(qvertices, data.vertices.begin());
-    std::ranges::copy(qindices, data.indices.begin());
-
-    return data;
+    default:
+        ErrorHandling::ThrowWithMessage("Unknown topology with type {}", topology);
+        break;
+    }
 }
 
 void MeshOpenGL::Bind() const
@@ -27,15 +36,15 @@ void MeshOpenGL::Bind() const
 
 void MeshOpenGL::Draw() const
 {
-    assert(topology == GL_TRIANGLES);
+    assert(topology == GL_TRIANGLES || topology == GL_TRIANGLE_FAN);
     OpenGl::DrawElements(topology, elements_count, GL_UNSIGNED_INT, nullptr);
 }
 
 void MeshOpenGL::DrawInstanced(const size_t num_instances)
 {
-    assert(topology == GL_TRIANGLES);
+    assert(topology == GL_TRIANGLES || topology == GL_TRIANGLE_FAN);
     glDrawElementsInstanced(
-        GL_TRIANGLES,
+        topology,
         static_cast<GLsizei>(elements_count),
         GL_UNSIGNED_INT,
         nullptr,

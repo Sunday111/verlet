@@ -20,7 +20,7 @@ void VerletApp::Initialize()
 
 void VerletApp::InitializeRendering()
 {
-    klgl::OpenGl::SetClearColor({255, 245, 153, 255});
+    klgl::OpenGl::SetClearColor(Vec4f{255, 245, 153, 255} / 255.f);
     GetWindow().SetSize(1000, 1000);
     GetWindow().SetTitle("Verlet");
 
@@ -59,7 +59,7 @@ void VerletApp::UpdateSimulation()
     if (relative_time - last_emit_time > 0.1f)
     {
         last_emit_time = relative_time;
-        constexpr float velocity_mag = 0.001f;
+        constexpr float velocity_mag = 0.1f;
         constexpr float emitter_rotation_speed = 3.0f;
         const Vec2f direction{
             std::cos(emitter_rotation_speed * relative_time),
@@ -78,6 +78,11 @@ void VerletApp::UpdateSimulation()
 void VerletApp::PostTick()
 {
     Super::PostTick();
+    const float frame_start = GetCurrentFrameStartTime();
+    constexpr float target_frame_duration = (1 / 60.f) * 0.9995f;
+    while (GetTimeSeconds() - frame_start < target_frame_duration)
+    {
+    }
 }
 
 void VerletApp::Render()

@@ -1,0 +1,11 @@
+{
+    "ModuleType": "GitClone",
+    "GitUrl": "https://github.com/jeremy-rifkin/cpptrace",
+    "GitTag": "main",
+    "TargetName": "cpptrace::cpptrace",
+    "LocalPath": "cpptrace",
+    "Dependencies": {
+        "Public": [],
+        "Private": []
+    }
+}

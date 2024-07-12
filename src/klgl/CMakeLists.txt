@@ -3,6 +3,7 @@ include(set_compiler_options)
 set(module_source_files
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/application.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/mesh/mesh_data.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/code/private/mesh/procedural_mesh_generator.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/name_cache/name.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/name_cache/name_cache.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/opengl/debug/annotations.cpp
@@ -18,8 +19,10 @@ set(module_source_files
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/type_id_widget.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/window.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/application.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/error_handling.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/macro/warning_suppress.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/mesh/mesh_data.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/mesh/procedural_mesh_generator.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/name_cache/name.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/name_cache/name_cache.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/opengl/debug/annotations.hpp
@@ -52,6 +55,7 @@ target_link_libraries(klgl PUBLIC edt
                                   nlohmann_json
                                   glad
                                   glfw
-                                  imgui_glfw_cmake)
+                                  imgui_glfw_cmake
+                                  cpptrace::cpptrace)
 target_include_directories(klgl PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/code/public)
 target_include_directories(klgl PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/code/private)

@@ -1,5 +1,8 @@
 #include "instance_painter.hpp"
 
+#include <cmath>
+
+#include "klgl/mesh/procedural_mesh_generator.hpp"
 #include "mesh_vertex.hpp"
 
 namespace verlet
@@ -7,14 +10,8 @@ namespace verlet
 
 void InstancedPainter::Initialize()
 {
-    const std::array<MeshVertex, 4> vertices{
-        {{.position = {1.0f, 1.0f}},
-         {.position = {1.0f, -1.0f}},
-         {.position = {-1.0f, -1.0f}},
-         {.position = {-1.0f, 1.0f}}}};
-    const std::array<uint32_t, 6> indices{0, 1, 3, 1, 2, 3};
-
-    mesh_ = klgl::MeshOpenGL::MakeFromData<MeshVertex>(std::span{vertices}, std::span{indices});
+    const auto [vertices, indices, topology] = *klgl::ProceduralMeshGenerator::GenerateCircleMesh(20);
+    mesh_ = klgl::MeshOpenGL::MakeFromData(std::span{vertices}, std::span{indices}, topology);
     mesh_->Bind();
     RegisterAttribute<&MeshVertex::position>(0, false);
 }

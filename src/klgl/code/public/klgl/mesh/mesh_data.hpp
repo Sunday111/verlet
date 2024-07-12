@@ -11,19 +11,21 @@ namespace klgl
 
 struct MeshData
 {
-    static MeshData MakeIndexedQuad();
-
     std::vector<Vec2f> vertices;
-    std::vector<Vec3i> indices;
+    std::vector<uint32_t> indices;
+    GLuint topology = GL_TRIANGLES;
 };
 
 struct MeshOpenGL
 {
+    static void ValidateIndicesCountForTopology(const GLuint topology, const size_t num_indices);
+
     template <typename Vertex, size_t VE = std::dynamic_extent, size_t IE = std::dynamic_extent>
-    static std::unique_ptr<MeshOpenGL> MakeFromData(
-        std::span<const Vertex, VE> vertices,
-        std::span<const uint32_t, IE> indices)
+    static std::unique_ptr<MeshOpenGL>
+    MakeFromData(std::span<const Vertex, VE> vertices, std::span<const uint32_t, IE> indices, GLuint topology)
     {
+        ValidateIndicesCountForTopology(topology, indices.size());
+
         auto mesh = std::make_unique<MeshOpenGL>();
 
         mesh->vao = OpenGl::GenVertexArray();
@@ -37,7 +39,7 @@ struct MeshOpenGL
         OpenGl::BufferData(GL_ELEMENT_ARRAY_BUFFER, std::span{indices}, GL_STATIC_DRAW);
 
         mesh->elements_count = indices.size();
-        mesh->topology = GL_TRIANGLES;
+        mesh->topology = topology;
 
         return mesh;
     }

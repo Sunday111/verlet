@@ -47,6 +47,9 @@ add_subdirectory(cloned_modules/glfw SYSTEM)
 # https://github.com/Sunday111/imgui_glfw_cmake main
 add_subdirectory(cloned_modules/imgui_glfw_cmake SYSTEM)
 
+# https://github.com/jeremy-rifkin/cpptrace main
+add_subdirectory(cloned_modules/cpptrace SYSTEM)
+
 # --------------------------------- Own Modules ----------------------------------
 add_subdirectory(deps/yae/modules/examples/ecs)
 add_subdirectory(deps/yae/modules/examples/ecs_tests)

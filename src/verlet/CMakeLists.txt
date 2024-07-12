@@ -4,7 +4,6 @@ set(module_source_files
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/instance_painter.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/instance_painter.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/main.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/code/private/measure_time.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/mesh_vertex.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/position_lookup.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/verlet_app.cpp
