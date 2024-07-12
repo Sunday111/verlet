@@ -6,7 +6,7 @@
 #include "EverydayTools/Math/IntRange.hpp"
 #include "klgl/mesh/mesh_data.hpp"
 #include "klgl/opengl/gl_api.hpp"
-#include "mesh_vertex.hpp"
+#include "klgl/template/type_to_gl_type.hpp"
 
 namespace verlet
 {
@@ -34,7 +34,8 @@ public:
             std::optional<GLuint>& vbo,
             const GLuint location,
             const std::array<ValueType, kBatchSize>& values,
-            const IntRange<size_t> elements_to_update)
+            const IntRange<size_t> elements_to_update,
+            bool normalize_values)
         {
             const bool must_initialize = !vbo.has_value();
             if (must_initialize) vbo = klgl::OpenGl::GenBuffer();
@@ -63,7 +64,7 @@ public:
                 location,
                 GlTypeTraits::Size,
                 GlTypeTraits::Type,
-                false,
+                normalize_values,
                 sizeof(ValueType),
                 nullptr);
             klgl::OpenGl::BindBuffer(GL_ARRAY_BUFFER, 0);
@@ -72,27 +73,39 @@ public:
                 1);  // IMPORTANT - use 1 element from offsets array for one rendered instance
         }
 
-        void UpdateColorsVBO(const IntRange<size_t> elements_to_update = IntRange{0uz, kBatchSize});
-        std::optional<GLuint> opt_color_vbo{};
-        std::array<Vec3f, kBatchSize> color{};
+        void UpdateColorsVBO(const IntRange<size_t> elements_to_update = IntRange{0uz, kBatchSize})
+        {
+            UpdateVBO(opt_color_vbo, kColorAttribLoc, color, elements_to_update, true);
+        }
 
-        void UpdateTranslationsVBO(const IntRange<size_t> elements_to_update = IntRange{0uz, kBatchSize});
+        void UpdateTranslationsVBO(const IntRange<size_t> elements_to_update = IntRange{0uz, kBatchSize})
+        {
+            UpdateVBO(opt_translation_vbo, kTranslationAttribLoc, translation, elements_to_update, false);
+        }
+
+        void UpdateScaleVBO(const IntRange<size_t> elements_to_update = IntRange{0uz, kBatchSize})
+        {
+            UpdateVBO(opt_scale_vbo, kScaleAttribLoc, scale, elements_to_update, false);
+        }
+
+        std::optional<GLuint> opt_color_vbo{};
+        std::array<Vec3<uint8_t>, kBatchSize> color{};
+
         std::optional<GLuint> opt_translation_vbo{};
         std::array<Vec2f, kBatchSize> translation{};
 
-        void UpdateScaleVBO(const IntRange<size_t> elements_to_update = IntRange{0uz, kBatchSize});
         std::optional<GLuint> opt_scale_vbo{};
         std::array<Vec2f, kBatchSize> scale{};
     };
 
-    void SetCircle(const size_t index, const Vec2f& translation, const Vec3f& color, const Vec2f scale)
+    void SetCircle(const size_t index, const Vec2f& translation, const Vec3<uint8_t>& color, const Vec2f scale)
     {
         SetColor(index, color);
         SetScale(index, scale);
         SetTranslation(index, translation);
     }
 
-    void SetColor(const size_t index, const Vec3f& color)
+    void SetColor(const size_t index, const Vec3<uint8_t>& color)
     {
         auto [batch, index_in_batch] = DecomposeIndex(index);
         assert(
@@ -116,51 +129,10 @@ public:
         batch.translation[index_in_batch] = translation;
     }
 
-    void Initialize()
-    {
-        const std::array<MeshVertex, 4> vertices{
-            {{.position = {1.0f, 1.0f}},
-             {.position = {1.0f, -1.0f}},
-             {.position = {-1.0f, -1.0f}},
-             {.position = {-1.0f, 1.0f}}}};
-        const std::array<uint32_t, 6> indices{0, 1, 3, 1, 2, 3};
+    void Initialize();
+    void Render();
 
-        mesh_ = klgl::MeshOpenGL::MakeFromData<MeshVertex>(std::span{vertices}, std::span{indices});
-        mesh_->Bind();
-        RegisterAttribute<&MeshVertex::position>(0, false);
-    }
-
-    void Render()
-    {
-        mesh_->Bind();
-        for (const size_t batch_index : std::views::iota(0uz, batches_.size()))
-        {
-            auto& batch = batches_[batch_index];
-            // number of circles initialized for the current batch
-            const size_t num_locally_initialized = num_initialized_ % batch.kBatchSize;
-            const size_t num_locally_used = std::min(num_circles_ - batch_index * batch.kBatchSize, batch.kBatchSize);
-
-            // if we have new elements since last render - send color and scale for new elements
-            if (num_locally_used > num_locally_initialized)
-            {
-                const IntRange update_range{num_locally_initialized, num_locally_used};
-                batch.UpdateColorsVBO(update_range);
-                batch.UpdateScaleVBO(update_range);
-            }
-            else
-            {
-                klgl::OpenGl::EnableVertexAttribArray(kColorAttribLoc);
-                klgl::OpenGl::BindBuffer(GL_ARRAY_BUFFER, *batch.opt_color_vbo);
-                klgl::OpenGl::EnableVertexAttribArray(kScaleAttribLoc);
-                klgl::OpenGl::BindBuffer(GL_ARRAY_BUFFER, *batch.opt_scale_vbo);
-            }
-
-            // Update all offsets
-            batch.UpdateTranslationsVBO({0, num_locally_used});
-            mesh_->DrawInstanced(num_locally_used);
-        }
-    }
-
+    // Want to keep it inline
     std::tuple<Batch&, size_t> DecomposeIndex(const size_t index)
     {
         const size_t batch_index = index / Batch::kBatchSize;

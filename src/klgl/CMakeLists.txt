@@ -27,7 +27,6 @@ set(module_source_files
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/opengl/gl_api.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/platform/os/os.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/read_file.hpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/reflection/glm_reflect.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/reflection/matrix_reflect.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/reflection/register_types.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/shader/define_handle.hpp

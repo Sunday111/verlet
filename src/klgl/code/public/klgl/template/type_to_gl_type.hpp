@@ -15,6 +15,13 @@ struct TypeToGlType<float>
     static constexpr GLenum Type = GL_FLOAT;
 };
 
+template <>
+struct TypeToGlType<uint8_t>
+{
+    static constexpr size_t Size = 1;
+    static constexpr GLenum Type = GL_UNSIGNED_BYTE;
+};
+
 template <typename T, int N>
 struct TypeToGlType<edt::Matrix<T, N, 1>>
 {
