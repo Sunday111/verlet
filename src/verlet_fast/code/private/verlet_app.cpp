@@ -77,7 +77,7 @@ void VerletApp::UpdateSimulation()
     }
 
     // Emitter
-    if (enable_emitter_ && time - last_emit_time > 0.1f)
+    if (enable_emitter_ && time - last_emit_time > 0.005f)
     {
         const Vec2f emitter_pos = world_range.Uniform({0.5, 0.85f});
         last_emit_time = time;
@@ -151,7 +151,7 @@ void VerletApp::RenderGUI()
             size_t objects_count = 0;
             world.ForEachObjectInCell(
                 cell_id,
-                [&](const ObjectId&)
+                [&](const ObjectId&, const VerletObject&)
                 {
                     ++objects_count;
                 });

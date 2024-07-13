@@ -61,7 +61,7 @@ struct VerletLink
 
 struct VerletWorld
 {
-    static constexpr Vec2f cell_size = Vec2f{} + VerletObject::GetRadius() * 3;
+    static constexpr Vec2f cell_size = Vec2f{} + VerletObject::GetRadius() * 6;
 
     void Reserve(const size_t num_objects)
     {
@@ -89,18 +89,25 @@ struct VerletWorld
         return objects[id.GetValue()];
     }
 
-    template <edt::Callable<void, ObjectId> Callback>
+    template <edt::Callable<void, const ObjectId&, VerletObject&> Callback>
+    void ForEachObjectInCell(const VerletWorldCell& cell, Callback&& callback)
+    {
+        auto object_id = cell.first;
+        while (object_id != kInvalidObjectId)
+        {
+            auto& object = GetObject(object_id);
+            const auto next = object.next_in_cell;
+            callback(object_id, object);
+            object_id = next;
+        }
+    }
+
+    template <edt::Callable<void, const ObjectId&, VerletObject&> Callback>
     void ForEachObjectInCell(WorldCellId cell_id, Callback&& callback)
     {
         if (const VerletWorldCell* cell = GetCell(cell_id))
         {
-            auto object_id = cell->first;
-            while (object_id != kInvalidObjectId)
-            {
-                const auto next = GetObject(object_id).next_in_cell;
-                callback(object_id);
-                object_id = next;
-            }
+            ForEachObjectInCell(*cell, std::forward<Callback>(callback));
         }
     }
 
@@ -142,18 +149,17 @@ struct VerletSolver
     edt::Vec2f gravity{0.0f, -0.75f};
     float constraint_radius = 1.f;
     size_t sub_steps = 8;
-    float collision_response = 0.75f;
 
     void Update(VerletWorld& world, const float dt) const
     {
         const float sub_dt = dt / static_cast<float>(sub_steps);
         for ([[maybe_unused]] const size_t index : std::views::iota(0uz, sub_steps))
         {
-            ApplyConstraint(world.objects);
             ApplyLinks(world.objects, world.links);
             world.RebuildGrid();
-            SolveCollisions(world.objects);
+            SolveCollisions(world);
             UpdatePosition(world.objects, sub_dt);
+            ApplyConstraint(world.objects);
         }
     }
 
@@ -192,28 +198,47 @@ struct VerletSolver
         }
     }
 
-    void SolveCollisions(std::span<VerletObject> objects) const
+    void SolveCollisions(VerletWorld& world) const
     {
-        const size_t objects_count = objects.size();
-        for (const size_t i : IndicesView(objects))
+        auto solve_collision_between_object_and_cell =
+            [&](const ObjectId& object_id, VerletObject& object, const WorldCellId& origin, const Vec2i& offset)
         {
-            auto& a = objects[i];
-            for (const size_t j : std::views::iota(i + 1, objects_count))
-            {
-                auto& b = objects[j];
-                const float min_dist = a.GetRadius() + b.GetRadius();
-                const auto rel = a.position - b.position;
-                const float dist_sq = rel.SquaredLength();
-                if (dist_sq < edt::Math::Sqr(min_dist) && (a.movable || b.movable))
+            world.ForEachObjectInCell(
+                WorldCellId::FromValue(origin.GetValue() + offset),
+                [&](const ObjectId& another_object_id, VerletObject& another_object)
                 {
-                    const float dist = std::sqrt(dist_sq);
-                    const auto dir = rel / dist;
-                    const float delta = collision_response * (min_dist - dist);
-                    auto [ka, kb] = MassCoefficients(a, b);
-                    a.position += ka * delta * dir;
-                    b.position -= kb * delta * dir;
-                }
-            }
+                    if (object_id != another_object_id)
+                    {
+                        const float min_dist = object.GetRadius() + another_object.GetRadius();
+                        const auto rel = object.position - another_object.position;
+                        const float dist_sq = rel.SquaredLength();
+                        if (dist_sq < edt::Math::Sqr(min_dist) && (object.movable || another_object.movable))
+                        {
+                            const float dist = std::sqrt(dist_sq);
+                            const float delta = min_dist - dist;
+                            auto [ka, kb] = MassCoefficients(object, another_object);
+                            const auto coll_vec = delta * rel / dist;
+                            object.position += ka * coll_vec;
+                            another_object.position -= kb * coll_vec;
+                        }
+                    }
+                });
+        };
+
+        for (auto& [cell_id, cell] : world.cells)
+        {
+            world.ForEachObjectInCell(
+                cell,
+                [&](const ObjectId& object_id, VerletObject& object)
+                {
+                    for (int dx = -1; dx != 2; ++dx)
+                    {
+                        for (int dy = -1; dy != 2; ++dy)
+                        {
+                            solve_collision_between_object_and_cell(object_id, object, cell_id, {dx, dy});
+                        }
+                    }
+                });
         }
     }
 
