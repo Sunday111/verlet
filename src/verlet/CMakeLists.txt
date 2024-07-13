@@ -6,6 +6,8 @@ set(module_source_files
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/main.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/mesh_vertex.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/position_lookup.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/code/private/tool.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/code/private/tool.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/verlet_app.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/verlet_app.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/verlet_solver.hpp)

@@ -15,6 +15,8 @@
 namespace verlet
 {
 
+class Tool;
+
 class VerletApp : public klgl::Application
 {
 public:
@@ -22,32 +24,25 @@ public:
     using TimePoint = typename Clock::time_point;
     using Super = klgl::Application;
 
-    struct HeldObject
-    {
-        size_t index{};
-        bool was_movable{};
-    };
-
-    static constexpr edt::FloatRange2D<float> world_range{.x = {-100.f, 100.f}, .y = {-100.f, 100.f}};
-    static constexpr Vec2f emitter_pos = world_range.Uniform({0.5, 0.85f});
-    static constexpr VerletSolver solver{
-        .gravity = Vec2f{0.f, -world_range.y.Extent() / 1.f},
-        .constraint_radius = world_range.Extent().x() / 2.f,
-    };
+    VerletApp();
+    ~VerletApp() override;
 
     void Initialize() override;
     void InitializeRendering();
     void Tick() override
     {
         Super::Tick();
+        UpdateWorldRange();
         UpdateSimulation();
         Render();
     }
 
+    void UpdateWorldRange();
     void UpdateSimulation();
     void Render();
     void RenderWorld();
     void RenderGUI();
+    void GUI_Tools();
 
     [[nodiscard]] static constexpr Vec2f TransformPos(const Mat3f& mat, const Vec2f& pos)
     {
@@ -73,10 +68,16 @@ public:
         return world_pos;
     }
 
+    static constexpr edt::FloatRange<float> kMinSideRange{-100, 100};
+    edt::FloatRange2D<float> world_range{.x = {-100.f, 100.f}, .y = {-100.f, 100.f}};
+    VerletSolver solver{
+        .gravity = Vec2f{0.f, -kMinSideRange.Extent() / 1.f},
+        .constraint_radius = kMinSideRange.Extent() / 2.f,
+    };
+
     std::vector<VerletObject> objects;
     std::vector<VerletLink> links;
     float last_emit_time = 0.0;
-    bool lmb_hold = false;
 
     // Rendering
     std::unique_ptr<klgl::Shader> shader_;
@@ -93,11 +94,9 @@ public:
     InstancedPainter circle_painter_{};
     std::chrono::milliseconds last_sim_update_duration_{};
 
-    bool spawn_movable_objects_ = true;
-    bool link_spawned_to_previous_ = false;
     bool enable_emitter_ = false;
 
-    std::optional<HeldObject> held_object_;
+    std::unique_ptr<Tool> tool_;
 };
 
 }  // namespace verlet
