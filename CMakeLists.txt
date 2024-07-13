@@ -62,6 +62,7 @@ add_subdirectory(deps/yae/modules/examples/yae_example_benchmark_main)
 add_subdirectory(deps/yae/modules/examples/ecs_benchmark)
 add_subdirectory(deps/yae/modules/examples/yae_example_executable)
 add_subdirectory(src/klgl)
+add_subdirectory(src/verlet_fast)
 add_subdirectory(src/verlet)
 
 enable_testing()

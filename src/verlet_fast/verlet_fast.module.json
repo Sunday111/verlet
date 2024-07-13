@@ -1,0 +1,13 @@
+{
+    "ModuleType": "Executable",
+    "CopyDirectoriesAfterBuild": [
+        "content"
+    ],
+    "Dependencies": {
+        "Public": [],
+        "Private": [
+            "klgl",
+            "unordered_dense"
+        ]
+    }
+}
