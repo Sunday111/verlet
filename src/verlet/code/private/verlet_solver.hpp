@@ -2,10 +2,35 @@
 
 #include "EverydayTools/Math/Math.hpp"
 #include "EverydayTools/Math/Matrix.hpp"
-#include "verlet_objects.hpp"
 
 namespace verlet
 {
+
+using namespace edt::lazy_matrix_aliases;  // NOLINT
+
+template <typename T, auto extent = std::dynamic_extent>
+[[nodiscard]] constexpr inline auto IndicesView(std::span<T, extent> span)
+{
+    return std::views::iota(0uz, span.size());
+}
+
+struct VerletObject
+{
+    Vec2f position{};
+    Vec2f old_position{};
+    Vec3<uint8_t> color;
+    float radius = 1.f;
+
+    bool movable = true;
+};
+
+struct VerletLink
+{
+    float target_distance{};
+    size_t first{};
+    size_t second{};
+};
+
 struct VerletSolver
 {
     edt::Vec2f gravity{0.0f, -0.75f};
@@ -13,73 +38,115 @@ struct VerletSolver
     size_t sub_steps = 8;
     float collision_response = 0.75f;
 
-    void Update(VerletObjects& objects, const float dt) const
+    void Update(std::span<VerletObject> objects, std::span<VerletLink> links, const float dt) const
     {
         const float sub_dt = dt / static_cast<float>(sub_steps);
         for ([[maybe_unused]] const size_t index : std::views::iota(0uz, sub_steps))
         {
             ApplyConstraint(objects);
+            ApplyLinks(objects, links);
             SolveCollisions(objects);
             UpdatePosition(objects, sub_dt);
         }
     }
 
-    void UpdatePosition(VerletObjects& objects, const float dt) const
+    void UpdatePosition(std::span<VerletObject> objects, const float dt) const
     {
-        for (const size_t index : objects.Indices())
+        for (auto& object : objects)
         {
-            const auto velocity = objects.position[index] - objects.old_position[index];
-
-            // Save current position
-            objects.old_position[index] = objects.position[index];
-
-            // Perform Verlet integration
-            objects.position[index] += velocity + gravity * dt * dt;
-        }
-    }
-
-    void ApplyConstraint(VerletObjects& objects) const
-    {
-        for (const size_t index : objects.Indices())
-        {
-            const float min_dist = constraint_radius - objects.radius[index];
-            const float dist_sq = objects.position[index].SquaredLength();
-            if (dist_sq > edt::Math::Sqr(min_dist))
+            [[likely]] if (object.movable)
             {
-                const float dist = std::sqrt(dist_sq);
-                const auto direction = objects.position[index] / dist;
-                objects.position[index] = direction * (constraint_radius - objects.radius[index]);
+                const auto velocity = object.position - object.old_position;
+
+                // Save current position
+                object.old_position = object.position;
+
+                // Perform Verlet integration
+                object.position += velocity + gravity * dt * dt;
             }
         }
     }
 
-    void SolveCollisions(VerletObjects& objects) const
+    void ApplyConstraint(std::span<VerletObject> objects) const
     {
-        const size_t objects_count = objects.Size();
-        for (const size_t i : std::views::iota(0uz, objects_count))
+        for (auto& object : objects)
         {
-            const auto a_r = objects.radius[i];
-            auto& a_pos = objects.position[i];
+            if (object.movable)
+            {
+                const float min_dist = constraint_radius - object.radius;
+                const float dist_sq = object.position.SquaredLength();
+                if (dist_sq > edt::Math::Sqr(min_dist))
+                {
+                    const float dist = std::sqrt(dist_sq);
+                    const auto direction = object.position / dist;
+                    object.position = direction * (constraint_radius - object.radius);
+                }
+            }
+        }
+    }
+
+    void SolveCollisions(std::span<VerletObject> objects) const
+    {
+        const size_t objects_count = objects.size();
+        for (const size_t i : IndicesView(objects))
+        {
+            auto& a = objects[i];
             for (const size_t j : std::views::iota(i + 1, objects_count))
             {
-                const auto b_r = objects.radius[j];
-                auto& b_pos = objects.position[j];
-                const float min_dist = a_r + b_r;
-                const auto rel = a_pos - b_pos;
+                auto& b = objects[j];
+                const float min_dist = a.radius + b.radius;
+                const auto rel = a.position - b.position;
                 const float dist_sq = rel.SquaredLength();
-                if (dist_sq < edt::Math::Sqr(min_dist))
+                if (dist_sq < edt::Math::Sqr(min_dist) && (a.movable || b.movable))
                 {
                     const float dist = std::sqrt(dist_sq);
                     const auto dir = rel / dist;
-                    const float delta = 0.5f * collision_response * (min_dist - dist);
-
-                    const float ka = a_r / min_dist;
-                    a_pos += ka * delta * dir;
-
-                    const float kb = b_r / min_dist;
-                    b_pos -= kb * delta * dir;
+                    const float delta = collision_response * (min_dist - dist);
+                    auto [ka, kb] = MassCoefficients(a, b);
+                    a.position += ka * delta * dir;
+                    b.position -= kb * delta * dir;
                 }
             }
+        }
+    }
+
+    static std::tuple<float, float> MassCoefficients(const VerletObject& a, const VerletObject& b)
+    {
+        const float min_distance = a.radius + b.radius;
+        if (a.movable)
+        {
+            if (b.movable)
+            {
+                return {a.radius / min_distance, b.radius / min_distance};
+            }
+            else
+            {
+                return {1.f, 0.f};
+            }
+        }
+        else if (b.movable)
+        {
+            return {0.f, 1.f};
+        }
+
+        return {0.f, 0.f};
+    }
+
+    static void ApplyLinks(std::span<VerletObject> objects, std::span<const VerletLink> links)
+    {
+        for (const VerletLink& link : links)
+        {
+            VerletObject& a = objects[link.first];
+            VerletObject& b = objects[link.second];
+            Vec2f axis = a.position - b.position;
+            const float distance = std::sqrt(axis.SquaredLength());
+            axis /= distance;
+            const float min_distance = a.radius + b.radius;
+            const float delta = std::max(min_distance, link.target_distance) - distance;
+
+            auto [ka, kb] = MassCoefficients(a, b);
+            a.position += ka * delta * axis;
+            b.position -= kb * delta * axis;
         }
     }
 

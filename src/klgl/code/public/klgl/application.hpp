@@ -2,6 +2,7 @@
 
 #include <filesystem>
 #include <memory>
+#include <optional>
 
 namespace klgl
 {
@@ -40,6 +41,8 @@ public:
 
     // Duration of the previous tick (in seconds)
     float GetLastFrameDurationSeconds() const;
+
+    void SetTargetFramerate(std::optional<float> framerate);
 
 private:
     std::unique_ptr<State> state_;

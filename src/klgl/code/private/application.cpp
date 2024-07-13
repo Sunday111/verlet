@@ -15,7 +15,6 @@
 #include "klgl/window.hpp"
 #include "platform/glfw/glfw_state.hpp"
 
-
 namespace klgl
 {
 
@@ -62,12 +61,35 @@ struct Application::State
             .count();
     }
 
+    float GetRelativeTimeSeconds() const
+    {
+        return State::DurationToSeconds(GetTime() - app_start_time_);
+    }
+
+    float GetCurrentFrameStartTime() const
+    {
+        return State::DurationToSeconds(frame_start_time_history_[current_frame_time_index_] - app_start_time_);
+    }
+
+    void AlignWithFramerate()
+    {
+        if (target_framerate_.has_value())
+        {
+            const float frame_start = GetCurrentFrameStartTime();
+            constexpr float target_frame_duration = (1 / 60.f) * 0.9995f;
+            while (GetRelativeTimeSeconds() - frame_start < target_frame_duration)
+            {
+            }
+        }
+    }
+
     TimePoint app_start_time_{};
     static constexpr size_t kFrameTimeHistorySize = 128;
     std::array<TimePoint, kFrameTimeHistorySize> frame_start_time_history_{};
     float last_frame_duration_seconds_ = 0.f;
     float framerate_ = 0.0f;
     uint8_t current_frame_time_index_ = kFrameTimeHistorySize - 1;
+    std::optional<float> target_framerate_;
 };
 
 Application::Application()
@@ -194,6 +216,7 @@ void Application::MainLoop()
         PreTick();
         Tick();
         PostTick();
+        state_->AlignWithFramerate();
     }
 }
 
@@ -219,13 +242,13 @@ const std::filesystem::path& Application::GetExecutableDir() const
 
 float Application::GetTimeSeconds() const
 {
+    return state_->GetRelativeTimeSeconds();
     return State::DurationToSeconds(State::GetTime() - state_->app_start_time_);
 }
 
 float Application::GetCurrentFrameStartTime() const
 {
-    return State::DurationToSeconds(
-        state_->frame_start_time_history_[state_->current_frame_time_index_] - state_->app_start_time_);
+    return state_->GetCurrentFrameStartTime();
 }
 
 float Application::GetFramerate() const
@@ -236,6 +259,11 @@ float Application::GetFramerate() const
 float Application::GetLastFrameDurationSeconds() const
 {
     return state_->last_frame_duration_seconds_;
+}
+
+void Application::SetTargetFramerate(std::optional<float> framerate)
+{
+    state_->target_framerate_ = framerate;
 }
 
 }  // namespace klgl

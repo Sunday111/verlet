@@ -8,18 +8,14 @@ namespace verlet
 void VerletApp::Initialize()
 {
     Super::Initialize();
+    objects.reserve(3000);
     InitializeRendering();
-
-    start_time = Clock::now();
-
-    objects.position.reserve(3000);
-    objects.old_position.reserve(3000);
-    objects.color.reserve(3000);
-    objects.radius.reserve(3000);
 }
 
 void VerletApp::InitializeRendering()
 {
+    SetTargetFramerate({60.f});
+
     klgl::OpenGl::SetClearColor(Vec4f{255, 245, 153, 255} / 255.f);
     GetWindow().SetSize(1000, 1000);
     GetWindow().SetTitle("Verlet");
@@ -36,53 +32,98 @@ void VerletApp::InitializeRendering()
 
 void VerletApp::UpdateSimulation()
 {
+    const float time = GetTimeSeconds();
     const float dt = GetLastFrameDurationSeconds();
-    const TimePoint current_time = Clock::now();
-    const float relative_time =
-        std::chrono::duration_cast<std::chrono::duration<float>>(current_time - start_time).count();
 
-    auto spawn_at = [&](const Vec2f& position, const Vec2f& velocity, const float radius)
+    auto spawn_with_velocity = [&](const Vec2f& position, const Vec2f& velocity, const float radius) -> VerletObject&
     {
-        const size_t index = objects.Add();
-        objects.position[index] = position;
-        objects.old_position[index] = solver.MakePreviousPosition(position, velocity, dt);
-        objects.color[index] = edt::Math::GetRainbowColors(relative_time);
-        objects.radius[index] = radius;
+        objects.push_back({
+            .position = position,
+            .old_position = solver.MakePreviousPosition(position, velocity, dt),
+            .color = edt::Math::GetRainbowColors(time),
+            .radius = radius,
+            .movable = true,
+        });
+        return objects.back();
     };
 
-    if (ImGui::IsMouseClicked(ImGuiMouseButton_Left) && !ImGui::GetIO().WantCaptureMouse)
+    if (ImGui::IsMouseClicked(ImGuiMouseButton_Right) && !ImGui::GetIO().WantCaptureMouse)
     {
-        spawn_at(GetMousePositionInWorldCoordinates(), {0.f, 0.f}, 1.f);
+        auto& new_object = spawn_with_velocity(GetMousePositionInWorldCoordinates(), {0.f, 0.f}, 1.f);
+        new_object.movable = spawn_movable_objects_;
+        if (link_spawned_to_previous_ && objects.size() > 1)
+        {
+            const size_t new_object_index = objects.size() - 1;
+            const size_t previous_index = objects.size() - 2;
+            auto& previous_object = objects[previous_index];
+            links.push_back({previous_object.radius + new_object.radius, previous_index, new_object_index});
+            if (new_object.movable)
+            {
+                auto dir = (new_object.position - previous_object.position).Normalized();
+                new_object.position = previous_object.position + dir * (previous_object.radius + new_object.radius);
+                new_object.old_position = new_object.position;
+            }
+        }
+    }
+
+    auto get_mouse_pos = [opt_pos = std::optional<Vec2f>{std::nullopt}, this]() mutable -> const Vec2f&
+    {
+        if (!opt_pos) opt_pos = GetMousePositionInWorldCoordinates();
+        return *opt_pos;
+    };
+
+    if (ImGui::IsMouseDown(ImGuiMouseButton_Left))
+    {
+        if (!lmb_hold)
+        {
+            lmb_hold = true;
+            for (const size_t index : IndicesView(std::span{objects}))
+            {
+                auto& object = objects[index];
+                if ((object.position - get_mouse_pos()).SquaredLength() < 1.f)
+                {
+                    held_object_ = {index, object.movable};
+                    object.movable = false;
+                    break;
+                }
+            }
+        }
+    }
+    else if (lmb_hold)
+    {
+        lmb_hold = false;
+        if (held_object_)
+        {
+            auto& object = objects[held_object_->index];
+            object.position = GetMousePositionInWorldCoordinates();
+            object.old_position = object.position;
+            object.movable = held_object_->was_movable;
+            held_object_ = std::nullopt;
+        }
+    }
+
+    if (held_object_)
+    {
+        auto& object = objects[held_object_->index];
+        object.position = get_mouse_pos();
     }
 
     // Emitter
-    if (relative_time - last_emit_time > 0.1f)
+    if (enable_emitter_ && time - last_emit_time > 0.1f)
     {
-        last_emit_time = relative_time;
+        last_emit_time = time;
         constexpr float velocity_mag = 0.1f;
         constexpr float emitter_rotation_speed = 3.0f;
-        const Vec2f direction{
-            std::cos(emitter_rotation_speed * relative_time),
-            std::sin(emitter_rotation_speed * relative_time)};
-        spawn_at(emitter_pos, direction * velocity_mag, 2.f + std::sin(3 * relative_time));
+        const float emitter_angle = edt::kPi<float> * std::sin(time * emitter_rotation_speed) / 4;
+        const Vec2f emitter_direction = edt::Math::MakeRotationMatrix(emitter_angle).MatMul(Vec2f{{0.f, -1.f}});
+        spawn_with_velocity(emitter_pos, emitter_direction * velocity_mag, 2.f + std::sin(3 * time));
     }
 
-    const auto [update_duration] = edt::MeasureTime<std::chrono::milliseconds>(
-        [&]
-        {
-            solver.Update(objects, dt);
-        });
-    last_sim_update_duration_ = update_duration;
-}
-
-void VerletApp::PostTick()
-{
-    Super::PostTick();
-    const float frame_start = GetCurrentFrameStartTime();
-    constexpr float target_frame_duration = (1 / 60.f) * 0.9995f;
-    while (GetTimeSeconds() - frame_start < target_frame_duration)
-    {
-    }
+    std::tie(last_sim_update_duration_) = edt::MeasureTime<std::chrono::milliseconds>(
+        std::bind_front(&VerletSolver::Update, &solver),
+        objects,
+        links,
+        dt);
 }
 
 void VerletApp::Render()
@@ -110,11 +151,11 @@ void VerletApp::RenderWorld()
     // Draw constraint
     circle_painter_.SetCircle(circle_index++, Vec2f{}, {}, 2 * solver.constraint_radius / world_range.Extent());
 
-    for (const size_t index : objects.Indices())
+    for (auto& object : objects)
     {
-        const auto screen_pos = to_screen_coord(objects.position[index]);
-        const auto screen_size = TransformVector(world_to_screen, objects.radius[index] + Vec2f{});
-        const auto& color = objects.color[index];
+        const auto screen_pos = to_screen_coord(object.position);
+        const auto screen_size = TransformVector(world_to_screen, object.radius + Vec2f{});
+        const auto& color = object.color;
 
         circle_painter_.SetCircle(circle_index++, screen_pos, color, screen_size);
     }
@@ -129,8 +170,11 @@ void VerletApp::RenderGUI()
     ImGui::Begin("Parameters");
     shader_->DrawDetails();
     ImGui::Text("%s", FormatTemp("Framerate: {}", GetFramerate()));                      // NOLINT
-    ImGui::Text("%s", FormatTemp("Objects count: {}", objects.Size()));                  // NOLINT
+    ImGui::Text("%s", FormatTemp("Objects count: {}", objects.size()));                  // NOLINT
     ImGui::Text("%s", FormatTemp("Sim update duration {}", last_sim_update_duration_));  // NOLINT
+    ImGui::Checkbox("Spawn movable objects", &spawn_movable_objects_);
+    ImGui::Checkbox("Enable emitter", &enable_emitter_);
+    ImGui::Checkbox("Link link to previous", &link_spawned_to_previous_);
     ImGui::End();
 }
 }  // namespace verlet

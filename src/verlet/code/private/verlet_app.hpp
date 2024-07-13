@@ -10,7 +10,6 @@
 #include "klgl/application.hpp"
 #include "klgl/shader/shader.hpp"
 #include "klgl/window.hpp"
-#include "verlet_objects.hpp"
 #include "verlet_solver.hpp"
 
 namespace verlet
@@ -22,6 +21,12 @@ public:
     using Clock = std::chrono::high_resolution_clock;
     using TimePoint = typename Clock::time_point;
     using Super = klgl::Application;
+
+    struct HeldObject
+    {
+        size_t index{};
+        bool was_movable{};
+    };
 
     static constexpr edt::FloatRange2D<float> world_range{.x = {-100.f, 100.f}, .y = {-100.f, 100.f}};
     static constexpr Vec2f emitter_pos = world_range.Uniform({0.5, 0.85f});
@@ -38,7 +43,6 @@ public:
         UpdateSimulation();
         Render();
     }
-    void PostTick() override;
 
     void UpdateSimulation();
     void Render();
@@ -69,9 +73,10 @@ public:
         return world_pos;
     }
 
-    VerletObjects objects;
+    std::vector<VerletObject> objects;
+    std::vector<VerletLink> links;
     float last_emit_time = 0.0;
-    TimePoint start_time;
+    bool lmb_hold = false;
 
     // Rendering
     std::unique_ptr<klgl::Shader> shader_;
@@ -87,6 +92,12 @@ public:
     std::string temp_string_for_formatting_{};
     InstancedPainter circle_painter_{};
     std::chrono::milliseconds last_sim_update_duration_{};
+
+    bool spawn_movable_objects_ = true;
+    bool link_spawned_to_previous_ = false;
+    bool enable_emitter_ = false;
+
+    std::optional<HeldObject> held_object_;
 };
 
 }  // namespace verlet
