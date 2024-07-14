@@ -89,7 +89,7 @@ void VerletApp::UpdateSimulation()
         spawn_with_velocity(emitter_pos, emitter_direction * velocity_mag, 2.f + std::sin(3 * time));
     }
 
-    std::tie(last_sim_update_duration_) = edt::MeasureTime<std::chrono::milliseconds>(
+    last_sim_update_duration_ = edt::MeasureTime<std::chrono::milliseconds>(
         std::bind_front(&VerletSolver::Update, &solver),
         objects,
         links,

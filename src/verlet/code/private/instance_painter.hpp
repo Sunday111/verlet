@@ -34,7 +34,7 @@ public:
             std::optional<GLuint>& vbo,
             const GLuint location,
             const std::array<ValueType, kBatchSize>& values,
-            const IntRange<size_t> elements_to_update,
+            const edt::IntRange<size_t> elements_to_update,
             bool normalize_values)
         {
             const bool must_initialize = !vbo.has_value();
@@ -73,17 +73,17 @@ public:
                 1);  // IMPORTANT - use 1 element from offsets array for one rendered instance
         }
 
-        void UpdateColorsVBO(const IntRange<size_t> elements_to_update = IntRange{0uz, kBatchSize})
+        void UpdateColorsVBO(const edt::IntRange<size_t> elements_to_update = {0uz, kBatchSize})
         {
             UpdateVBO(opt_color_vbo, kColorAttribLoc, color, elements_to_update, true);
         }
 
-        void UpdateTranslationsVBO(const IntRange<size_t> elements_to_update = IntRange{0uz, kBatchSize})
+        void UpdateTranslationsVBO(const edt::IntRange<size_t> elements_to_update = {0uz, kBatchSize})
         {
             UpdateVBO(opt_translation_vbo, kTranslationAttribLoc, translation, elements_to_update, false);
         }
 
-        void UpdateScaleVBO(const IntRange<size_t> elements_to_update = IntRange{0uz, kBatchSize})
+        void UpdateScaleVBO(const edt::IntRange<size_t> elements_to_update = {0uz, kBatchSize})
         {
             UpdateVBO(opt_scale_vbo, kScaleAttribLoc, scale, elements_to_update, false);
         }

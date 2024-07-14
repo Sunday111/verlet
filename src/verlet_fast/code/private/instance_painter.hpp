@@ -27,14 +27,14 @@ public:
         Batch(const Batch&) = delete;
         Batch(Batch&&) noexcept = default;
 
-        static constexpr size_t kBatchSize = 128;
+        static constexpr size_t kBatchSize = 512;
 
         template <typename ValueType>
         static void UpdateVBO(
             std::optional<GLuint>& vbo,
             const GLuint location,
             const std::array<ValueType, kBatchSize>& values,
-            const IntRange<size_t> elements_to_update,
+            const edt::IntRange<size_t> elements_to_update,
             bool normalize_values)
         {
             const bool must_initialize = !vbo.has_value();
@@ -73,60 +73,69 @@ public:
                 1);  // IMPORTANT - use 1 element from offsets array for one rendered instance
         }
 
-        void UpdateColorsVBO(const IntRange<size_t> elements_to_update = IntRange{0uz, kBatchSize})
+        void UpdateBuffers()
         {
-            UpdateVBO(opt_color_vbo, kColorAttribLoc, color, elements_to_update, true);
+            UpdateVBO(opt_color_vbo, kColorAttribLoc, color, dirty_colors, true);
+            UpdateVBO(opt_translation_vbo, kTranslationAttribLoc, translation, dirty_translations, false);
+            UpdateVBO(opt_scale_vbo, kScaleAttribLoc, scale, dirty_scales, false);
+            dirty_colors = {0, 0};
+            dirty_translations = {0, 0};
+            dirty_scales = {0, 0};
         }
 
-        void UpdateTranslationsVBO(const IntRange<size_t> elements_to_update = IntRange{0uz, kBatchSize})
+        template <std::ranges::random_access_range Collection, typename ValueType>
+            requires(std::same_as<std::ranges::range_value_t<Collection>, ValueType>)
+        static void SetValueAtIndexHelper(
+            Collection& values,
+            const ValueType& value,
+            const size_t index,
+            edt::IntRange<size_t>& dirty_range)
         {
-            UpdateVBO(opt_translation_vbo, kTranslationAttribLoc, translation, elements_to_update, false);
+            if (values[index] != value)
+            {
+                values[index] = value;
+                if (dirty_range.begin == dirty_range.end)
+                {
+                    dirty_range = {index, index + 1};
+                }
+                else
+                {
+                    if (index >= dirty_range.end)
+                    {
+                        dirty_range.end = index + 1;
+                    }
+                    else if (index < dirty_range.begin)
+                    {
+                        dirty_range.begin = index;
+                    }
+                }
+            }
         }
 
-        void UpdateScaleVBO(const IntRange<size_t> elements_to_update = IntRange{0uz, kBatchSize})
+        void SetValue(const size_t index, const Vec3<uint8_t>& color_, const Vec2f& translation_, const Vec2f& scale_)
         {
-            UpdateVBO(opt_scale_vbo, kScaleAttribLoc, scale, elements_to_update, false);
+            SetValueAtIndexHelper(color, color_, index, dirty_colors);
+            SetValueAtIndexHelper(translation, translation_, index, dirty_translations);
+            SetValueAtIndexHelper(scale, scale_, index, dirty_scales);
         }
 
         std::optional<GLuint> opt_color_vbo{};
         std::array<Vec3<uint8_t>, kBatchSize> color{};
+        edt::IntRange<size_t> dirty_colors{0, 0};
 
         std::optional<GLuint> opt_translation_vbo{};
         std::array<Vec2f, kBatchSize> translation{};
+        edt::IntRange<size_t> dirty_translations{0, 0};
 
         std::optional<GLuint> opt_scale_vbo{};
         std::array<Vec2f, kBatchSize> scale{};
+        edt::IntRange<size_t> dirty_scales{0, 0};
     };
 
     void SetCircle(const size_t index, const Vec2f& translation, const Vec3<uint8_t>& color, const Vec2f scale)
     {
-        SetColor(index, color);
-        SetScale(index, scale);
-        SetTranslation(index, translation);
-    }
-
-    void SetColor(const size_t index, const Vec3<uint8_t>& color)
-    {
         auto [batch, index_in_batch] = DecomposeIndex(index);
-        assert(
-            index >= num_initialized_ ||
-            color == batch.color[index_in_batch]);  // In this app color for circle is immutable
-        batch.color[index_in_batch] = color;
-    }
-
-    void SetScale(const size_t index, const Vec2f& scale)
-    {
-        auto [batch, index_in_batch] = DecomposeIndex(index);
-        assert(
-            index >= num_initialized_ ||
-            scale == batch.scale[index_in_batch]);  // In this app scale for circle is immutable
-        batch.scale[index_in_batch] = scale;
-    }
-
-    void SetTranslation(const size_t index, const Vec2f& translation)
-    {
-        auto [batch, index_in_batch] = DecomposeIndex(index);
-        batch.translation[index_in_batch] = translation;
+        batch.SetValue(index_in_batch, color, translation, scale);
     }
 
     void Initialize();

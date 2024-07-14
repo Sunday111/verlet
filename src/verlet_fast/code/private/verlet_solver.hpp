@@ -2,13 +2,13 @@
 
 #include <ankerl/unordered_dense.h>
 
+#include <EverydayTools/Math/FloatRange.hpp>
+#include <EverydayTools/Time/MeasureTime.hpp>
 #include <cassert>
 
 #include "EverydayTools/Concepts/Callable.hpp"
-#include "EverydayTools/Math/Math.hpp"
 #include "EverydayTools/Math/Matrix.hpp"
 #include "EverydayTools/Template/TaggedIdentifier.hpp"
-#include "tagged_id_hash.hpp"
 
 namespace verlet
 {
@@ -25,13 +25,6 @@ struct ObjectIdTag;
 using ObjectId = edt::TaggedIdentifier<ObjectIdTag, size_t>;
 static constexpr auto kInvalidObjectId = ObjectId{};
 
-struct WorldCellIdTag;
-using WorldCellId = edt::TaggedIdentifier<
-    WorldCellIdTag,
-    edt::Vec2<int32_t>,
-    edt::Vec2<int32_t>{std::numeric_limits<int32_t>::max(), std::numeric_limits<int32_t>::max()}>;
-static constexpr auto kInvalidCellId = WorldCellId{};
-
 struct VerletObject
 {
     Vec2f position{};
@@ -41,7 +34,7 @@ struct VerletObject
 
     [[nodiscard]] static constexpr float GetRadius()
     {
-        return 1.f;
+        return 0.5f;
     }
 
     bool movable = true;
@@ -49,7 +42,8 @@ struct VerletObject
 
 struct VerletWorldCell
 {
-    ObjectId first = kInvalidObjectId;
+    static constexpr uint8_t kCapacity = 4;
+    std::array<ObjectId, kCapacity> objects;
 };
 
 struct VerletLink
@@ -61,7 +55,7 @@ struct VerletLink
 
 struct VerletWorld
 {
-    static constexpr Vec2f cell_size = Vec2f{} + VerletObject::GetRadius() * 6;
+    static constexpr Vec2<size_t> cell_size{1, 1};
 
     void Reserve(const size_t num_objects)
     {
@@ -73,98 +67,98 @@ struct VerletWorld
         return std::views::iota(0uz, objects.size()) | std::views::transform(ObjectId::FromValue);
     }
 
-    VerletWorldCell* GetCell(const WorldCellId& cell_id)
-    {
-        assert(cell_id != kInvalidCellId);
-        if (const auto it = cells.find(cell_id); it != cells.end())
-        {
-            return &it->second;
-        }
-
-        return nullptr;
-    }
-
     VerletObject& GetObject(const ObjectId& id)
     {
         return objects[id.GetValue()];
     }
 
-    template <edt::Callable<void, const ObjectId&, VerletObject&> Callback>
-    void ForEachObjectInCell(const VerletWorldCell& cell, Callback&& callback)
+    template <edt::Callable<void, const ObjectId&> Callback>
+    void ForEachObjectInCell(const size_t cell_index, Callback&& callback)
     {
-        auto object_id = cell.first;
-        while (object_id != kInvalidObjectId)
+        const uint8_t count = cell_obj_counts_[cell_index];
+        const auto& cell = cells[cell_index];
+        for (uint8_t i = 0; i != count; ++i)
         {
-            auto& object = GetObject(object_id);
-            const auto next = object.next_in_cell;
-            callback(object_id, object);
-            object_id = next;
+            callback(cell.objects[i]);
         }
     }
 
-    template <edt::Callable<void, const ObjectId&, VerletObject&> Callback>
-    void ForEachObjectInCell(WorldCellId cell_id, Callback&& callback)
+    [[nodiscard]] size_t LocationToCellIndex(const Vec2f& location) const
     {
-        if (const VerletWorldCell* cell = GetCell(cell_id))
-        {
-            ForEachObjectInCell(*cell, std::forward<Callback>(callback));
-        }
+        auto [x, y] = ((location - world_range_.Min()).Cast<size_t>() / cell_size).Tuple();
+        return x + y * grid_size_.x();
     }
 
     void RebuildGrid()
     {
         // Clear grid
-        for (auto& [id, cell] : cells)
-        {
-            cell.first = kInvalidObjectId;
-        }
+        grid_size_ = Vec2<size_t>{2, 2} + world_range_.Extent().Cast<size_t>() / cell_size;
+        const size_t cells_count = grid_size_.x() * grid_size_.y();
+        cell_obj_counts_.resize(cells_count);
+        cells.resize(cells_count);
+
+        std::ranges::fill(cell_obj_counts_, uint8_t{0});
 
         for (const auto object_id : GetObjectIds())
         {
             auto& object = GetObject(object_id);
-            auto [cell_it, emplaced] = cells.try_emplace(CellIdByLocation(object.position));
-            auto& cell = cell_it->second;
-            if (emplaced)
-            {
-                // cell initialization. nothing to do here (for now)
-            }
-
-            object.next_in_cell = cell.first;
-            cell.first = object_id;
+            const auto cell_index = LocationToCellIndex(object.position);
+            auto& cell = cells[cell_index];
+            auto& cell_sz = cell_obj_counts_[cell_index];
+            cell.objects[cell_sz % VerletWorldCell::kCapacity] = object_id;
+            cell_sz = std::min<uint8_t>(cell_sz + 1, VerletWorldCell::kCapacity);
         }
     }
 
-    [[nodiscard]] static constexpr WorldCellId CellIdByLocation(const Vec2f& location)
-    {
-        return WorldCellId::FromValue((location / cell_size).Cast<int32_t>());
-    }
-
+    edt::FloatRange2Df world_range_ = {{-100, 100}, {-100, 100}};
+    Vec2<size_t> grid_size_;
     std::vector<VerletLink> links;
     std::vector<VerletObject> objects;
-    ankerl::unordered_dense::map<WorldCellId, VerletWorldCell, TaggedIdentifierHash<WorldCellId>> cells;
+    std::vector<VerletWorldCell> cells;
+    std::vector<uint8_t> cell_obj_counts_;
 };
 
 struct VerletSolver
 {
-    edt::Vec2f gravity{0.0f, -0.75f};
-    float constraint_radius = 1.f;
+    edt::Vec2f gravity{0.0f, -20.f};
     size_t sub_steps = 8;
 
-    void Update(VerletWorld& world, const float dt) const
+    struct UpdateStats
     {
-        const float sub_dt = dt / static_cast<float>(sub_steps);
-        for ([[maybe_unused]] const size_t index : std::views::iota(0uz, sub_steps))
-        {
-            ApplyLinks(world.objects, world.links);
-            world.RebuildGrid();
-            SolveCollisions(world);
-            UpdatePosition(world.objects, sub_dt);
-            ApplyConstraint(world.objects);
-        }
+        std::chrono::nanoseconds apply_links;
+        std::chrono::nanoseconds rebuild_grid;
+        std::chrono::nanoseconds solve_collisions;
+        std::chrono::nanoseconds update_positions;
+        std::chrono::nanoseconds total;
+    };
+
+    UpdateStats Update(VerletWorld& world, const float dt) const
+    {
+        UpdateStats stats{};
+        stats.total = edt::MeasureTime(
+            [&]
+            {
+                const float sub_dt = dt / static_cast<float>(sub_steps);
+                for ([[maybe_unused]] const size_t index : std::views::iota(0uz, sub_steps))
+                {
+                    stats.apply_links += edt::MeasureTime(std::bind_front(&VerletSolver::ApplyLinks), world);
+                    stats.rebuild_grid += edt::MeasureTime(std::bind_front(&VerletWorld::RebuildGrid, &world));
+                    stats.solve_collisions +=
+                        edt::MeasureTime(std::bind_front(&VerletSolver::SolveCollisions, this), world);
+                    stats.update_positions +=
+                        edt::MeasureTime(std::bind_front(&VerletSolver::UpdatePosition, this), world.objects, sub_dt);
+                }
+            });
+
+        return stats;
     }
 
     void UpdatePosition(std::span<VerletObject> objects, const float dt) const
     {
+        constexpr edt::FloatRange2D<float> rect_constraint{{-100, 100}, {-100, 100}};
+        constexpr float margin = 2.0f;
+        constexpr auto constraint_with_margin = rect_constraint.Enlarged(-margin);
+
         for (auto& object : objects)
         {
             [[likely]] if (object.movable)
@@ -176,69 +170,70 @@ struct VerletSolver
 
                 // Perform Verlet integration
                 object.position += velocity + gravity * dt * dt;
+
+                ApplyConstraint(object, constraint_with_margin);
             }
         }
     }
 
-    void ApplyConstraint(std::span<VerletObject> objects) const
+    void ApplyConstraint(VerletObject& object, const edt::FloatRange2D<float>& constraint) const
     {
-        for (auto& object : objects)
+        if (object.movable)
         {
-            if (object.movable)
-            {
-                const float min_dist = constraint_radius - object.GetRadius();
-                const float dist_sq = object.position.SquaredLength();
-                if (dist_sq > edt::Math::Sqr(min_dist))
-                {
-                    const float dist = std::sqrt(dist_sq);
-                    const auto direction = object.position / dist;
-                    object.position = direction * (constraint_radius - object.GetRadius());
-                }
-            }
+            object.position = constraint.Clamp(object.position);
         }
     }
 
     void SolveCollisions(VerletWorld& world) const
     {
+        constexpr float eps = 0.0001f;
         auto solve_collision_between_object_and_cell =
-            [&](const ObjectId& object_id, VerletObject& object, const WorldCellId& origin, const Vec2i& offset)
+            [&](const ObjectId& object_id, VerletObject& object, const size_t origin_cell_index)
         {
             world.ForEachObjectInCell(
-                WorldCellId::FromValue(origin.GetValue() + offset),
-                [&](const ObjectId& another_object_id, VerletObject& another_object)
+                origin_cell_index,
+                [&](const ObjectId& another_object_id)
                 {
                     if (object_id != another_object_id)
                     {
-                        const float min_dist = object.GetRadius() + another_object.GetRadius();
-                        const auto rel = object.position - another_object.position;
-                        const float dist_sq = rel.SquaredLength();
-                        if (dist_sq < edt::Math::Sqr(min_dist) && (object.movable || another_object.movable))
+                        auto& another_object = world.GetObject(another_object_id);
+                        const Vec2f axis = object.position - another_object.position;
+                        const float dist_sq = axis.SquaredLength();
+                        if (dist_sq < 1.0f && dist_sq > eps)
                         {
-                            const float dist = std::sqrt(dist_sq);
-                            const float delta = min_dist - dist;
-                            auto [ka, kb] = MassCoefficients(object, another_object);
-                            const auto coll_vec = delta * rel / dist;
-                            object.position += ka * coll_vec;
-                            another_object.position -= kb * coll_vec;
+                            // const float delta = 0.5f - dist / 2;
+                            // const Vec2f col_vec = (axis / dist) * delta;
+                            const Vec2f col_vec = 0.5f * axis * (-1.f + std::pow(dist_sq, -0.5f));
+                            object.position += col_vec;
+                            another_object.position -= col_vec;
                         }
                     }
                 });
         };
 
-        for (auto& [cell_id, cell] : world.cells)
+        const size_t grid_width = world.grid_size_.x();
+        for (const size_t cell_y : std::views::iota(1uz, world.grid_size_.y() - 1))
         {
-            world.ForEachObjectInCell(
-                cell,
-                [&](const ObjectId& object_id, VerletObject& object)
-                {
-                    for (int dx = -1; dx != 2; ++dx)
+            const size_t offset = cell_y * grid_width;
+            for (const size_t cell_x : std::views::iota(1uz, grid_width - 1))
+            {
+                const size_t cell_index = offset + cell_x;
+                world.ForEachObjectInCell(
+                    cell_index,
+                    [&](const ObjectId& object_id)
                     {
-                        for (int dy = -1; dy != 2; ++dy)
-                        {
-                            solve_collision_between_object_and_cell(object_id, object, cell_id, {dx, dy});
-                        }
-                    }
-                });
+                        auto& object = world.GetObject(object_id);
+                        solve_collision_between_object_and_cell(object_id, object, cell_index);
+                        solve_collision_between_object_and_cell(object_id, object, cell_index + 1);
+                        solve_collision_between_object_and_cell(object_id, object, cell_index - 1);
+                        solve_collision_between_object_and_cell(object_id, object, cell_index + grid_width);
+                        solve_collision_between_object_and_cell(object_id, object, cell_index + grid_width + 1);
+                        solve_collision_between_object_and_cell(object_id, object, cell_index + grid_width - 1);
+                        solve_collision_between_object_and_cell(object_id, object, cell_index - grid_width);
+                        solve_collision_between_object_and_cell(object_id, object, cell_index - grid_width + 1);
+                        solve_collision_between_object_and_cell(object_id, object, cell_index - grid_width - 1);
+                    });
+            }
         }
     }
 
@@ -264,12 +259,12 @@ struct VerletSolver
         return {0.f, 0.f};
     }
 
-    static void ApplyLinks(std::span<VerletObject> objects, std::span<const VerletLink> links)
+    static void ApplyLinks(VerletWorld& world)
     {
-        for (const VerletLink& link : links)
+        for (const VerletLink& link : world.links)
         {
-            VerletObject& a = objects[link.first.GetValue()];
-            VerletObject& b = objects[link.second.GetValue()];
+            VerletObject& a = world.objects[link.first.GetValue()];
+            VerletObject& b = world.objects[link.second.GetValue()];
             Vec2f axis = a.position - b.position;
             const float distance = std::sqrt(axis.SquaredLength());
             axis /= distance;

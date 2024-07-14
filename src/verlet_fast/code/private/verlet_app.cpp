@@ -21,7 +21,8 @@ void VerletApp::InitializeRendering()
 {
     SetTargetFramerate({60.f});
 
-    klgl::OpenGl::SetClearColor(Vec4f{255, 245, 153, 255} / 255.f);
+    // klgl::OpenGl::SetClearColor(Vec4f{255, 245, 153, 255} / 255.f);
+    klgl::OpenGl::SetClearColor({});
     GetWindow().SetSize(1000, 1000);
     GetWindow().SetTitle("Verlet");
 
@@ -88,8 +89,7 @@ void VerletApp::UpdateSimulation()
         spawn_with_velocity(emitter_pos, emitter_direction * velocity_mag);
     }
 
-    std::tie(last_sim_update_duration_) =
-        edt::MeasureTime<std::chrono::milliseconds>(std::bind_front(&VerletSolver::Update, &solver), world, dt);
+    perf_stats_.sim_update = solver.Update(world, dt);
 }
 
 void VerletApp::Render()
@@ -102,43 +102,50 @@ void VerletApp::RenderWorld()
 {
     const klgl::ScopeAnnotation annotation("Render World");
 
-    klgl::OpenGl::Clear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
-
     const edt::FloatRange2D<float> screen_range{.x = {-1, 1}, .y = {-1, 1}};
     const Mat3f world_to_screen = edt::Math::MakeTransform(world_range, screen_range);
 
-    [[maybe_unused]] auto to_screen_coord = [&](const Vec2f& plot_pos)
+    auto paint_instanced_object = [&, next_instance_index = 0uz](VerletObject& object) mutable
     {
-        return TransformPos(world_to_screen, plot_pos);
-    };
-
-    size_t circle_index = 0;
-
-    // Draw constraint
-    circle_painter_.SetCircle(circle_index++, Vec2f{}, {}, 2 * solver.constraint_radius / world_range.Extent());
-
-    for (auto& object : world.objects)
-    {
-        const auto screen_pos = to_screen_coord(object.position);
+        const auto screen_pos = TransformPos(world_to_screen, object.position);
         const auto screen_size = TransformVector(world_to_screen, object.GetRadius() + Vec2f{});
         const auto& color = object.color;
+        circle_painter_.SetCircle(next_instance_index++, screen_pos, color, screen_size);
+    };
 
-        circle_painter_.SetCircle(circle_index++, screen_pos, color, screen_size);
-    }
+    perf_stats_.render.total = edt::MeasureTime(
+        [&]
+        {
+            klgl::OpenGl::Clear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
-    shader_->Use();
-    circle_painter_.Render();
+            perf_stats_.render.set_circle_loop =
+                std::get<0>(edt::MeasureTime(std::ranges::for_each, world.objects, paint_instanced_object));
+
+            shader_->Use();
+            circle_painter_.Render();
+        });
 }
 
 void VerletApp::RenderGUI()
 {
+    auto to_flt_ms = [](auto duration)
+    {
+        return std::chrono::duration_cast<std::chrono::duration<float, std::milli>>(duration);
+    };
+
     const klgl::ScopeAnnotation annotation("Render GUI");
     if (ImGui::Begin("Settings"))
     {
         shader_->DrawDetails();
-        ImGui::Text("%s", FormatTemp("Framerate: {}", GetFramerate()));                      // NOLINT
-        ImGui::Text("%s", FormatTemp("Objects count: {}", world.objects.size()));            // NOLINT
-        ImGui::Text("%s", FormatTemp("Sim update duration {}", last_sim_update_duration_));  // NOLINT
+        GuiText("Framerate: {}", GetFramerate());
+        GuiText("Objects count: {}", world.objects.size());
+        GuiText("Sim update {}", to_flt_ms(perf_stats_.sim_update.total));
+        GuiText("  Apply links {}", to_flt_ms(perf_stats_.sim_update.apply_links));
+        GuiText("  Rebuild grid {}", to_flt_ms(perf_stats_.sim_update.rebuild_grid));
+        GuiText("  Solve collisions {}", to_flt_ms(perf_stats_.sim_update.solve_collisions));
+        GuiText("  Update positions {}", to_flt_ms(perf_stats_.sim_update.update_positions));
+        GuiText("Render {}", to_flt_ms(perf_stats_.render.total));
+        GuiText("  Set Circle Loop {}", to_flt_ms(perf_stats_.render.set_circle_loop));
         ImGui::Checkbox("Enable emitter", &enable_emitter_);
         GUI_Tools();
     }
@@ -146,21 +153,13 @@ void VerletApp::RenderGUI()
 
     if (ImGui::Begin("Cells"))
     {
-        for (const auto& cell_id : std::views::keys(world.cells))
+        for (const size_t cell_index : std::views::iota(0uz, world.cells.size()))
         {
-            size_t objects_count = 0;
-            world.ForEachObjectInCell(
-                cell_id,
-                [&](const ObjectId&, const VerletObject&)
-                {
-                    ++objects_count;
-                });
-
-            if (objects_count != 0)
+            if (const auto objects_count = world.cell_obj_counts_[cell_index]; objects_count != 0)
             {
-                ImGui::Text(  // NOLINT
-                    "%s",
-                    FormatTemp("Cell {} {}: {}", cell_id.GetValue().x(), cell_id.GetValue().y(), objects_count));
+                const size_t cell_x = cell_index % world.grid_size_.x();
+                const size_t cell_y = cell_index / world.grid_size_.x();
+                GuiText("Cell {} {}: {}", cell_x, cell_y, objects_count);
             }
         }
     }

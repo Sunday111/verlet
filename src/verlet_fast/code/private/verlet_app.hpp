@@ -20,6 +20,18 @@ class Tool;
 class VerletApp : public klgl::Application
 {
 public:
+    struct RenderPerfStats
+    {
+        std::chrono::nanoseconds total;
+        std::chrono::nanoseconds set_circle_loop;
+    };
+
+    struct PerfStats
+    {
+        VerletSolver::UpdateStats sim_update;
+        RenderPerfStats render;
+    };
+
     using Clock = std::chrono::high_resolution_clock;
     using TimePoint = typename Clock::time_point;
     using Super = klgl::Application;
@@ -41,6 +53,14 @@ public:
     void UpdateSimulation();
     void Render();
     void RenderWorld();
+
+    template <typename... Args>
+    void GuiText(const fmt::format_string<Args...>& format, Args&&... args)
+    {
+        std::string_view formatted = FormatTemp(format, std::forward<Args>(args)...);
+        ImGui::TextUnformatted(formatted.begin(), formatted.end());
+    }
+
     void RenderGUI();
     void GUI_Tools();
 
@@ -72,7 +92,6 @@ public:
     edt::FloatRange2D<float> world_range{.x = {-100.f, 100.f}, .y = {-100.f, 100.f}};
     VerletSolver solver{
         .gravity = Vec2f{0.f, -kMinSideRange.Extent() / 1.f},
-        .constraint_radius = kMinSideRange.Extent() / 2.f,
     };
 
     VerletWorld world;
@@ -82,20 +101,20 @@ public:
     std::unique_ptr<klgl::Shader> shader_;
 
     template <typename... Args>
-    const char* FormatTemp(const fmt::format_string<Args...> fmt, Args&&... args)
+    std::string_view FormatTemp(const fmt::format_string<Args...>& fmt, Args&&... args)
     {
         temp_string_for_formatting_.clear();
         fmt::format_to(std::back_inserter(temp_string_for_formatting_), fmt, std::forward<Args>(args)...);
-        return temp_string_for_formatting_.data();
+        return temp_string_for_formatting_;
     }
 
     std::string temp_string_for_formatting_{};
     InstancedPainter circle_painter_{};
-    std::chrono::milliseconds last_sim_update_duration_{};
 
     bool enable_emitter_ = false;
 
     std::unique_ptr<Tool> tool_;
+    PerfStats perf_stats_{};
 };
 
 }  // namespace verlet

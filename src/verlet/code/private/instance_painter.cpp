@@ -29,7 +29,7 @@ void InstancedPainter::Render()
         // if we have new elements since last render - send color and scale for new elements
         if (num_locally_used > num_locally_initialized)
         {
-            const IntRange update_range{num_locally_initialized, num_locally_used};
+            const edt::IntRange update_range{num_locally_initialized, num_locally_used};
             batch.UpdateColorsVBO(update_range);
             batch.UpdateScaleVBO(update_range);
         }
