@@ -302,11 +302,6 @@ struct VerletSolver
         return current_position - velocity / kTimeSubStepDurationSeconds;
     }
 
-    struct ThreadMemory
-    {
-    };
-
-    std::array<ThreadMemory, kNumThreads> threads_memory_{};
     std::vector<std::jthread> threads_;
     std::barrier<> sync_point_{kNumThreads + 1};
 
