@@ -4,7 +4,9 @@
 
 #include <EverydayTools/Math/FloatRange.hpp>
 #include <EverydayTools/Time/MeasureTime.hpp>
+#include <barrier>
 #include <cassert>
+#include <thread>
 
 #include "EverydayTools/Concepts/Callable.hpp"
 #include "EverydayTools/Math/Math.hpp"
@@ -60,12 +62,98 @@ struct VerletSolver
         std::array<ObjectId, kCapacity> objects;
     };
 
+    static constexpr size_t kNumThreads = 16;
     static constexpr float kVelocityDampling = 40.f;  // arbitrary, approximating air friction
     static constexpr edt::Vec2f gravity{0.0f, -20.f};
     static constexpr Vec2<size_t> cell_size{1, 1};
     static constexpr float kTimeStepDurationSeconds = 1.f / 60.f;
     static constexpr size_t kNumSubSteps = 8;
     static constexpr float kTimeSubStepDurationSeconds = kTimeStepDurationSeconds / static_cast<float>(kNumSubSteps);
+
+    VerletSolver()
+    {
+        for (const size_t thread_index : std::views::iota(0uz, kNumThreads))
+        {
+            threads_.push_back(std::jthread(std::bind_front(&VerletSolver::WorkerThread, this), thread_index));
+        }
+    }
+
+    ~VerletSolver()
+    {
+        std::ranges::for_each(threads_, &std::jthread::request_stop);
+        SolveCollisions();
+    }
+
+    void WorkerThread(const std::stop_token& stop_token, [[maybe_unused]] const size_t thread_index)
+    {
+        while (!stop_token.stop_requested())
+        {
+            // waint for request
+            sync_point_.arrive_and_wait();
+
+            constexpr float eps = 0.0001f;
+            auto solve_collision_between_object_and_cell =
+                [&](const ObjectId& object_id, VerletObject& object, const size_t origin_cell_index)
+            {
+                ForEachObjectInCell(
+                    origin_cell_index,
+                    [&](const ObjectId& another_object_id)
+                    {
+                        if (object_id != another_object_id)
+                        {
+                            auto& another_object = GetObject(another_object_id);
+                            const Vec2f axis = object.position - another_object.position;
+                            const float dist_sq = axis.SquaredLength();
+                            if (dist_sq < 1.0f && dist_sq > eps)
+                            {
+                                const float dist = std::sqrt(dist_sq);
+                                const float delta = 0.5f - dist / 2;
+                                const Vec2f col_vec = (axis / dist) * delta;
+                                object.position += col_vec;
+                                another_object.position -= col_vec;
+                            }
+                        }
+                    });
+            };
+
+            const size_t columns_pre_thread = (grid_size_.x() / kNumThreads);
+            size_t begin_x = 1 + columns_pre_thread * thread_index;
+            size_t end_x = begin_x + columns_pre_thread;
+            if (thread_index == kNumThreads - 1)
+            {
+                end_x = grid_size_.x();
+            }
+
+            const size_t grid_width = grid_size_.x();
+            for (const size_t cell_x : std::views::iota(begin_x, end_x))
+            {
+                for (const size_t cell_y : std::views::iota(1uz, grid_size_.y() - 1))
+                {
+                    const size_t cell_index = cell_y * grid_width + cell_x;
+                    ForEachObjectInCell(
+                        cell_index,
+                        [&](const ObjectId& object_id)
+                        {
+                            auto& object = GetObject(object_id);
+                            solve_collision_between_object_and_cell(object_id, object, cell_index);
+                            solve_collision_between_object_and_cell(object_id, object, cell_index + 1);
+                            solve_collision_between_object_and_cell(object_id, object, cell_index - 1);
+                            solve_collision_between_object_and_cell(object_id, object, cell_index + grid_width);
+                            solve_collision_between_object_and_cell(object_id, object, cell_index + grid_width + 1);
+                            solve_collision_between_object_and_cell(object_id, object, cell_index + grid_width - 1);
+                            solve_collision_between_object_and_cell(object_id, object, cell_index - grid_width);
+                            solve_collision_between_object_and_cell(object_id, object, cell_index - grid_width + 1);
+                            solve_collision_between_object_and_cell(object_id, object, cell_index - grid_width - 1);
+                        });
+                }
+            }
+
+            // notify completion
+            sync_point_.arrive_and_wait();
+        }
+    }
+
+    VerletSolver(const VerletSolver&) = delete;
 
     void Reserve(const size_t num_objects)
     {
@@ -165,55 +253,8 @@ struct VerletSolver
 
     void SolveCollisions()
     {
-        constexpr float eps = 0.0001f;
-        auto solve_collision_between_object_and_cell =
-            [&](const ObjectId& object_id, VerletObject& object, const size_t origin_cell_index)
-        {
-            ForEachObjectInCell(
-                origin_cell_index,
-                [&](const ObjectId& another_object_id)
-                {
-                    if (object_id != another_object_id)
-                    {
-                        auto& another_object = GetObject(another_object_id);
-                        const Vec2f axis = object.position - another_object.position;
-                        const float dist_sq = axis.SquaredLength();
-                        if (dist_sq < 1.0f && dist_sq > eps)
-                        {
-                            const float dist = std::sqrt(dist_sq);
-                            const float delta = 0.5f - dist / 2;
-                            const Vec2f col_vec = (axis / dist) * delta;
-                            object.position += col_vec;
-                            another_object.position -= col_vec;
-                        }
-                    }
-                });
-        };
-
-        const size_t grid_width = grid_size_.x();
-        for (const size_t cell_y : std::views::iota(1uz, grid_size_.y() - 1))
-        {
-            const size_t offset = cell_y * grid_width;
-            for (const size_t cell_x : std::views::iota(1uz, grid_width - 1))
-            {
-                const size_t cell_index = offset + cell_x;
-                ForEachObjectInCell(
-                    cell_index,
-                    [&](const ObjectId& object_id)
-                    {
-                        auto& object = GetObject(object_id);
-                        solve_collision_between_object_and_cell(object_id, object, cell_index);
-                        solve_collision_between_object_and_cell(object_id, object, cell_index + 1);
-                        solve_collision_between_object_and_cell(object_id, object, cell_index - 1);
-                        solve_collision_between_object_and_cell(object_id, object, cell_index + grid_width);
-                        solve_collision_between_object_and_cell(object_id, object, cell_index + grid_width + 1);
-                        solve_collision_between_object_and_cell(object_id, object, cell_index + grid_width - 1);
-                        solve_collision_between_object_and_cell(object_id, object, cell_index - grid_width);
-                        solve_collision_between_object_and_cell(object_id, object, cell_index - grid_width + 1);
-                        solve_collision_between_object_and_cell(object_id, object, cell_index - grid_width - 1);
-                    });
-            }
-        }
+        sync_point_.arrive_and_wait();
+        sync_point_.arrive_and_wait();
     }
 
     static std::tuple<float, float> MassCoefficients(const VerletObject& a, const VerletObject& b)
@@ -260,6 +301,14 @@ struct VerletSolver
     {
         return current_position - velocity / kTimeSubStepDurationSeconds;
     }
+
+    struct ThreadMemory
+    {
+    };
+
+    std::array<ThreadMemory, kNumThreads> threads_memory_{};
+    std::vector<std::jthread> threads_;
+    std::barrier<> sync_point_{kNumThreads + 1};
 
     edt::FloatRange2Df sim_area_ = {{-100, 100}, {-100, 100}};
     Vec2<size_t> grid_size_;
