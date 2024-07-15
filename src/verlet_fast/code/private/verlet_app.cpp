@@ -3,6 +3,7 @@
 #include "EverydayTools/Time/MeasureTime.hpp"
 #include "klgl/opengl/debug/annotations.hpp"
 #include "klgl/opengl/gl_api.hpp"
+#include "ranges.hpp"
 #include "tool.hpp"
 
 namespace verlet
@@ -14,7 +15,7 @@ VerletApp::~VerletApp() = default;
 void VerletApp::Initialize()
 {
     Super::Initialize();
-    world.Reserve(3000);
+    solver.Reserve(3000);
     InitializeRendering();
 }
 
@@ -56,15 +57,30 @@ void VerletApp::UpdateWorldRange()
     *smaller = kMinSideRange;
     *bigger = smaller->Enlarged(smaller->Extent() * (ratio - 1.f) * 0.5f);
 
-    if (world_range.x.begin < world.sim_area_.x.begin)
+    static constexpr float kMaxExtentChangePerTick = 0.5f;
+    auto adjust_range = [](const edt::FloatRange<float>& world, edt::FloatRange<float>& sim)
     {
-        world.sim_area_.x.begin = world_range.x.begin;
-    }
-    else
-    {
-        world.sim_area_.x.begin += std::min(1.f, world.sim_area_.x.begin - world_range.x.begin);
-    }
-    // world.sim_area_
+        if (world.begin < sim.begin)
+        {
+            sim.begin = world.begin;
+        }
+        else
+        {
+            sim.begin += std::min(kMaxExtentChangePerTick, world.begin - sim.begin);
+        }
+
+        if (world.end > sim.end)
+        {
+            sim.end = world.end;
+        }
+        else
+        {
+            sim.end -= std::min(kMaxExtentChangePerTick, sim.end - world.end);
+        }
+    };
+
+    adjust_range(world_range.x, solver.sim_area_.x);
+    adjust_range(world_range.y, solver.sim_area_.y);
 }
 
 void VerletApp::UpdateSimulation()
@@ -77,45 +93,29 @@ void VerletApp::UpdateSimulation()
     }
 
     // Emitter
-    if (enable_emitter_ && world.objects.size() < 1000 && time - last_emit_time > 0.005f)
+    if (enable_emitter_ && solver.objects.size() < 30000 && time - last_emit_time > 0.005f)
     {
         for (uint32_t i{20}; i--;)
         {
-            const size_t id = world.objects.size();
-            const float y = 10.f + 1.1f * static_cast<float>(i);
-            world.objects.push_back({
-                .position = {2.0f, y},
-                .old_position = {1.8f, y},
-                .color = edt::Math::GetRainbowColors(static_cast<float>(id) * 0.0001f),
+            const size_t id = solver.objects.size();
+            const float y = 79.f + 1.01f * static_cast<float>(i);
+            const auto color = edt::Math::GetRainbowColors(static_cast<float>(id) / 10000);
+            solver.objects.push_back({
+                .position = {0.6f, y},
+                .old_position = {0.4f, y},
+                .color = color,
+                .movable = true,
+            });
+            solver.objects.push_back({
+                .position = {-0.6f, y},
+                .old_position = {-0.4f, y},
+                .color = color,
                 .movable = true,
             });
         }
     }
 
-    // auto spawn_with_velocity = [&](const Vec2f& position, const Vec2f& velocity) -> VerletObject&
-    // {
-    //     world.objects.push_back({
-    //         .position = position,
-    //         .old_position = solver.MakePreviousPosition(position, velocity, sim_time_step),
-    //         .color = edt::Math::GetRainbowColors(time),
-    //         .movable = true,
-    //     });
-    //     return world.objects.back();
-    // };
-    //
-    // // Emitter
-    // if (enable_emitter_ && time - last_emit_time > 0.005f)
-    // {
-    //     const Vec2f emitter_pos = world_range.Uniform({0.5, 0.85f});
-    //     last_emit_time = time;
-    //     constexpr float velocity_mag = 0.1f;
-    //     constexpr float emitter_rotation_speed = 3.0f;
-    //     const float emitter_angle = edt::kPi<float> * std::sin(time * emitter_rotation_speed) / 4;
-    //     const Vec2f emitter_direction = edt::Math::MakeRotationMatrix(emitter_angle).MatMul(Vec2f{{0.f, -1.f}});
-    //     spawn_with_velocity(emitter_pos, emitter_direction * velocity_mag);
-    // }
-
-    perf_stats_.sim_update = solver.Update(world);
+    perf_stats_.sim_update = solver.Update();
 }
 
 void VerletApp::Render()
@@ -145,7 +145,7 @@ void VerletApp::RenderWorld()
             klgl::OpenGl::Clear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
             perf_stats_.render.set_circle_loop =
-                std::get<0>(edt::MeasureTime(std::ranges::for_each, world.objects, paint_instanced_object));
+                std::get<0>(edt::MeasureTime(std::ranges::for_each, solver.objects, paint_instanced_object));
 
             shader_->Use();
             circle_painter_.Render();
@@ -164,7 +164,7 @@ void VerletApp::RenderGUI()
     {
         shader_->DrawDetails();
         GuiText("Framerate: {}", GetFramerate());
-        GuiText("Objects count: {}", world.objects.size());
+        GuiText("Objects count: {}", solver.objects.size());
         GuiText("Sim update {}", to_flt_ms(perf_stats_.sim_update.total));
         GuiText("  Apply links {}", to_flt_ms(perf_stats_.sim_update.apply_links));
         GuiText("  Rebuild grid {}", to_flt_ms(perf_stats_.sim_update.rebuild_grid));
@@ -179,13 +179,13 @@ void VerletApp::RenderGUI()
 
     if (ImGui::Begin("Cells"))
     {
-        for (const size_t cell_index : std::views::iota(0uz, world.cells.size()))
+        for (const auto& [cell_index, cell_objects_count] : Enumerate(solver.cell_obj_counts_))
         {
-            if (const auto objects_count = world.cell_obj_counts_[cell_index]; objects_count != 0)
+            if (cell_objects_count != 0)
             {
-                const size_t cell_x = cell_index % world.grid_size_.x();
-                const size_t cell_y = cell_index / world.grid_size_.x();
-                GuiText("Cell {} {}: {}", cell_x, cell_y, objects_count);
+                const size_t cell_x = cell_index % solver.grid_size_.x();
+                const size_t cell_y = cell_index / solver.grid_size_.x();
+                GuiText("Cell {} {}: {}", cell_x, cell_y, cell_objects_count);
             }
         }
     }

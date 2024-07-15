@@ -92,7 +92,6 @@ public:
     edt::FloatRange2D<float> world_range{.x = {-100.f, 100.f}, .y = {-100.f, 100.f}};
     VerletSolver solver{};
 
-    VerletWorld world;
     float last_emit_time = 0.0;
 
     // Rendering

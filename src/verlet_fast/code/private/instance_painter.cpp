@@ -4,6 +4,7 @@
 
 #include "klgl/mesh/procedural_mesh_generator.hpp"
 #include "mesh_vertex.hpp"
+#include "ranges.hpp"
 
 namespace verlet
 {
@@ -19,9 +20,8 @@ void InstancedPainter::Initialize()
 void InstancedPainter::Render()
 {
     mesh_->Bind();
-    for (const size_t batch_index : std::views::iota(0uz, batches_.size()))
+    for (auto [batch_index, batch] : Enumerate(batches_))
     {
-        auto& batch = batches_[batch_index];
         // number of circles initialized for the current batch
         const size_t num_locally_used = std::min(num_circles_ - batch_index * batch.kBatchSize, batch.kBatchSize);
 
