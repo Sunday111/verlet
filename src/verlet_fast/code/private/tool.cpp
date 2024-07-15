@@ -12,7 +12,7 @@ void SpawnObjectsTool::Tick()
         const auto mouse_position = app_.GetMousePositionInWorldCoordinates();
         app_.world.objects.push_back({
             .position = mouse_position,
-            .old_position = app_.solver.MakePreviousPosition(mouse_position, {}, app_.GetLastFrameDurationSeconds()),
+            .old_position = app_.solver.MakePreviousPosition(mouse_position, {}),
             .color = edt::Math::GetRainbowColors(app_.GetTimeSeconds()),
             .movable = true,
         });

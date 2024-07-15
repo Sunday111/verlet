@@ -2,6 +2,7 @@
 
 #include "EverydayTools/Time/MeasureTime.hpp"
 #include "klgl/opengl/debug/annotations.hpp"
+#include "klgl/opengl/gl_api.hpp"
 #include "tool.hpp"
 
 namespace verlet
@@ -54,23 +55,21 @@ void VerletApp::UpdateWorldRange()
 
     *smaller = kMinSideRange;
     *bigger = smaller->Enlarged(smaller->Extent() * (ratio - 1.f) * 0.5f);
+
+    if (world_range.x.begin < world.sim_area_.x.begin)
+    {
+        world.sim_area_.x.begin = world_range.x.begin;
+    }
+    else
+    {
+        world.sim_area_.x.begin += std::min(1.f, world.sim_area_.x.begin - world_range.x.begin);
+    }
+    // world.sim_area_
 }
 
 void VerletApp::UpdateSimulation()
 {
     const float time = GetTimeSeconds();
-    const float dt = GetLastFrameDurationSeconds();
-
-    auto spawn_with_velocity = [&](const Vec2f& position, const Vec2f& velocity) -> VerletObject&
-    {
-        world.objects.push_back({
-            .position = position,
-            .old_position = solver.MakePreviousPosition(position, velocity, dt),
-            .color = edt::Math::GetRainbowColors(time),
-            .movable = true,
-        });
-        return world.objects.back();
-    };
 
     if (tool_)
     {
@@ -78,18 +77,45 @@ void VerletApp::UpdateSimulation()
     }
 
     // Emitter
-    if (enable_emitter_ && time - last_emit_time > 0.005f)
+    if (enable_emitter_ && world.objects.size() < 1000 && time - last_emit_time > 0.005f)
     {
-        const Vec2f emitter_pos = world_range.Uniform({0.5, 0.85f});
-        last_emit_time = time;
-        constexpr float velocity_mag = 0.1f;
-        constexpr float emitter_rotation_speed = 3.0f;
-        const float emitter_angle = edt::kPi<float> * std::sin(time * emitter_rotation_speed) / 4;
-        const Vec2f emitter_direction = edt::Math::MakeRotationMatrix(emitter_angle).MatMul(Vec2f{{0.f, -1.f}});
-        spawn_with_velocity(emitter_pos, emitter_direction * velocity_mag);
+        for (uint32_t i{20}; i--;)
+        {
+            const size_t id = world.objects.size();
+            const float y = 10.f + 1.1f * static_cast<float>(i);
+            world.objects.push_back({
+                .position = {2.0f, y},
+                .old_position = {1.8f, y},
+                .color = edt::Math::GetRainbowColors(static_cast<float>(id) * 0.0001f),
+                .movable = true,
+            });
+        }
     }
 
-    perf_stats_.sim_update = solver.Update(world, dt);
+    // auto spawn_with_velocity = [&](const Vec2f& position, const Vec2f& velocity) -> VerletObject&
+    // {
+    //     world.objects.push_back({
+    //         .position = position,
+    //         .old_position = solver.MakePreviousPosition(position, velocity, sim_time_step),
+    //         .color = edt::Math::GetRainbowColors(time),
+    //         .movable = true,
+    //     });
+    //     return world.objects.back();
+    // };
+    //
+    // // Emitter
+    // if (enable_emitter_ && time - last_emit_time > 0.005f)
+    // {
+    //     const Vec2f emitter_pos = world_range.Uniform({0.5, 0.85f});
+    //     last_emit_time = time;
+    //     constexpr float velocity_mag = 0.1f;
+    //     constexpr float emitter_rotation_speed = 3.0f;
+    //     const float emitter_angle = edt::kPi<float> * std::sin(time * emitter_rotation_speed) / 4;
+    //     const Vec2f emitter_direction = edt::Math::MakeRotationMatrix(emitter_angle).MatMul(Vec2f{{0.f, -1.f}});
+    //     spawn_with_velocity(emitter_pos, emitter_direction * velocity_mag);
+    // }
+
+    perf_stats_.sim_update = solver.Update(world);
 }
 
 void VerletApp::Render()

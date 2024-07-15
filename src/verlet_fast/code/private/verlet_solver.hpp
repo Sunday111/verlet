@@ -7,6 +7,7 @@
 #include <cassert>
 
 #include "EverydayTools/Concepts/Callable.hpp"
+#include "EverydayTools/Math/Math.hpp"
 #include "EverydayTools/Math/Matrix.hpp"
 #include "EverydayTools/Template/TaggedIdentifier.hpp"
 
@@ -56,6 +57,9 @@ struct VerletLink
 struct VerletWorld
 {
     static constexpr Vec2<size_t> cell_size{1, 1};
+    static constexpr float kTimeStepDurationSeconds = 1.f / 60.f;
+    static constexpr size_t kNumSubSteps = 8;
+    static constexpr float kTimeSubStepDurationSeconds = kTimeStepDurationSeconds / static_cast<float>(kNumSubSteps);
 
     void Reserve(const size_t num_objects)
     {
@@ -85,14 +89,14 @@ struct VerletWorld
 
     [[nodiscard]] size_t LocationToCellIndex(const Vec2f& location) const
     {
-        auto [x, y] = ((location - world_range_.Min()).Cast<size_t>() / cell_size).Tuple();
+        auto [x, y] = ((location - sim_area_.Min()).Cast<size_t>() / cell_size).Tuple();
         return x + y * grid_size_.x();
     }
 
     void RebuildGrid()
     {
         // Clear grid
-        grid_size_ = Vec2<size_t>{2, 2} + world_range_.Extent().Cast<size_t>() / cell_size;
+        grid_size_ = Vec2<size_t>{2, 2} + sim_area_.Extent().Cast<size_t>() / cell_size;
         const size_t cells_count = grid_size_.x() * grid_size_.y();
         cell_obj_counts_.resize(cells_count);
         cells.resize(cells_count);
@@ -110,7 +114,7 @@ struct VerletWorld
         }
     }
 
-    edt::FloatRange2Df world_range_ = {{-100, 100}, {-100, 100}};
+    edt::FloatRange2Df sim_area_ = {{-100, 100}, {-100, 100}};
     Vec2<size_t> grid_size_;
     std::vector<VerletLink> links;
     std::vector<VerletObject> objects;
@@ -120,8 +124,7 @@ struct VerletWorld
 
 struct VerletSolver
 {
-    edt::Vec2f gravity{0.0f, -20.f};
-    size_t sub_steps = 8;
+    static constexpr edt::Vec2f gravity{0.0f, -200.f};
 
     struct UpdateStats
     {
@@ -132,34 +135,33 @@ struct VerletSolver
         std::chrono::nanoseconds total;
     };
 
-    UpdateStats Update(VerletWorld& world, const float dt) const
+    UpdateStats Update(VerletWorld& world) const
     {
         UpdateStats stats{};
         stats.total = edt::MeasureTime(
             [&]
             {
-                const float sub_dt = dt / static_cast<float>(sub_steps);
-                for ([[maybe_unused]] const size_t index : std::views::iota(0uz, sub_steps))
+                for ([[maybe_unused]] const size_t index : std::views::iota(0uz, VerletWorld::kNumSubSteps))
                 {
                     stats.apply_links += edt::MeasureTime(std::bind_front(&VerletSolver::ApplyLinks), world);
                     stats.rebuild_grid += edt::MeasureTime(std::bind_front(&VerletWorld::RebuildGrid, &world));
                     stats.solve_collisions +=
                         edt::MeasureTime(std::bind_front(&VerletSolver::SolveCollisions, this), world);
                     stats.update_positions +=
-                        edt::MeasureTime(std::bind_front(&VerletSolver::UpdatePosition, this), world.objects, sub_dt);
+                        edt::MeasureTime(std::bind_front(&VerletSolver::UpdatePosition, this), world);
                 }
             });
 
         return stats;
     }
 
-    void UpdatePosition(std::span<VerletObject> objects, const float dt) const
+    void UpdatePosition(VerletWorld& world) const
     {
-        constexpr edt::FloatRange2D<float> rect_constraint{{-100, 100}, {-100, 100}};
         constexpr float margin = 2.0f;
-        constexpr auto constraint_with_margin = rect_constraint.Enlarged(-margin);
+        const auto constraint_with_margin = world.sim_area_.Enlarged(-margin);
+        constexpr auto gravity_influence = gravity * edt::Math::Sqr(VerletWorld::kTimeSubStepDurationSeconds);
 
-        for (auto& object : objects)
+        for (auto& object : world.objects)
         {
             [[likely]] if (object.movable)
             {
@@ -169,7 +171,7 @@ struct VerletSolver
                 object.old_position = object.position;
 
                 // Perform Verlet integration
-                object.position += velocity + gravity * dt * dt;
+                object.position += velocity + gravity_influence;
 
                 ApplyConstraint(object, constraint_with_margin);
             }
@@ -201,9 +203,9 @@ struct VerletSolver
                         const float dist_sq = axis.SquaredLength();
                         if (dist_sq < 1.0f && dist_sq > eps)
                         {
-                            // const float delta = 0.5f - dist / 2;
-                            // const Vec2f col_vec = (axis / dist) * delta;
-                            const Vec2f col_vec = 0.5f * axis * (-1.f + std::pow(dist_sq, -0.5f));
+                            const float dist = std::sqrt(dist_sq);
+                            const float delta = 0.5f - dist / 2;
+                            const Vec2f col_vec = (axis / dist) * delta;
                             object.position += col_vec;
                             another_object.position -= col_vec;
                         }
@@ -277,10 +279,9 @@ struct VerletSolver
         }
     }
 
-    [[nodiscard]] edt::Vec2f
-    MakePreviousPosition(const edt::Vec2f& current_position, const edt::Vec2f& velocity, const float dt) const
+    [[nodiscard]] edt::Vec2f MakePreviousPosition(const edt::Vec2f& current_position, const edt::Vec2f& velocity) const
     {
-        return current_position - velocity / (dt * static_cast<float>(sub_steps));
+        return current_position - velocity / VerletWorld::kTimeSubStepDurationSeconds;
     }
 };
 }  // namespace verlet

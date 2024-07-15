@@ -90,9 +90,7 @@ public:
 
     static constexpr edt::FloatRange<float> kMinSideRange{-100, 100};
     edt::FloatRange2D<float> world_range{.x = {-100.f, 100.f}, .y = {-100.f, 100.f}};
-    VerletSolver solver{
-        .gravity = Vec2f{0.f, -kMinSideRange.Extent() / 1.f},
-    };
+    VerletSolver solver{};
 
     VerletWorld world;
     float last_emit_time = 0.0;
