@@ -12,6 +12,7 @@
 #include "EverydayTools/Math/Math.hpp"
 #include "EverydayTools/Math/Matrix.hpp"
 #include "EverydayTools/Template/TaggedIdentifier.hpp"
+#include "size_t_suffix.hpp"
 #include "ranges.hpp"
 
 namespace verlet
@@ -62,7 +63,7 @@ struct VerletSolver
         std::array<ObjectId, kCapacity> objects;
     };
 
-    static constexpr size_t kNumThreads = 16;
+    static constexpr size_t kNumThreads = 32;
     static constexpr float kVelocityDampling = 40.f;  // arbitrary, approximating air friction
     static constexpr edt::Vec2f gravity{0.0f, -20.f};
     static constexpr Vec2<size_t> cell_size{1, 1};

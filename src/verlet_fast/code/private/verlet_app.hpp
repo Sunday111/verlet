@@ -58,7 +58,8 @@ public:
     void GuiText(const fmt::format_string<Args...>& format, Args&&... args)
     {
         std::string_view formatted = FormatTemp(format, std::forward<Args>(args)...);
-        ImGui::TextUnformatted(formatted.begin(), formatted.end());
+        const char* p = &formatted.front();
+        ImGui::TextUnformatted(p, p + formatted.size());
     }
 
     void RenderGUI();
@@ -88,7 +89,7 @@ public:
         return world_pos;
     }
 
-    static constexpr edt::FloatRange<float> kMinSideRange{-100, 100};
+    static constexpr edt::FloatRange<float> kMinSideRange{-200, 200};
     edt::FloatRange2D<float> world_range{.x = {-100.f, 100.f}, .y = {-100.f, 100.f}};
     VerletSolver solver{};
 

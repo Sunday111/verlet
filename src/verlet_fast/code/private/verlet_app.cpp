@@ -93,7 +93,7 @@ void VerletApp::UpdateSimulation()
     }
 
     // Emitter
-    if (enable_emitter_ && solver.objects.size() < 80000 && time - last_emit_time > 0.005f)
+    if (enable_emitter_ && solver.objects.size() < 120000 && time - last_emit_time > 0.005f)
     {
         for (uint32_t i{20}; i--;)
         {
