@@ -4,7 +4,8 @@
 #include "klgl/opengl/debug/annotations.hpp"
 #include "klgl/opengl/gl_api.hpp"
 #include "ranges.hpp"
-#include "tool.hpp"
+#include "tools/move_objects_tool.hpp"
+#include "tools/spawn_objects_tool.hpp"
 
 namespace verlet
 {
@@ -15,7 +16,6 @@ VerletApp::~VerletApp() = default;
 void VerletApp::Initialize()
 {
     Super::Initialize();
-    solver.Reserve(3000);
     InitializeRendering();
 }
 
