@@ -142,6 +142,9 @@ void VerletSolver::UpdatePosition()
 
             // Constraint
             object.position = constraint_with_margin.Clamp(object.position);
+
+            // Helps with 'explosions' but doesn't solve it generally
+            // object.old_position = constraint_with_margin.Clamp(object.old_position);
         }
     }
 }

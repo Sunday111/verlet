@@ -109,6 +109,7 @@ public:
     InstancedPainter circle_painter_{};
 
     bool enable_emitter_ = false;
+    size_t emitter_max_objects_count_ = 10000;
 
     std::unique_ptr<Tool> tool_;
     PerfStats perf_stats_{};

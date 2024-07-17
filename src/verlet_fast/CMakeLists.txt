@@ -1,12 +1,15 @@
 cmake_minimum_required(VERSION 3.20)
 include(set_compiler_options)
 set(module_source_files
+    ${CMAKE_CURRENT_SOURCE_DIR}/code/private/imgui_helpers.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/instance_painter.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/instance_painter.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/main.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/mesh_vertex.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/ranges.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/tagged_id_hash.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/code/private/tools/delete_objects_tool.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/code/private/tools/delete_objects_tool.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/tools/move_objects_tool.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/tools/move_objects_tool.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/tools/spawn_objects_tool.cpp
