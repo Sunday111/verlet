@@ -6,6 +6,9 @@ set(module_source_files
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/instance_painter.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/main.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/mesh_vertex.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/code/private/object.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/code/private/object_pool.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/code/private/object_pool.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/ranges.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/tagged_id_hash.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/tools/delete_objects_tool.cpp

@@ -9,31 +9,10 @@
 #include <thread>
 
 #include "EverydayTools/Math/Matrix.hpp"
-#include "EverydayTools/Template/TaggedIdentifier.hpp"
+#include "object_pool.hpp"
 
 namespace verlet
 {
-
-using namespace edt::lazy_matrix_aliases;  // NOLINT
-
-struct ObjectIdTag;
-using ObjectId = edt::TaggedIdentifier<ObjectIdTag, size_t>;
-static constexpr auto kInvalidObjectId = ObjectId{};
-
-struct VerletObject
-{
-    Vec2f position{};
-    Vec2f old_position{};
-    Vec3<uint8_t> color;
-    ObjectId next_in_cell = kInvalidObjectId;
-
-    [[nodiscard]] static constexpr float GetRadius()
-    {
-        return 0.5f;
-    }
-
-    bool movable = true;
-};
 
 struct VerletSolver
 {
@@ -85,14 +64,9 @@ struct VerletSolver
 
     void WorkerThread(const std::stop_token& stop_token, const size_t thread_index);
 
-    VerletObject& GetObject(const ObjectId& id)
-    {
-        return objects[id.GetValue()];
-    }
-
     [[nodiscard]] size_t LocationToCellIndex(const Vec2f& location) const
     {
-        auto [x, y] = ((location - sim_area_.Min()).Cast<size_t>() / cell_size).Tuple();
+        auto [x, y] = ((sim_area_.Clamp(location) - sim_area_.Min()).Cast<size_t>() / cell_size).Tuple();
         return x + y * grid_size_.x();
     }
 
@@ -115,7 +89,7 @@ struct VerletSolver
     edt::FloatRange2Df sim_area_ = {{-100, 100}, {-100, 100}};
     Vec2<size_t> grid_size_;
     std::vector<VerletLink> links;
-    std::vector<VerletObject> objects;
+    ObjectPool objects;
     std::vector<VerletWorldCell> cells;
     std::vector<uint8_t> cell_obj_counts_;
 };

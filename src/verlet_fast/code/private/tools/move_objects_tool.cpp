@@ -2,7 +2,6 @@
 
 #include <imgui.h>
 
-#include "ranges.hpp"
 #include "verlet_app.hpp"
 
 namespace verlet
@@ -25,11 +24,10 @@ void MoveObjectsTool::Tick()
         if (!lmb_hold)
         {
             lmb_hold = true;
-            if (auto opt_index = FindObject(get_mouse_pos()))
+            if (auto id = FindObject(get_mouse_pos()); id.IsValid())
             {
-                size_t index = *opt_index;
-                auto& object = app_.solver.objects[index];
-                held_object_ = {index, object.movable};
+                auto& object = app_.solver.objects.Get(id);
+                held_object_ = {id, object.movable};
                 object.movable = false;
             }
         }
@@ -41,7 +39,7 @@ void MoveObjectsTool::Tick()
 
     if (held_object_)
     {
-        auto& object = app_.solver.objects[held_object_->index];
+        auto& object = app_.solver.objects.Get(held_object_->index);
         object.position = get_mouse_pos();
     }
 }
@@ -57,7 +55,7 @@ void MoveObjectsTool::ReleaseObject(const Vec2f& mouse_position)
     lmb_hold = false;
     if (held_object_)
     {
-        auto& object = app_.solver.objects[held_object_->index];
+        auto& object = app_.solver.objects.Get(held_object_->index);
         object.position = mouse_position;
         object.old_position = object.position;
         object.movable = held_object_->was_movable;
@@ -65,30 +63,31 @@ void MoveObjectsTool::ReleaseObject(const Vec2f& mouse_position)
     }
 }
 
-std::optional<size_t> MoveObjectsTool::FindObject(const Vec2f& mouse_position) const
+ObjectId MoveObjectsTool::FindObject(const Vec2f& mouse_position) const
 {
     float prev_distance_sq{};
-    std::optional<size_t> opt_index;
-    for (auto [index, object] : Enumerate(app_.solver.objects))
+    ObjectId result;
+    for (auto id : app_.solver.objects.AllObjects())
     {
+        auto& object = app_.solver.objects.Get(id);
         const float distance_sq = (object.position - mouse_position).SquaredLength();
         if (distance_sq < select_radius_)
         {
             if (find_closes_one_)
             {
-                if (!opt_index || distance_sq < prev_distance_sq)
+                if (!result.IsValid() || distance_sq < prev_distance_sq)
                 {
-                    opt_index = index;
+                    result = id;
                 }
             }
             else
             {
-                opt_index.emplace(index);
+                result = id;
                 break;
             }
         }
     }
 
-    return opt_index;
+    return result;
 }
 }  // namespace verlet

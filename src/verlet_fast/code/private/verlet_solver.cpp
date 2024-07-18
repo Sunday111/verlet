@@ -1,7 +1,6 @@
 #include "verlet_solver.hpp"
 
 #include "EverydayTools/Math/Math.hpp"
-#include "ranges.hpp"
 
 namespace verlet
 {
@@ -34,7 +33,7 @@ void VerletSolver::WorkerThread(const std::stop_token& stop_token, const size_t 
             {
                 if (object_id != another_object_id)
                 {
-                    auto& another_object = GetObject(another_object_id);
+                    auto& another_object = objects.Get(another_object_id);
                     const Vec2f axis = object.position - another_object.position;
                     const float dist_sq = axis.SquaredLength();
                     if (dist_sq < 1.0f && dist_sq > eps)
@@ -65,7 +64,7 @@ void VerletSolver::WorkerThread(const std::stop_token& stop_token, const size_t 
                 const size_t cell_index = cell_y * grid_width + cell_x;
                 for (const ObjectId& object_id : ForEachObjectInCell(cell_index))
                 {
-                    auto& object = GetObject(object_id);
+                    auto& object = objects.Get(object_id);
                     solve_collision_between_object_and_cell(object_id, object, cell_index);
                     solve_collision_between_object_and_cell(object_id, object, cell_index + 1);
                     solve_collision_between_object_and_cell(object_id, object, cell_index - 1);
@@ -94,12 +93,13 @@ void VerletSolver::RebuildGrid()
 
     std::ranges::fill(cell_obj_counts_, uint8_t{0});
 
-    for (auto [object_index, object] : Enumerate(objects))
+    for (const ObjectId id : objects.AllObjects())
     {
+        auto& object = objects.Get(id);
         const auto cell_index = LocationToCellIndex(object.position);
         auto& cell = cells[cell_index];
         auto& cell_sz = cell_obj_counts_[cell_index];
-        cell.objects[cell_sz % VerletWorldCell::kCapacity] = ObjectId::FromValue(object_index);
+        cell.objects[cell_sz % VerletWorldCell::kCapacity] = id;
         cell_sz = std::min<uint8_t>(cell_sz + 1, VerletWorldCell::kCapacity);
     }
 }
@@ -128,9 +128,9 @@ void VerletSolver::UpdatePosition()
     const auto constraint_with_margin = sim_area_.Enlarged(-margin);
     constexpr float dt_2 = edt::Math::Sqr(kTimeSubStepDurationSeconds);
 
-    for (auto& object : objects)
+    for (const ObjectId id : objects.AllObjects())
     {
-        [[likely]] if (object.movable)
+        [[likely]] if (auto& object = objects.Get(id); object.movable)
         {
             const auto last_update_move = object.position - object.old_position;
 
@@ -175,8 +175,9 @@ void VerletSolver::ApplyLinks()
 {
     for (const VerletLink& link : links)
     {
-        VerletObject& a = objects[link.first.GetValue()];
-        VerletObject& b = objects[link.second.GetValue()];
+        VerletObject& a = objects.Get(link.first);
+        VerletObject& b = objects.Get(link.second);
+
         Vec2f axis = a.position - b.position;
         const float distance = std::sqrt(axis.SquaredLength());
         axis /= distance;

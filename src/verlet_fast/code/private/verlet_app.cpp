@@ -93,25 +93,29 @@ void VerletApp::UpdateSimulation()
     }
 
     // Emitter
-    if (enable_emitter_ && solver.objects.size() <= emitter_max_objects_count_)
+    if (enable_emitter_ && solver.objects.ObjectsCount() <= emitter_max_objects_count_)
     {
         for (uint32_t i{40}; i--;)
         {
-            const size_t id = solver.objects.size();
+            const size_t idx = solver.objects.ObjectsCount();
             const float y = 50.f + 1.02f * static_cast<float>(i);
-            const auto color = edt::Math::GetRainbowColors(static_cast<float>(id) / 4000);
-            solver.objects.push_back({
-                .position = {0.6f, y},
-                .old_position = {0.4f, y},
-                .color = color,
-                .movable = true,
-            });
-            solver.objects.push_back({
-                .position = {-0.6f, y},
-                .old_position = {-0.4f, y},
-                .color = color,
-                .movable = true,
-            });
+            const auto color = edt::Math::GetRainbowColors(static_cast<float>(idx) / 4000);
+
+            {
+                auto [aid, a] = solver.objects.Alloc();
+                a.position = {0.6f, y};
+                a.old_position = {0.4f, y};
+                a.color = color;
+                a.movable = true;
+            }
+
+            {
+                auto [bid, b] = solver.objects.Alloc();
+                b.position = {-0.6f, y};
+                b.old_position = {-0.4f, y};
+                b.color = color;
+                b.movable = true;
+            }
         }
     }
 
@@ -132,8 +136,9 @@ void VerletApp::RenderWorld()
     const edt::FloatRange2D<float> screen_range{.x = {-1, 1}, .y = {-1, 1}};
     const Mat3f world_to_screen = edt::Math::MakeTransform(world_range, screen_range);
 
-    auto paint_instanced_object = [&, next_instance_index = 0uz](VerletObject& object) mutable
+    auto paint_instanced_object = [&, next_instance_index = 0uz](ObjectId id) mutable
     {
+        auto& object = solver.objects.Get(id);
         const auto screen_pos = TransformPos(world_to_screen, object.position);
         const auto screen_size = TransformVector(world_to_screen, object.GetRadius() + Vec2f{});
         const auto& color = object.color;
@@ -145,8 +150,8 @@ void VerletApp::RenderWorld()
         {
             klgl::OpenGl::Clear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
-            perf_stats_.render.set_circle_loop =
-                std::get<0>(edt::MeasureTime(std::ranges::for_each, solver.objects, paint_instanced_object));
+            perf_stats_.render.set_circle_loop = std::get<0>(
+                edt::MeasureTime(std::ranges::for_each, solver.objects.AllObjects(), paint_instanced_object));
 
             shader_->Use();
             circle_painter_.Render();
@@ -165,7 +170,7 @@ void VerletApp::RenderGUI()
     {
         shader_->DrawDetails();
         GuiText("Framerate: {}", GetFramerate());
-        GuiText("Objects count: {}", solver.objects.size());
+        GuiText("Objects count: {}", solver.objects.ObjectsCount());
         GuiText("Sim update {}", to_flt_ms(perf_stats_.sim_update.total));
         GuiText("  Apply links {}", to_flt_ms(perf_stats_.sim_update.apply_links));
         GuiText("  Rebuild grid {}", to_flt_ms(perf_stats_.sim_update.rebuild_grid));

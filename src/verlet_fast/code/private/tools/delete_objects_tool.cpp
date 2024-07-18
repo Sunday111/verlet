@@ -10,17 +10,25 @@ void DeleteObjectsTool::Tick()
 {
     if (ImGui::IsMouseClicked(ImGuiMouseButton_Left) && !ImGui::GetIO().WantCaptureMouse)
     {
+        std::vector<ObjectId> to_delete;
         const Vec2f mouse_pos = app_.GetMousePositionInWorldCoordinates();
-        const auto [erase_begin, erase_end] = std::ranges::remove_if(
-            app_.solver.objects,
-            [&](const VerletObject& object)
+
+        for (ObjectId id : app_.solver.objects.AllObjects())
+        {
+            auto& object = app_.solver.objects.Get(id);
+            if ((object.position - mouse_pos).SquaredLength() < edt::Math::Sqr(delete_radius_ + object.GetRadius()))
             {
-                return (object.position - mouse_pos).SquaredLength() <
-                       edt::Math::Sqr(delete_radius_ + object.GetRadius());
-            });
-        app_.solver.objects.erase(erase_begin, erase_end);
+                to_delete.push_back(id);
+            }
+        }
+
+        for (ObjectId id : to_delete)
+        {
+            app_.solver.objects.Free(id);
+        }
     }
 }
+
 void DeleteObjectsTool::DrawGUI()
 {
     ImGui::Text("Left click to delete objects");  // NOLINT

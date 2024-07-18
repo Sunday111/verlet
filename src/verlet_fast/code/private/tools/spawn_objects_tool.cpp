@@ -12,24 +12,18 @@ void SpawnObjectsTool::Tick()
     if (ImGui::IsMouseClicked(ImGuiMouseButton_Left) && !ImGui::GetIO().WantCaptureMouse)
     {
         const auto mouse_position = app_.GetMousePositionInWorldCoordinates();
-        app_.solver.objects.push_back({
-            .position = mouse_position,
-            .old_position = mouse_position,
-            .color = edt::Math::GetRainbowColors(app_.GetTimeSeconds()),
-            .movable = true,
-        });
 
-        auto& new_object = app_.solver.objects.back();
+        auto [spawned_object_id, new_object] = app_.solver.objects.Alloc();
+        new_object.position = mouse_position;
+        new_object.old_position = mouse_position;
+        new_object.color = edt::Math::GetRainbowColors(app_.GetTimeSeconds());
         new_object.movable = spawn_movable_objects_;
-        if (link_spawned_to_previous_ && app_.solver.objects.size() > 1)
+
+        if (link_spawned_to_previous_ && previous_spawned_.IsValid())
         {
-            const size_t new_object_index = app_.solver.objects.size() - 1;
-            const size_t previous_index = app_.solver.objects.size() - 2;
-            auto& previous_object = app_.solver.objects[previous_index];
+            auto& previous_object = app_.solver.objects.Get(previous_spawned_);
             app_.solver.links.push_back(
-                {previous_object.GetRadius() + new_object.GetRadius(),
-                 ObjectId::FromValue(previous_index),
-                 ObjectId::FromValue(new_object_index)});
+                {previous_object.GetRadius() + new_object.GetRadius(), previous_spawned_, spawned_object_id});
             if (new_object.movable)
             {
                 auto dir = (new_object.position - previous_object.position).Normalized();
@@ -38,6 +32,8 @@ void SpawnObjectsTool::Tick()
                 new_object.old_position = new_object.position;
             }
         }
+
+        previous_spawned_ = spawned_object_id;
     }
 }
 

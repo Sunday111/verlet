@@ -1,6 +1,7 @@
 #include <optional>
 
 #include "EverydayTools/Math/Matrix.hpp"
+#include "object.hpp"
 #include "tool.hpp"
 
 namespace verlet
@@ -12,7 +13,7 @@ class MoveObjectsTool : public Tool
 public:
     struct HeldObject
     {
-        size_t index{};
+        ObjectId index{};
         bool was_movable{};
     };
 
@@ -27,7 +28,7 @@ public:
 
 private:
     void ReleaseObject(const Vec2f& mouse_position);
-    std::optional<size_t> FindObject(const Vec2f& mouse_position) const;
+    ObjectId FindObject(const Vec2f& mouse_position) const;
 
 private:
     bool lmb_hold = false;

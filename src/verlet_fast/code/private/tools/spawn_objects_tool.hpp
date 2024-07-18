@@ -1,3 +1,4 @@
+#include "object.hpp"
 #include "tool.hpp"
 
 namespace verlet
@@ -16,5 +17,6 @@ public:
 private:
     bool spawn_movable_objects_ = true;
     bool link_spawned_to_previous_ = false;
+    ObjectId previous_spawned_;
 };
 }  // namespace verlet
