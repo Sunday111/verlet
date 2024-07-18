@@ -36,8 +36,11 @@ void SpawnObjectsTool::Tick()
                 auto dir = (new_object.position - previous_object.position).Normalized();
                 new_object.position = previous_object.position + dir * target_distance * 1.001f;
                 new_object.old_position = new_object.position;
+            }
 
-                // TODO: optionally "calm down" the while linked list of objects?
+            if (stabilize_chain_)
+            {
+                app_.solver.StabilizeChain(spawned_object_id);
             }
         }
 
@@ -50,6 +53,11 @@ void SpawnObjectsTool::DrawGUI()
     ImGui::Text("Use left mouse button to spawn objects");  // NOLINT
     ImGui::Checkbox("Spawn movable objects", &spawn_movable_objects_);
     ImGui::Checkbox("Link link to previous", &link_spawned_to_previous_);
+
+    if (link_spawned_to_previous_)
+    {
+        ImGui::Checkbox("Stabilize chain", &stabilize_chain_);
+    }
 }
 
 }  // namespace verlet

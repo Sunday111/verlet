@@ -111,6 +111,7 @@ struct VerletSolver
     UpdateStats Update();
     void UpdatePosition();
     void DeleteObject(ObjectId id);
+    void StabilizeChain(ObjectId first);
 
     void SolveCollisions()
     {
