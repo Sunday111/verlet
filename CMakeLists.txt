@@ -10,6 +10,7 @@ set(YAE_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/deps/yae")
 set(YAE_PROJECT_ROOT "${CMAKE_CURRENT_SOURCE_DIR}")
 set(CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH};${YAE_ROOT}/cmake")
 
+
 # ---------------------------- External Dependencies -----------------------------
 
 # https://github.com/Sunday111/EverydayTools for_yae

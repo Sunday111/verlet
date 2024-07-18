@@ -1,6 +1,7 @@
 #include "verlet_solver.hpp"
 
 #include "EverydayTools/Math/Math.hpp"
+#include "fmt/ranges.h"  // IWYU pragma: keep
 
 namespace verlet
 {
@@ -93,9 +94,8 @@ void VerletSolver::RebuildGrid()
 
     std::ranges::fill(cell_obj_counts_, uint8_t{0});
 
-    for (const ObjectId id : objects.AllObjects())
+    for (auto [id, object] : objects.IdentifiersAndObjects())
     {
-        auto& object = objects.Get(id);
         const auto cell_index = LocationToCellIndex(object.position);
         auto& cell = cells[cell_index];
         auto& cell_sz = cell_obj_counts_[cell_index];
@@ -128,25 +128,79 @@ void VerletSolver::UpdatePosition()
     const auto constraint_with_margin = sim_area_.Enlarged(-margin);
     constexpr float dt_2 = edt::Math::Sqr(kTimeSubStepDurationSeconds);
 
-    for (const ObjectId id : objects.AllObjects())
+    for (auto& object : objects.Objects() | ObjectFilters::IsMovable())
     {
-        [[likely]] if (auto& object = objects.Get(id); object.movable)
+        const auto last_update_move = object.position - object.old_position;
+
+        // Save current position
+        object.old_position = object.position;
+
+        // Perform Verlet integration
+        object.position += last_update_move + (gravity - last_update_move * kVelocityDampling) * dt_2;
+
+        // Constraint
+        object.position = constraint_with_margin.Clamp(object.position);
+
+        // Helps with 'explosions' but doesn't solve it generally
+        // object.old_position = constraint_with_margin.Clamp(object.old_position);
+    }
+}
+
+void VerletSolver::DeleteObject(ObjectId to_delete)
+{
+    auto id_to_index = std::mem_fn(&ObjectId::GetValue);
+
+    auto print_links = [&](std::string_view title)
+    {
+        fmt::println("    {}:", title);
+        fmt::println("        Linked to:");
+        for (auto [id, links] : linked_to)
         {
-            const auto last_update_move = object.position - object.old_position;
+            if (links.empty()) continue;
+            fmt::println(
+                "            {} -> {}",
+                id.GetValue(),
+                links | std::views::transform(std::mem_fn(&VerletSolver::VerletLink::other)) |
+                    std::views::transform(id_to_index));
+        }
 
-            // Save current position
-            object.old_position = object.position;
+        fmt::println("        Linked by:");
+        for (auto [id, others] : linked_by)
+        {
+            if (others.empty()) continue;
+            fmt::println("            {} <- {}", id.GetValue(), others | std::views::transform(id_to_index));
+        }
+    };
 
-            // Perform Verlet integration
-            object.position += last_update_move + (gravity - last_update_move * kVelocityDampling) * dt_2;
+    fmt::println("Deleting object: {}", to_delete.GetValue());
+    print_links("    State before");
 
-            // Constraint
-            object.position = constraint_with_margin.Clamp(object.position);
+    if (auto linked_by_it = linked_by.find(to_delete); linked_by_it != linked_by.end())
+    {
+        for (auto& other : linked_by_it->second)
+        {
+            auto& v = linked_to[other];
+            auto [b, e] = std::ranges::remove(v, to_delete, &VerletSolver::VerletLink::other);
+            v.erase(b, e);
+        }
 
-            // Helps with 'explosions' but doesn't solve it generally
-            // object.old_position = constraint_with_margin.Clamp(object.old_position);
+        linked_by.erase(linked_by_it);
+    }
+
+    if (auto linked_to_it = linked_to.find(to_delete); linked_to_it != linked_to.end())
+    {
+        for (auto& link : linked_to_it->second)
+        {
+            auto& v = linked_by[link.other];
+            auto [b, e] = std::ranges::remove(v, to_delete);
+            v.erase(b, e);
         }
     }
+
+    linked_to.erase(to_delete);
+    objects.Free(to_delete);
+
+    print_links("    State after");
 }
 
 std::tuple<float, float> VerletSolver::MassCoefficients(const VerletObject& a, const VerletObject& b)
@@ -173,20 +227,24 @@ std::tuple<float, float> VerletSolver::MassCoefficients(const VerletObject& a, c
 
 void VerletSolver::ApplyLinks()
 {
-    for (const VerletLink& link : links)
+    for (const auto& [object_id, links] : linked_to)
     {
-        VerletObject& a = objects.Get(link.first);
-        VerletObject& b = objects.Get(link.second);
+        VerletObject& a = objects.Get(object_id);
 
-        Vec2f axis = a.position - b.position;
-        const float distance = std::sqrt(axis.SquaredLength());
-        axis /= distance;
-        const float min_distance = a.GetRadius() + b.GetRadius();
-        const float delta = std::max(min_distance, link.target_distance) - distance;
+        for (const auto& link : links)
+        {
+            VerletObject& b = objects.Get(link.other);
 
-        auto [ka, kb] = MassCoefficients(a, b);
-        a.position += ka * delta * axis;
-        b.position -= kb * delta * axis;
+            Vec2f axis = a.position - b.position;
+            const float distance = std::sqrt(axis.SquaredLength());
+            axis /= distance;
+            const float min_distance = a.GetRadius() + b.GetRadius();
+            const float delta = std::max(min_distance, link.target_distance) - distance;
+
+            auto [ka, kb] = MassCoefficients(a, b);
+            a.position += ka * delta * axis;
+            b.position -= kb * delta * axis;
+        }
     }
 }
 

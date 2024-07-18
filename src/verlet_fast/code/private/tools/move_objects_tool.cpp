@@ -21,9 +21,8 @@ void MoveObjectsTool::Tick()
 
     if (ImGui::IsMouseDown(ImGuiMouseButton_Left) && !ImGui::GetIO().WantCaptureMouse)
     {
-        if (!lmb_hold)
+        if (!std::exchange(lmb_hold, true))
         {
-            lmb_hold = true;
             if (auto id = FindObject(get_mouse_pos()); id.IsValid())
             {
                 auto& object = app_.solver.objects.Get(id);
@@ -47,7 +46,6 @@ void MoveObjectsTool::Tick()
 void MoveObjectsTool::DrawGUI()
 {
     ImGui::Text("Click and hold with left mouse button on object to move it");  // NOLINT
-    ImGui::Checkbox("Find closest to cursor", &find_closes_one_);
 }
 
 void MoveObjectsTool::ReleaseObject(const Vec2f& mouse_position)
@@ -66,25 +64,15 @@ void MoveObjectsTool::ReleaseObject(const Vec2f& mouse_position)
 ObjectId MoveObjectsTool::FindObject(const Vec2f& mouse_position) const
 {
     float prev_distance_sq{};
-    ObjectId result;
-    for (auto id : app_.solver.objects.AllObjects())
+    ObjectId result = kInvalidObjectId;
+
+    for (const auto [id, object] : app_.solver.objects.IdentifiersAndObjects())
     {
-        auto& object = app_.solver.objects.Get(id);
         const float distance_sq = (object.position - mouse_position).SquaredLength();
-        if (distance_sq < select_radius_)
+        if (!result.IsValid() || distance_sq < prev_distance_sq)
         {
-            if (find_closes_one_)
-            {
-                if (!result.IsValid() || distance_sq < prev_distance_sq)
-                {
-                    result = id;
-                }
-            }
-            else
-            {
-                result = id;
-                break;
-            }
+            result = id;
+            prev_distance_sq = distance_sq;
         }
     }
 

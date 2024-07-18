@@ -8,8 +8,12 @@
 #include <cassert>
 #include <thread>
 
+#include "EverydayTools/Math/Math.hpp"
 #include "EverydayTools/Math/Matrix.hpp"
+#include "EverydayTools/Template/Overload.hpp"
+#include "ankerl/unordered_dense.h"
 #include "object_pool.hpp"
+#include "tagged_id_hash.hpp"
 
 namespace verlet
 {
@@ -28,8 +32,7 @@ struct VerletSolver
     struct VerletLink
     {
         float target_distance{};
-        ObjectId first{};
-        ObjectId second{};
+        ObjectId other{};
     };
 
     struct VerletWorldCell
@@ -70,10 +73,44 @@ struct VerletSolver
         return x + y * grid_size_.x();
     }
 
+    struct ObjectFilters
+    {
+        [[nodiscard]] static auto IsMovable()
+        {
+            constexpr auto is_movable = [](const VerletObject& object)
+            {
+                return object.IsMovable();
+            };
+
+            return std::views::filter(edt::Overload{
+                is_movable,
+                [](const std::tuple<ObjectId, const VerletObject&> id_and_obj)
+                {
+                    return std::get<1>(id_and_obj).movable;
+                }});
+        }
+
+        [[nodiscard]] static auto InArea(Vec2f position, float radius)
+        {
+            auto is_close_enough = [position, rsq = edt::Math::Sqr(radius)](const VerletObject& object)
+            {
+                return (position - object.position).SquaredLength() < rsq;
+            };
+
+            return std::views::filter(edt::Overload{
+                is_close_enough,
+                [=](const std::tuple<ObjectId, const VerletObject&> id_and_obj)
+                {
+                    return is_close_enough(std::get<1>(id_and_obj));
+                }});
+        }
+    };
+
     void ApplyLinks();
     void RebuildGrid();
     UpdateStats Update();
     void UpdatePosition();
+    void DeleteObject(ObjectId id);
 
     void SolveCollisions()
     {
@@ -88,7 +125,10 @@ struct VerletSolver
 
     edt::FloatRange2Df sim_area_ = {{-100, 100}, {-100, 100}};
     Vec2<size_t> grid_size_;
-    std::vector<VerletLink> links;
+
+    ankerl::unordered_dense::map<ObjectId, std::vector<VerletLink>, TaggedIdentifierHash<ObjectId>> linked_to;
+    ankerl::unordered_dense::map<ObjectId, std::vector<ObjectId>, TaggedIdentifierHash<ObjectId>> linked_by;
+
     ObjectPool objects;
     std::vector<VerletWorldCell> cells;
     std::vector<uint8_t> cell_obj_counts_;

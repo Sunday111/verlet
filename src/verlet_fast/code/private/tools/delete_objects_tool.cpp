@@ -2,6 +2,7 @@
 
 #include <imgui.h>
 
+#include "fmt/ranges.h"  // IWYU pragma: keep
 #include "verlet_app.hpp"
 
 namespace verlet
@@ -13,19 +14,17 @@ void DeleteObjectsTool::Tick()
         std::vector<ObjectId> to_delete;
         const Vec2f mouse_pos = app_.GetMousePositionInWorldCoordinates();
 
-        for (ObjectId id : app_.solver.objects.AllObjects())
+        auto get_id = [](const std::tuple<ObjectId, VerletObject&>& kv)
         {
-            auto& object = app_.solver.objects.Get(id);
-            if ((object.position - mouse_pos).SquaredLength() < edt::Math::Sqr(delete_radius_ + object.GetRadius()))
-            {
-                to_delete.push_back(id);
-            }
-        }
+            return std::get<0>(kv);
+        };
 
-        for (ObjectId id : to_delete)
-        {
-            app_.solver.objects.Free(id);
-        }
+        auto filter_by_distance = VerletSolver::ObjectFilters::InArea(mouse_pos, delete_radius_);
+        auto delete_object = std::bind_front(&VerletSolver::DeleteObject, &app_.solver);
+
+        std::ranges::for_each(
+            app_.solver.objects.IdentifiersAndObjects() | filter_by_distance | std::views::transform(get_id),
+            delete_object);
     }
 }
 

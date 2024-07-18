@@ -102,19 +102,19 @@ void VerletApp::UpdateSimulation()
             const auto color = edt::Math::GetRainbowColors(static_cast<float>(idx) / 4000);
 
             {
-                auto [aid, a] = solver.objects.Alloc();
-                a.position = {0.6f, y};
-                a.old_position = {0.4f, y};
-                a.color = color;
-                a.movable = true;
+                auto [aid, object] = solver.objects.Alloc();
+                object.position = {0.6f, y};
+                object.old_position = {0.4f, y};
+                object.color = color;
+                object.movable = true;
             }
 
             {
-                auto [bid, b] = solver.objects.Alloc();
-                b.position = {-0.6f, y};
-                b.old_position = {-0.4f, y};
-                b.color = color;
-                b.movable = true;
+                auto [bid, object] = solver.objects.Alloc();
+                object.position = {-0.6f, y};
+                object.old_position = {-0.4f, y};
+                object.color = color;
+                object.movable = true;
             }
         }
     }
@@ -136,9 +136,8 @@ void VerletApp::RenderWorld()
     const edt::FloatRange2D<float> screen_range{.x = {-1, 1}, .y = {-1, 1}};
     const Mat3f world_to_screen = edt::Math::MakeTransform(world_range, screen_range);
 
-    auto paint_instanced_object = [&, next_instance_index = 0uz](ObjectId id) mutable
+    auto paint_instanced_object = [&, next_instance_index = 0uz](const VerletObject& object) mutable
     {
-        auto& object = solver.objects.Get(id);
         const auto screen_pos = TransformPos(world_to_screen, object.position);
         const auto screen_size = TransformVector(world_to_screen, object.GetRadius() + Vec2f{});
         const auto& color = object.color;
@@ -150,8 +149,14 @@ void VerletApp::RenderWorld()
         {
             klgl::OpenGl::Clear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
-            perf_stats_.render.set_circle_loop = std::get<0>(
-                edt::MeasureTime(std::ranges::for_each, solver.objects.AllObjects(), paint_instanced_object));
+            perf_stats_.render.set_circle_loop = edt::MeasureTime(
+                [&]
+                {
+                    for (const VerletObject& object : solver.objects.Objects())
+                    {
+                        paint_instanced_object(object);
+                    }
+                });
 
             shader_->Use();
             circle_painter_.Render();

@@ -33,7 +33,5 @@ private:
 private:
     bool lmb_hold = false;
     std::optional<HeldObject> held_object_;
-    float select_radius_ = 1.f;
-    bool find_closes_one_ = false;
 };
 }  // namespace verlet

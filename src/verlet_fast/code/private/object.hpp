@@ -19,11 +19,21 @@ struct VerletObject
     Vec2f position{};
     Vec2f old_position{};
     Vec3<uint8_t> color;
-    bool movable = true;
+    bool movable : 1 {};
+
+    bool IsMovable() const
+    {
+        return movable;
+    }
 
     [[nodiscard]] static constexpr float GetRadius()
     {
         return 0.5f;
     }
+
+    //////
+    uint8_t reserved_property_that_goes_last : 1 {};
 };
+
+static_assert(sizeof(VerletObject) == 20);
 }  // namespace verlet
