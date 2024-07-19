@@ -42,8 +42,9 @@ void VerletSolver::WorkerThread(const std::stop_token& stop_token, const size_t 
                         const float dist = std::sqrt(dist_sq);
                         const float delta = 0.5f - dist / 2;
                         const Vec2f col_vec = (axis / dist) * delta;
-                        object.position += col_vec;
-                        another_object.position -= col_vec;
+                        const auto [ac, bc] = MassCoefficients(object, another_object);
+                        object.position += ac * col_vec;
+                        another_object.position -= bc * col_vec;
                     }
                 }
             }
@@ -201,6 +202,38 @@ void VerletSolver::DeleteObject(ObjectId to_delete)
     objects.Free(to_delete);
 
     print_links("    State after");
+}
+
+void VerletSolver::StabilizeChain(ObjectId first)
+{
+    std::vector queue{first};
+    ankerl::unordered_dense::set<ObjectId, TaggedIdentifierHash<ObjectId>> visited;
+
+    while (!queue.empty())
+    {
+        ObjectId id = queue.back();
+        queue.pop_back();
+
+        if (!visited.emplace(id).second)
+        {
+            continue;
+        }
+
+        if (auto it = linked_to.find(id); it != linked_to.end())
+        {
+            std::ranges::copy(
+                it->second | std::views::transform(std::mem_fn(&VerletSolver::VerletLink::other)),
+                std::back_inserter(queue));
+        }
+
+        if (auto it = linked_by.find(id); it != linked_by.end())
+        {
+            std::ranges::copy(it->second, std::back_inserter(queue));
+        }
+
+        auto& object = objects.Get(id);
+        object.old_position = object.position;
+    }
 }
 
 std::tuple<float, float> VerletSolver::MassCoefficients(const VerletObject& a, const VerletObject& b)
