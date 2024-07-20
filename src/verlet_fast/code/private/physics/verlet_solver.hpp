@@ -4,9 +4,7 @@
 
 #include <EverydayTools/Math/FloatRange.hpp>
 #include <EverydayTools/Time/MeasureTime.hpp>
-#include <barrier>
 #include <cassert>
-#include <thread>
 
 #include "EverydayTools/Math/Math.hpp"
 #include "EverydayTools/Math/Matrix.hpp"
@@ -18,8 +16,11 @@
 namespace verlet
 {
 
-struct VerletSolver
+class CollisionSolver;
+
+class VerletSolver
 {
+public:
     struct UpdateStats
     {
         std::chrono::nanoseconds apply_links;
@@ -41,7 +42,6 @@ struct VerletSolver
         std::array<ObjectId, kCapacity> objects;
     };
 
-    static constexpr size_t kNumThreads = 16;
     static constexpr float kVelocityDampling = 40.f;  // arbitrary, approximating air friction
     static constexpr edt::Vec2f gravity{0.0f, -20.f};
     static constexpr Vec2<size_t> cell_size{1, 1};
@@ -65,7 +65,7 @@ struct VerletSolver
                                                          });
     }
 
-    void WorkerThread(const std::stop_token& stop_token, const size_t thread_index);
+    void SolveCollisions(const size_t thread_index, const size_t threads_count);
 
     [[nodiscard]] size_t LocationToCellIndex(const Vec2f& location) const
     {
@@ -113,16 +113,10 @@ struct VerletSolver
     void DeleteObject(ObjectId id);
     void StabilizeChain(ObjectId first);
 
-    void SolveCollisions()
-    {
-        sync_point_.arrive_and_wait();  // ensure all threads at the beginning of the loop
-        sync_point_.arrive_and_wait();  // ensure all threads finished collision detection
-    }
+    size_t GetThreadsCount() const;
+    void SetThreadsCount(size_t count);
 
     static std::tuple<float, float> MassCoefficients(const VerletObject& a, const VerletObject& b);
-
-    std::vector<std::jthread> threads_;
-    std::barrier<> sync_point_{kNumThreads + 1};
 
     edt::FloatRange2Df sim_area_ = {{-100, 100}, {-100, 100}};
     Vec2<size_t> grid_size_;
@@ -133,5 +127,7 @@ struct VerletSolver
     ObjectPool objects;
     std::vector<VerletWorldCell> cells;
     std::vector<uint8_t> cell_obj_counts_;
+    std::unique_ptr<CollisionSolver> collision_solver_;
 };
+
 }  // namespace verlet

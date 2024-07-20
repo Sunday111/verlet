@@ -1,87 +1,71 @@
 #include "verlet_solver.hpp"
 
 #include "EverydayTools/Math/Math.hpp"
+#include "collision_solvers/collision_solver_mt.hpp"
+#include "collision_solvers/collision_solver_st.hpp"
 #include "fmt/ranges.h"  // IWYU pragma: keep
 
 namespace verlet
 {
 VerletSolver::VerletSolver()
 {
-    for (const size_t thread_index : std::views::iota(0uz, kNumThreads))
+    SetThreadsCount(std::thread::hardware_concurrency());
+}
+
+void VerletSolver::SolveCollisions(const size_t thread_index, size_t threads_count)
+{
+    constexpr float eps = 0.0001f;
+    auto solve_collision_between_object_and_cell =
+        [&](const ObjectId& object_id, VerletObject& object, const size_t origin_cell_index)
     {
-        threads_.push_back(std::jthread(std::bind_front(&VerletSolver::WorkerThread, this), thread_index));
+        for (const ObjectId& another_object_id : ForEachObjectInCell(origin_cell_index))
+        {
+            if (object_id != another_object_id)
+            {
+                auto& another_object = objects.Get(another_object_id);
+                const Vec2f axis = object.position - another_object.position;
+                const float dist_sq = axis.SquaredLength();
+                if (dist_sq < 1.0f && dist_sq > eps)
+                {
+                    const float dist = std::sqrt(dist_sq);
+                    const float delta = 0.5f - dist / 2;
+                    const Vec2f col_vec = (axis / dist) * delta;
+                    const auto [ac, bc] = MassCoefficients(object, another_object);
+                    object.position += ac * col_vec;
+                    another_object.position -= bc * col_vec;
+                }
+            }
+        }
+    };
+
+    const size_t columns_pre_thread = (grid_size_.x() / threads_count);
+    size_t begin_x = 1 + columns_pre_thread * thread_index;
+    size_t end_x = begin_x + columns_pre_thread;
+    if (thread_index == threads_count - 1)
+    {
+        end_x = grid_size_.x();
     }
-}
 
-VerletSolver::~VerletSolver()
-{
-    std::ranges::for_each(threads_, &std::jthread::request_stop);
-    SolveCollisions();
-}
-
-void VerletSolver::WorkerThread(const std::stop_token& stop_token, const size_t thread_index)
-{
-    while (!stop_token.stop_requested())
+    const size_t grid_width = grid_size_.x();
+    for (const size_t cell_x : std::views::iota(begin_x, end_x))
     {
-        // waint for request
-        sync_point_.arrive_and_wait();
-
-        constexpr float eps = 0.0001f;
-        auto solve_collision_between_object_and_cell =
-            [&](const ObjectId& object_id, VerletObject& object, const size_t origin_cell_index)
+        for (const size_t cell_y : std::views::iota(1uz, grid_size_.y() - 1))
         {
-            for (const ObjectId& another_object_id : ForEachObjectInCell(origin_cell_index))
+            const size_t cell_index = cell_y * grid_width + cell_x;
+            for (const ObjectId& object_id : ForEachObjectInCell(cell_index))
             {
-                if (object_id != another_object_id)
-                {
-                    auto& another_object = objects.Get(another_object_id);
-                    const Vec2f axis = object.position - another_object.position;
-                    const float dist_sq = axis.SquaredLength();
-                    if (dist_sq < 1.0f && dist_sq > eps)
-                    {
-                        const float dist = std::sqrt(dist_sq);
-                        const float delta = 0.5f - dist / 2;
-                        const Vec2f col_vec = (axis / dist) * delta;
-                        const auto [ac, bc] = MassCoefficients(object, another_object);
-                        object.position += ac * col_vec;
-                        another_object.position -= bc * col_vec;
-                    }
-                }
-            }
-        };
-
-        const size_t columns_pre_thread = (grid_size_.x() / kNumThreads);
-        size_t begin_x = 1 + columns_pre_thread * thread_index;
-        size_t end_x = begin_x + columns_pre_thread;
-        if (thread_index == kNumThreads - 1)
-        {
-            end_x = grid_size_.x();
-        }
-
-        const size_t grid_width = grid_size_.x();
-        for (const size_t cell_x : std::views::iota(begin_x, end_x))
-        {
-            for (const size_t cell_y : std::views::iota(1uz, grid_size_.y() - 1))
-            {
-                const size_t cell_index = cell_y * grid_width + cell_x;
-                for (const ObjectId& object_id : ForEachObjectInCell(cell_index))
-                {
-                    auto& object = objects.Get(object_id);
-                    solve_collision_between_object_and_cell(object_id, object, cell_index);
-                    solve_collision_between_object_and_cell(object_id, object, cell_index + 1);
-                    solve_collision_between_object_and_cell(object_id, object, cell_index - 1);
-                    solve_collision_between_object_and_cell(object_id, object, cell_index + grid_width);
-                    solve_collision_between_object_and_cell(object_id, object, cell_index + grid_width + 1);
-                    solve_collision_between_object_and_cell(object_id, object, cell_index + grid_width - 1);
-                    solve_collision_between_object_and_cell(object_id, object, cell_index - grid_width);
-                    solve_collision_between_object_and_cell(object_id, object, cell_index - grid_width + 1);
-                    solve_collision_between_object_and_cell(object_id, object, cell_index - grid_width - 1);
-                }
+                auto& object = objects.Get(object_id);
+                solve_collision_between_object_and_cell(object_id, object, cell_index);
+                solve_collision_between_object_and_cell(object_id, object, cell_index + 1);
+                solve_collision_between_object_and_cell(object_id, object, cell_index - 1);
+                solve_collision_between_object_and_cell(object_id, object, cell_index + grid_width);
+                solve_collision_between_object_and_cell(object_id, object, cell_index + grid_width + 1);
+                solve_collision_between_object_and_cell(object_id, object, cell_index + grid_width - 1);
+                solve_collision_between_object_and_cell(object_id, object, cell_index - grid_width);
+                solve_collision_between_object_and_cell(object_id, object, cell_index - grid_width + 1);
+                solve_collision_between_object_and_cell(object_id, object, cell_index - grid_width - 1);
             }
         }
-
-        // notify completion
-        sync_point_.arrive_and_wait();
     }
 }
 
@@ -115,7 +99,8 @@ VerletSolver::UpdateStats VerletSolver::Update()
             {
                 stats.apply_links += edt::MeasureTime(std::bind_front(&VerletSolver::ApplyLinks, this));
                 stats.rebuild_grid += edt::MeasureTime(std::bind_front(&VerletSolver::RebuildGrid, this));
-                stats.solve_collisions += edt::MeasureTime(std::bind_front(&VerletSolver::SolveCollisions, this));
+                stats.solve_collisions +=
+                    edt::MeasureTime(std::bind_front(&CollisionSolver::SolveCollisions, collision_solver_.get()));
                 stats.update_positions += edt::MeasureTime(std::bind_front(&VerletSolver::UpdatePosition, this));
             }
         });
@@ -279,6 +264,31 @@ void VerletSolver::ApplyLinks()
             b.position -= kb * delta * axis;
         }
     }
+}
+
+size_t VerletSolver::GetThreadsCount() const
+{
+    return collision_solver_->GetThreadsCount();
+}
+
+void VerletSolver::SetThreadsCount(size_t count)
+{
+    if (!collision_solver_ || count != GetThreadsCount())
+    {
+        if (count == 0)
+        {
+            collision_solver_ = std::make_unique<CollisionSolverST>(*this);
+        }
+        else
+        {
+            collision_solver_ = std::make_unique<CollisionSolverMT>(*this, count);
+        }
+    }
+}
+
+VerletSolver::~VerletSolver()
+{
+    collision_solver_ = nullptr;
 }
 
 }  // namespace verlet

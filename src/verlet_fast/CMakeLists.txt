@@ -9,6 +9,13 @@ set(module_source_files
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/object.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/object_pool.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/object_pool.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/code/private/physics/collision_solvers/collision_solver.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/code/private/physics/collision_solvers/collision_solver_mt.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/code/private/physics/collision_solvers/collision_solver_mt.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/code/private/physics/collision_solvers/collision_solver_st.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/code/private/physics/collision_solvers/collision_solver_st.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/code/private/physics/verlet_solver.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/code/private/physics/verlet_solver.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/ranges.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/tagged_id_hash.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/tools/delete_objects_tool.cpp
@@ -19,9 +26,7 @@ set(module_source_files
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/tools/spawn_objects_tool.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/tools/tool.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/verlet_app.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/code/private/verlet_app.hpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/code/private/verlet_solver.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/code/private/verlet_solver.hpp)
+    ${CMAKE_CURRENT_SOURCE_DIR}/code/private/verlet_app.hpp)
 add_executable(verlet_fast ${module_source_files})
 set_generic_compiler_options(verlet_fast PRIVATE)
 target_link_libraries(verlet_fast PRIVATE klgl
