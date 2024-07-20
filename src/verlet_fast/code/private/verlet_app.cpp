@@ -1,5 +1,7 @@
 #include "verlet_app.hpp"
 
+#include <thread>
+
 #include "EverydayTools/Time/MeasureTime.hpp"
 #include "imgui_helpers.hpp"
 #include "klgl/opengl/debug/annotations.hpp"
@@ -192,6 +194,20 @@ void VerletApp::RenderGUI()
             }
         }
         GUI_Tools();
+
+        if (ImGui::CollapsingHeader("Collisions Solver"))
+        {
+            size_t count = solver.GetThreadsCount();
+            GuiText("0 threads means collisions will be solved in the main thread");
+            if (ImGuiHelper::SliderUInt(
+                    "Threads Count",
+                    &count,
+                    size_t{0},
+                    size_t{std::thread::hardware_concurrency()}))
+            {
+                solver.SetThreadsCount(count);
+            }
+        }
     }
     ImGui::End();
 

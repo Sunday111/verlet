@@ -10,7 +10,7 @@
 #include "klgl/application.hpp"
 #include "klgl/shader/shader.hpp"
 #include "klgl/window.hpp"
-#include "verlet_solver.hpp"
+#include "physics/verlet_solver.hpp"
 
 namespace verlet
 {
@@ -55,10 +55,16 @@ public:
     void RenderWorld();
 
     template <typename... Args>
+    void GuiText(std::string_view text)
+    {
+        ImGui::TextUnformatted(text.begin(), text.end());
+    }
+
+    template <typename... Args>
+        requires(sizeof...(Args) > 0)
     void GuiText(const fmt::format_string<Args...>& format, Args&&... args)
     {
-        std::string_view formatted = FormatTemp(format, std::forward<Args>(args)...);
-        ImGui::TextUnformatted(formatted.begin(), formatted.end());
+        GuiText(FormatTemp(format, std::forward<Args>(args)...));
     }
 
     void RenderGUI();
