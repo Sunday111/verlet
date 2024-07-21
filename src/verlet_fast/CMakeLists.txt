@@ -8,7 +8,9 @@ set(module_source_files
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/coloring/tick_color/tick_color_strategy.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/coloring/tick_color/tick_color_strategy_velocity.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/coloring/tick_color/tick_color_strategy_velocity.hpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/code/private/imgui_helpers.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/code/private/gui/app_gui.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/code/private/gui/app_gui.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/code/private/gui/imgui_helpers.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/instance_painter.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/instance_painter.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/main.cpp

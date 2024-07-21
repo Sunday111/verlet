@@ -54,24 +54,6 @@ public:
     void Render();
     void RenderWorld();
 
-    template <typename... Args>
-    void GuiText(std::string_view text)
-    {
-        ImGui::TextUnformatted(text.begin(), text.end());
-    }
-
-    template <typename... Args>
-        requires(sizeof...(Args) > 0)
-    void GuiText(const fmt::format_string<Args...>& format, Args&&... args)
-    {
-        GuiText(FormatTemp(format, std::forward<Args>(args)...));
-    }
-
-    void RenderGUI();
-    void GUI_Tools();
-    void GUI_SpawnColors();
-    void GUI_TickColors();
-
     [[nodiscard]] static constexpr Vec2f TransformPos(const Mat3f& mat, const Vec2f& pos)
     {
         Vec3f v3 = mat.MatMul(Vec3f{{pos.x(), pos.y(), 1.f}});
@@ -97,25 +79,16 @@ public:
     }
 
     static constexpr edt::FloatRange<float> kMinSideRange{-100, 100};
-    edt::FloatRange2D<float> world_range{.x = {-100.f, 100.f}, .y = {-100.f, 100.f}};
+    edt::FloatRange2D<float> world_range{.x = kMinSideRange, .y = kMinSideRange};
     VerletSolver solver{};
-
-    float last_emit_time = 0.0;
 
     // Rendering
     std::unique_ptr<klgl::Shader> shader_;
 
-    template <typename... Args>
-    std::string_view FormatTemp(const fmt::format_string<Args...>& fmt, Args&&... args)
-    {
-        temp_string_for_formatting_.clear();
-        fmt::format_to(std::back_inserter(temp_string_for_formatting_), fmt, std::forward<Args>(args)...);
-        return temp_string_for_formatting_;
-    }
-
-    std::string temp_string_for_formatting_{};
     InstancedPainter circle_painter_{};
 
+    // emitter
+    float last_emit_time = 0.0;
     bool enable_emitter_ = false;
     size_t emitter_max_objects_count_ = 10000;
 
