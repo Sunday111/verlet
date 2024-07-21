@@ -11,8 +11,9 @@ struct ObjectIdTag;
 using ObjectId = edt::TaggedIdentifier<ObjectIdTag, size_t>;
 static constexpr auto kInvalidObjectId = ObjectId{};
 
-struct VerletObject
+class VerletObject
 {
+public:
     VerletObject() = default;
     VerletObject(const VerletObject&) = delete;
 

@@ -3,6 +3,8 @@
 #include <thread>
 
 #include "EverydayTools/Time/MeasureTime.hpp"
+#include "coloring/spawn_color/spawn_color_strategy_rainbow.hpp"
+#include "coloring/tick_color/tick_color_strategy_velocity.hpp"
 #include "imgui_helpers.hpp"
 #include "klgl/opengl/debug/annotations.hpp"
 #include "klgl/opengl/gl_api.hpp"
@@ -20,6 +22,7 @@ VerletApp::~VerletApp() = default;
 void VerletApp::Initialize()
 {
     Super::Initialize();
+    spawn_color_strategy_ = std::make_unique<SpawnColorStrategyRainbow>(*this);
     InitializeRendering();
 }
 
@@ -29,7 +32,7 @@ void VerletApp::InitializeRendering()
 
     // klgl::OpenGl::SetClearColor(Vec4f{255, 245, 153, 255} / 255.f);
     klgl::OpenGl::SetClearColor({});
-    GetWindow().SetSize(1000, 1000);
+    GetWindow().SetSize(1920, 1080);
     GetWindow().SetTitle("Verlet");
 
     const auto content_dir = GetExecutableDir() / "content";
@@ -97,26 +100,25 @@ void VerletApp::UpdateSimulation()
     // Emitter
     if (enable_emitter_ && solver.objects.ObjectsCount() <= emitter_max_objects_count_)
     {
+        auto color_fn = spawn_color_strategy_->GetColorFunction();
         for (uint32_t i{40}; i--;)
         {
-            const size_t idx = solver.objects.ObjectsCount();
             const float y = 50.f + 1.02f * static_cast<float>(i);
-            const auto color = edt::Math::GetRainbowColors(static_cast<float>(idx) / 4000);
 
             {
                 auto [aid, object] = solver.objects.Alloc();
                 object.position = {0.6f, y};
                 object.old_position = {0.4f, y};
-                object.color = color;
                 object.movable = true;
+                object.color = color_fn(object);
             }
 
             {
                 auto [bid, object] = solver.objects.Alloc();
                 object.position = {-0.6f, y};
                 object.old_position = {-0.4f, y};
-                object.color = color;
                 object.movable = true;
+                object.color = color_fn(object);
             }
         }
     }
@@ -132,6 +134,12 @@ void VerletApp::Render()
 
 void VerletApp::RenderWorld()
 {
+    ObjectColorFunction color_function = [](const VerletObject& object)
+    {
+        return object.color;
+    };
+    if (tick_color_strategy_) color_function = tick_color_strategy_->GetColorFunction();
+
     const klgl::ScopeAnnotation annotation("Render World");
 
     circle_painter_.num_circles_ = 0;
@@ -142,7 +150,7 @@ void VerletApp::RenderWorld()
     {
         const auto screen_pos = TransformPos(world_to_screen, object.position);
         const auto screen_size = TransformVector(world_to_screen, object.GetRadius() + Vec2f{});
-        const auto& color = object.color;
+        const auto& color = color_function(object);
         circle_painter_.SetCircle(next_instance_index++, screen_pos, color, screen_size);
     };
 
@@ -194,6 +202,8 @@ void VerletApp::RenderGUI()
             }
         }
         GUI_Tools();
+        GUI_SpawnColors();
+        GUI_TickColors();
 
         if (ImGui::CollapsingHeader("Collisions Solver"))
         {
@@ -228,8 +238,6 @@ void VerletApp::RenderGUI()
 
 void VerletApp::GUI_Tools()
 {
-    ImGuiTabBarFlags tab_bar_flags = ImGuiTabBarFlags_None | ImGuiTabBarFlags_DrawSelectedOverline;
-
     auto use_tool = [&](const ToolType tool_type)
     {
         if (!tool_ || tool_->GetToolType() != tool_type)
@@ -257,6 +265,7 @@ void VerletApp::GUI_Tools()
         }
     };
 
+    ImGuiTabBarFlags tab_bar_flags = ImGuiTabBarFlags_None | ImGuiTabBarFlags_DrawSelectedOverline;
     if (ImGui::BeginTabBar("Tools", tab_bar_flags))
     {
         if (ImGui::BeginTabItem("Spawn"))
@@ -264,13 +273,11 @@ void VerletApp::GUI_Tools()
             use_tool(ToolType::SpawnObjects);
             ImGui::EndTabItem();
         }
-
         if (ImGui::BeginTabItem("Move"))
         {
             use_tool(ToolType::MoveObjects);
             ImGui::EndTabItem();
         }
-
         if (ImGui::BeginTabItem("Delete"))
         {
             use_tool(ToolType::DeleteObjects);
@@ -278,6 +285,77 @@ void VerletApp::GUI_Tools()
         }
 
         ImGui::EndTabBar();
+    }
+}
+
+void VerletApp::GUI_SpawnColors()
+{
+    auto use = [&](const cppreflection::Type* type)
+    {
+        if (&spawn_color_strategy_->GetType() != type)
+        {
+            if (type == cppreflection::GetTypeInfo<SpawnColorStrategyRainbow>())
+            {
+                spawn_color_strategy_ = std::make_unique<SpawnColorStrategyRainbow>(*this);
+            }
+        }
+
+        spawn_color_strategy_->DrawGUI();
+    };
+
+    if (ImGui::CollapsingHeader("Spawn Color"))
+    {
+        ImGuiTabBarFlags tab_bar_flags = ImGuiTabBarFlags_None | ImGuiTabBarFlags_DrawSelectedOverline;
+        if (ImGui::BeginTabBar("Spawn Color", tab_bar_flags))
+        {
+            if (ImGui::BeginTabItem("Rainbow"))
+            {
+                use(cppreflection::GetTypeInfo<SpawnColorStrategyRainbow>());
+                ImGui::EndTabItem();
+            }
+
+            ImGui::EndTabBar();
+        }
+    }
+}
+
+void VerletApp::GUI_TickColors()
+{
+    auto use = [&](const cppreflection::Type* type)
+    {
+        if (!tick_color_strategy_ || &tick_color_strategy_->GetType() != type)
+        {
+            if (type == cppreflection::GetTypeInfo<TickColorStrategyVelocity>())
+            {
+                tick_color_strategy_ = std::make_unique<TickColorStrategyVelocity>(*this);
+            }
+        }
+
+        if (tick_color_strategy_)
+        {
+            tick_color_strategy_->DrawGUI();
+        }
+    };
+
+    if (ImGui::CollapsingHeader("Tick Color"))
+    {
+        ImGuiTabBarFlags tab_bar_flags = ImGuiTabBarFlags_None | ImGuiTabBarFlags_DrawSelectedOverline;
+        if (ImGui::BeginTabBar("Tick Color", tab_bar_flags))
+        {
+            if (ImGui::BeginTabItem("None"))
+            {
+                tick_color_strategy_ = nullptr;
+                ImGui::EndTabItem();
+            }
+
+            if (ImGui::BeginTabItem("Velocity"))
+            {
+                use(cppreflection::GetTypeInfo<TickColorStrategyVelocity>());
+                ImGui::EndTabItem();
+            }
+
+            ImGui::EndTabBar();
+        }
     }
 }
 }  // namespace verlet

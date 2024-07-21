@@ -1,6 +1,13 @@
 cmake_minimum_required(VERSION 3.20)
 include(set_compiler_options)
 set(module_source_files
+    ${CMAKE_CURRENT_SOURCE_DIR}/code/private/coloring/object_color_function.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/code/private/coloring/spawn_color/spawn_color_strategy.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/code/private/coloring/spawn_color/spawn_color_strategy_rainbow.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/code/private/coloring/spawn_color/spawn_color_strategy_rainbow.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/code/private/coloring/tick_color/tick_color_strategy.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/code/private/coloring/tick_color/tick_color_strategy_velocity.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/code/private/coloring/tick_color/tick_color_strategy_velocity.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/imgui_helpers.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/instance_painter.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/instance_painter.hpp
