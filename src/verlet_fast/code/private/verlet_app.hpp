@@ -16,10 +16,14 @@ namespace verlet
 {
 
 class Tool;
+class SpawnColorStrategy;
+class TickColorStrategy;
 
 class VerletApp : public klgl::Application
 {
 public:
+    using Super = klgl::Application;
+
     struct RenderPerfStats
     {
         std::chrono::nanoseconds total;
@@ -31,10 +35,6 @@ public:
         VerletSolver::UpdateStats sim_update;
         RenderPerfStats render;
     };
-
-    using Clock = std::chrono::high_resolution_clock;
-    using TimePoint = typename Clock::time_point;
-    using Super = klgl::Application;
 
     VerletApp();
     ~VerletApp() override;
@@ -69,6 +69,8 @@ public:
 
     void RenderGUI();
     void GUI_Tools();
+    void GUI_SpawnColors();
+    void GUI_TickColors();
 
     [[nodiscard]] static constexpr Vec2f TransformPos(const Mat3f& mat, const Vec2f& pos)
     {
@@ -118,6 +120,9 @@ public:
     size_t emitter_max_objects_count_ = 10000;
 
     std::unique_ptr<Tool> tool_;
+    std::unique_ptr<SpawnColorStrategy> spawn_color_strategy_;
+    std::unique_ptr<TickColorStrategy> tick_color_strategy_;
+
     PerfStats perf_stats_{};
 };
 
