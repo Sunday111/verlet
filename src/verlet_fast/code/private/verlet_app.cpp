@@ -82,8 +82,10 @@ void VerletApp::UpdateWorldRange()
         }
     };
 
-    adjust_range(world_range.x, solver.sim_area_.x);
-    adjust_range(world_range.y, solver.sim_area_.y);
+    auto sim_area = solver.GetSimArea();
+    adjust_range(world_range.x, sim_area.x);
+    adjust_range(world_range.y, sim_area.y);
+    solver.SetSimArea(sim_area);
 }
 
 void VerletApp::UpdateSimulation()

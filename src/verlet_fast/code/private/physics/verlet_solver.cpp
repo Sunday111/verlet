@@ -4,6 +4,8 @@
 #include "collision_solvers/collision_solver_mt.hpp"
 #include "collision_solvers/collision_solver_st.hpp"
 #include "fmt/ranges.h"  // IWYU pragma: keep
+#include "klgl/error_handling.hpp"
+#include "klgl/template/on_scope_leave.hpp"
 
 namespace verlet
 {
@@ -71,18 +73,18 @@ void VerletSolver::SolveCollisions(const size_t thread_index, size_t threads_cou
 
 void VerletSolver::RebuildGrid()
 {
-    // Clear grid
-    grid_size_ = Vec2<size_t>{2, 2} + sim_area_.Extent().Cast<size_t>() / cell_size;
-    const size_t cells_count = grid_size_.x() * grid_size_.y();
-    cell_obj_counts_.resize(cells_count);
-    cells.resize(cells_count);
+    if (sim_area_changed_)
+    {
+        UpdateGridSize();
+        sim_area_changed_ = false;
+    }
 
     std::ranges::fill(cell_obj_counts_, uint8_t{0});
 
     for (auto [id, object] : objects.IdentifiersAndObjects())
     {
         const auto cell_index = LocationToCellIndex(object.position);
-        auto& cell = cells[cell_index];
+        auto& cell = cells_[cell_index];
         auto& cell_sz = cell_obj_counts_[cell_index];
         cell.objects[cell_sz % VerletWorldCell::kCapacity] = id;
         cell_sz = std::min<uint8_t>(cell_sz + 1, VerletWorldCell::kCapacity);
@@ -91,6 +93,8 @@ void VerletSolver::RebuildGrid()
 
 VerletSolver::UpdateStats VerletSolver::Update()
 {
+    update_in_progress_ = true;
+    const auto scope_leave_ = klgl::OnScopeLeave([this] { update_in_progress_ = false; });
     UpdateStats stats{};
     stats.total = edt::MeasureTime(
         [&]
@@ -286,9 +290,37 @@ void VerletSolver::SetThreadsCount(size_t count)
     }
 }
 
+void VerletSolver::SetSimArea(const edt::FloatRange2Df& sim_area)
+{
+    klgl::ErrorHandling::Ensure(!update_in_progress_, "Attempt to change simulation area while update is in progress");
+    if (sim_area.Min() != sim_area_.Min() || sim_area.Max() != sim_area_.Max())
+    {
+        sim_area_ = sim_area;
+        sim_area_changed_ = true;
+    }
+}
+
+void VerletSolver::UpdateGridSize()
+{
+    grid_size_ = Vec2<size_t>{2, 2} + sim_area_.Extent().Cast<size_t>() / cell_size;
+    const size_t cells_count = grid_size_.x() * grid_size_.y();
+    cell_obj_counts_.resize(cells_count);
+    cells_.resize(cells_count);
+}
+
 VerletSolver::~VerletSolver()
 {
     collision_solver_ = nullptr;
+}
+
+void VerletSolver::CreateLink(ObjectId from, ObjectId to, float target_distance)
+{
+    linked_to[from].push_back({
+        .target_distance = target_distance,
+        .other = to,
+    });
+
+    linked_by[to].push_back(from);
 }
 
 }  // namespace verlet

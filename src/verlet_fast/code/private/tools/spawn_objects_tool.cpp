@@ -24,11 +24,7 @@ void SpawnObjectsTool::Tick()
             auto& previous_object = app_.solver.objects.Get(previous_spawned_);
 
             const float target_distance = previous_object.GetRadius() + new_object.GetRadius();
-            app_.solver.linked_to[spawned_object_id].push_back({
-                .target_distance = target_distance,
-                .other = previous_spawned_,
-            });
-            app_.solver.linked_by[previous_spawned_].push_back(spawned_object_id);
+            app_.solver.CreateLink(spawned_object_id, previous_spawned_, target_distance);
 
             // if spawned object is movable spawn it nearby the object it links to
             if (new_object.movable)

@@ -57,15 +57,10 @@ public:
     [[nodiscard]] auto ForEachObjectInCell(const size_t cell_index) const
     {
         const uint8_t count = cell_obj_counts_[cell_index];
-        const auto& cell = cells[cell_index];
-        return std::views::iota(uint8_t{0}, count) | std::views::transform(
-                                                         [&](const uint8_t i) -> const ObjectId&
-                                                         {
-                                                             return cell.objects[i];
-                                                         });
+        const auto& cell = cells_[cell_index];
+        return std::views::iota(uint8_t{0}, count) |
+               std::views::transform([&](const uint8_t i) -> const ObjectId& { return cell.objects[i]; });
     }
-
-    void SolveCollisions(const size_t thread_index, const size_t threads_count);
 
     [[nodiscard]] size_t LocationToCellIndex(const Vec2f& location) const
     {
@@ -106,28 +101,42 @@ public:
         }
     };
 
+    UpdateStats Update();
     void ApplyLinks();
     void RebuildGrid();
-    UpdateStats Update();
+    void SolveCollisions(const size_t thread_index, const size_t threads_count);
     void UpdatePosition();
+
     void DeleteObject(ObjectId id);
     void StabilizeChain(ObjectId first);
+    void CreateLink(ObjectId from, ObjectId to, float target_distance);
 
     size_t GetThreadsCount() const;
     void SetThreadsCount(size_t count);
 
-    static std::tuple<float, float> MassCoefficients(const VerletObject& a, const VerletObject& b);
-
-    edt::FloatRange2Df sim_area_ = {{-100, 100}, {-100, 100}};
-    Vec2<size_t> grid_size_;
-
-    ankerl::unordered_dense::map<ObjectId, std::vector<VerletLink>, TaggedIdentifierHash<ObjectId>> linked_to;
-    ankerl::unordered_dense::map<ObjectId, std::vector<ObjectId>, TaggedIdentifierHash<ObjectId>> linked_by;
+    [[nodiscard]] const edt::FloatRange2Df& GetSimArea() const { return sim_area_; }
+    void SetSimArea(const edt::FloatRange2Df& sim_area);
 
     ObjectPool objects;
-    std::vector<VerletWorldCell> cells;
+
+private:
+    static std::tuple<float, float> MassCoefficients(const VerletObject& a, const VerletObject& b);
+    void UpdateGridSize();
+
+private:
+    edt::FloatRange2Df sim_area_ = {{-100, 100}, {-100, 100}};
+    bool sim_area_changed_ = true;
+
+    bool update_in_progress_ = false;
+    Vec2<size_t> grid_size_;
+
+    std::vector<VerletWorldCell> cells_;
     std::vector<uint8_t> cell_obj_counts_;
     std::unique_ptr<CollisionSolver> collision_solver_;
+
+    // links
+    ankerl::unordered_dense::map<ObjectId, std::vector<VerletLink>, TaggedIdentifierHash<ObjectId>> linked_to;
+    ankerl::unordered_dense::map<ObjectId, std::vector<ObjectId>, TaggedIdentifierHash<ObjectId>> linked_by;
 };
 
 }  // namespace verlet

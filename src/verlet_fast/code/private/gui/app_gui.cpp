@@ -32,21 +32,6 @@ void AppGUI::Render()
         CollisionsSolver();
     }
     ImGui::End();
-
-    auto& solver = app_->solver;
-    if (ImGui::Begin("Cells"))
-    {
-        for (const auto& [cell_index, cell_objects_count] : Enumerate(solver.cell_obj_counts_))
-        {
-            if (cell_objects_count != 0)
-            {
-                const size_t cell_x = cell_index % solver.grid_size_.x();
-                const size_t cell_y = cell_index / solver.grid_size_.x();
-                GuiText("Cell {} {}: {}", cell_x, cell_y, cell_objects_count);
-            }
-        }
-    }
-    ImGui::End();
 }
 
 void AppGUI::Perf()
