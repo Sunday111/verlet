@@ -4,6 +4,6 @@
     "cloned_modules_dir": "cloned_modules",
     "enable_lto_globally": true,
     "cpp": {
-        "standard": "26"
+        "standard": "23"
     }
 }
