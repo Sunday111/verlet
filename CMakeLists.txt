@@ -11,16 +11,20 @@ set(YAE_PROJECT_ROOT "${CMAKE_CURRENT_SOURCE_DIR}")
 set(CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH};${YAE_ROOT}/cmake")
 
 
+include(yae_lto)
+enable_lto_globally()
+
+
 # ---------------------------- External Dependencies -----------------------------
 
 # https://github.com/Sunday111/EverydayTools for_yae
 option(EDT_WITH_TESTS "" ON)
 add_subdirectory(cloned_modules/edt SYSTEM)
 
-# https://github.com/google/googletest v1.14.0
+# https://github.com/google/googletest v1.15.0
 option(INSTALL_GTEST "" OFF)
 option(BUILD_GMOCK "" OFF)
-add_subdirectory(cloned_modules/google/googletest/1_14_0 SYSTEM)
+add_subdirectory(cloned_modules/google/googletest/1_15_0 SYSTEM)
 
 # https://github.com/google/benchmark v1.8.3
 option(BENCHMARK_ENABLE_TESTING "" OFF)
