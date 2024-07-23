@@ -2,7 +2,6 @@
 
 #include <imgui.h>
 
-#include "ranges.hpp"
 #include "verlet_app.hpp"
 
 namespace verlet
@@ -22,14 +21,12 @@ void MoveObjectsTool::Tick()
 
     if (ImGui::IsMouseDown(ImGuiMouseButton_Left) && !ImGui::GetIO().WantCaptureMouse)
     {
-        if (!lmb_hold)
+        if (!std::exchange(lmb_hold, true))
         {
-            lmb_hold = true;
-            if (auto opt_index = FindObject(get_mouse_pos()))
+            if (auto id = FindObject(get_mouse_pos()); id.IsValid())
             {
-                size_t index = *opt_index;
-                auto& object = app_.solver.objects[index];
-                held_object_ = {index, object.movable};
+                auto& object = app_.solver.objects.Get(id);
+                held_object_ = {id, object.movable};
                 object.movable = false;
             }
         }
@@ -41,7 +38,7 @@ void MoveObjectsTool::Tick()
 
     if (held_object_)
     {
-        auto& object = app_.solver.objects[held_object_->index];
+        auto& object = app_.solver.objects.Get(held_object_->index);
         object.position = get_mouse_pos();
     }
 }
@@ -49,7 +46,6 @@ void MoveObjectsTool::Tick()
 void MoveObjectsTool::DrawGUI()
 {
     ImGui::Text("Click and hold with left mouse button on object to move it");  // NOLINT
-    ImGui::Checkbox("Find closest to cursor", &find_closes_one_);
 }
 
 void MoveObjectsTool::ReleaseObject(const Vec2f& mouse_position)
@@ -57,7 +53,7 @@ void MoveObjectsTool::ReleaseObject(const Vec2f& mouse_position)
     lmb_hold = false;
     if (held_object_)
     {
-        auto& object = app_.solver.objects[held_object_->index];
+        auto& object = app_.solver.objects.Get(held_object_->index);
         object.position = mouse_position;
         object.old_position = object.position;
         object.movable = held_object_->was_movable;
@@ -65,30 +61,21 @@ void MoveObjectsTool::ReleaseObject(const Vec2f& mouse_position)
     }
 }
 
-std::optional<size_t> MoveObjectsTool::FindObject(const Vec2f& mouse_position) const
+ObjectId MoveObjectsTool::FindObject(const Vec2f& mouse_position) const
 {
     float prev_distance_sq{};
-    std::optional<size_t> opt_index;
-    for (auto [index, object] : Enumerate(app_.solver.objects))
+    ObjectId result = kInvalidObjectId;
+
+    for (const auto [id, object] : app_.solver.objects.IdentifiersAndObjects())
     {
         const float distance_sq = (object.position - mouse_position).SquaredLength();
-        if (distance_sq < select_radius_)
+        if (!result.IsValid() || distance_sq < prev_distance_sq)
         {
-            if (find_closes_one_)
-            {
-                if (!opt_index || distance_sq < prev_distance_sq)
-                {
-                    opt_index = index;
-                }
-            }
-            else
-            {
-                opt_index.emplace(index);
-                break;
-            }
+            result = id;
+            prev_distance_sq = distance_sq;
         }
     }
 
-    return opt_index;
+    return result;
 }
 }  // namespace verlet

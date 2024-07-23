@@ -12,32 +12,35 @@ void SpawnObjectsTool::Tick()
     if (ImGui::IsMouseClicked(ImGuiMouseButton_Left) && !ImGui::GetIO().WantCaptureMouse)
     {
         const auto mouse_position = app_.GetMousePositionInWorldCoordinates();
-        app_.solver.objects.push_back({
-            .position = mouse_position,
-            .old_position = mouse_position,
-            .color = edt::Math::GetRainbowColors(app_.GetTimeSeconds()),
-            .movable = true,
-        });
 
-        auto& new_object = app_.solver.objects.back();
+        auto [spawned_object_id, new_object] = app_.solver.objects.Alloc();
+        new_object.position = mouse_position;
+        new_object.old_position = mouse_position;
+        new_object.color = edt::Math::GetRainbowColors(app_.GetTimeSeconds());
         new_object.movable = spawn_movable_objects_;
-        if (link_spawned_to_previous_ && app_.solver.objects.size() > 1)
+
+        if (link_spawned_to_previous_ && previous_spawned_.IsValid())
         {
-            const size_t new_object_index = app_.solver.objects.size() - 1;
-            const size_t previous_index = app_.solver.objects.size() - 2;
-            auto& previous_object = app_.solver.objects[previous_index];
-            app_.solver.links.push_back(
-                {previous_object.GetRadius() + new_object.GetRadius(),
-                 ObjectId::FromValue(previous_index),
-                 ObjectId::FromValue(new_object_index)});
+            auto& previous_object = app_.solver.objects.Get(previous_spawned_);
+
+            const float target_distance = previous_object.GetRadius() + new_object.GetRadius();
+            app_.solver.CreateLink(spawned_object_id, previous_spawned_, target_distance);
+
+            // if spawned object is movable spawn it nearby the object it links to
             if (new_object.movable)
             {
                 auto dir = (new_object.position - previous_object.position).Normalized();
-                new_object.position =
-                    previous_object.position + dir * (previous_object.GetRadius() + new_object.GetRadius());
+                new_object.position = previous_object.position + dir * target_distance * 1.001f;
                 new_object.old_position = new_object.position;
             }
+
+            if (stabilize_chain_)
+            {
+                app_.solver.StabilizeChain(spawned_object_id);
+            }
         }
+
+        previous_spawned_ = spawned_object_id;
     }
 }
 
@@ -46,6 +49,11 @@ void SpawnObjectsTool::DrawGUI()
     ImGui::Text("Use left mouse button to spawn objects");  // NOLINT
     ImGui::Checkbox("Spawn movable objects", &spawn_movable_objects_);
     ImGui::Checkbox("Link link to previous", &link_spawned_to_previous_);
+
+    if (link_spawned_to_previous_)
+    {
+        ImGui::Checkbox("Stabilize chain", &stabilize_chain_);
+    }
 }
 
 }  // namespace verlet

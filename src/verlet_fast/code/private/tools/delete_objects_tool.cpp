@@ -2,6 +2,7 @@
 
 #include <imgui.h>
 
+#include "fmt/ranges.h"  // IWYU pragma: keep
 #include "verlet_app.hpp"
 
 namespace verlet
@@ -10,17 +11,23 @@ void DeleteObjectsTool::Tick()
 {
     if (ImGui::IsMouseClicked(ImGuiMouseButton_Left) && !ImGui::GetIO().WantCaptureMouse)
     {
+        std::vector<ObjectId> to_delete;
         const Vec2f mouse_pos = app_.GetMousePositionInWorldCoordinates();
-        const auto [erase_begin, erase_end] = std::ranges::remove_if(
-            app_.solver.objects,
-            [&](const VerletObject& object)
-            {
-                return (object.position - mouse_pos).SquaredLength() <
-                       edt::Math::Sqr(delete_radius_ + object.GetRadius());
-            });
-        app_.solver.objects.erase(erase_begin, erase_end);
+
+        auto get_id = [](const std::tuple<ObjectId, VerletObject&>& kv)
+        {
+            return std::get<0>(kv);
+        };
+
+        auto filter_by_distance = VerletSolver::ObjectFilters::InArea(mouse_pos, delete_radius_);
+        auto delete_object = std::bind_front(&VerletSolver::DeleteObject, &app_.solver);
+
+        std::ranges::for_each(
+            app_.solver.objects.IdentifiersAndObjects() | filter_by_distance | std::views::transform(get_id),
+            delete_object);
     }
 }
+
 void DeleteObjectsTool::DrawGUI()
 {
     ImGui::Text("Left click to delete objects");  // NOLINT

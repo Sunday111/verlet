@@ -4,7 +4,7 @@
 
 namespace verlet
 {
-template <std::ranges::random_access_range Range>
+template <typename Range>
 [[nodiscard]] constexpr inline auto RangeIndices(const Range& range)
 {
     return std::views::iota(size_t{0}, std::ranges::size(range));

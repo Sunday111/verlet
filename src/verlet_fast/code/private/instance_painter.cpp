@@ -4,7 +4,6 @@
 
 #include "klgl/mesh/procedural_mesh_generator.hpp"
 #include "mesh_vertex.hpp"
-#include "size_t_suffix.hpp"
 #include "ranges.hpp"
 
 namespace verlet
