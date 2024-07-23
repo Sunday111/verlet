@@ -23,6 +23,8 @@ void InstancedPainter::Render()
     mesh_->Bind();
     for (auto [batch_index, batch] : Enumerate(batches_))
     {
+        if (num_circles_ <= batch_index * batch.kBatchSize) break;
+
         // number of circles initialized for the current batch
         const size_t num_locally_used = std::min(num_circles_ - batch_index * batch.kBatchSize, batch.kBatchSize);
 

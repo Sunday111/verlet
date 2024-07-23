@@ -1,10 +1,13 @@
 #include "verlet_app.hpp"
 
 #include "EverydayTools/Time/MeasureTime.hpp"
+#include "imgui_helpers.hpp"
 #include "klgl/opengl/debug/annotations.hpp"
 #include "klgl/opengl/gl_api.hpp"
 #include "ranges.hpp"
-#include "tool.hpp"
+#include "tools/delete_objects_tool.hpp"
+#include "tools/move_objects_tool.hpp"
+#include "tools/spawn_objects_tool.hpp"
 
 namespace verlet
 {
@@ -15,7 +18,6 @@ VerletApp::~VerletApp() = default;
 void VerletApp::Initialize()
 {
     Super::Initialize();
-    solver.Reserve(3000);
     InitializeRendering();
 }
 
@@ -85,21 +87,19 @@ void VerletApp::UpdateWorldRange()
 
 void VerletApp::UpdateSimulation()
 {
-    const float time = GetTimeSeconds();
-
     if (tool_)
     {
         tool_->Tick();
     }
 
     // Emitter
-    if (enable_emitter_ && solver.objects.size() < 120000 && time - last_emit_time > 0.005f)
+    if (enable_emitter_ && solver.objects.size() <= emitter_max_objects_count_)
     {
-        for (uint32_t i{20}; i--;)
+        for (uint32_t i{40}; i--;)
         {
             const size_t id = solver.objects.size();
-            const float y = 79.f + 1.01f * static_cast<float>(i);
-            const auto color = edt::Math::GetRainbowColors(static_cast<float>(id) / 10000);
+            const float y = 50.f + 1.02f * static_cast<float>(i);
+            const auto color = edt::Math::GetRainbowColors(static_cast<float>(id) / 4000);
             solver.objects.push_back({
                 .position = {0.6f, y},
                 .old_position = {0.4f, y},
@@ -128,6 +128,7 @@ void VerletApp::RenderWorld()
 {
     const klgl::ScopeAnnotation annotation("Render World");
 
+    circle_painter_.num_circles_ = 0;
     const edt::FloatRange2D<float> screen_range{.x = {-1, 1}, .y = {-1, 1}};
     const Mat3f world_to_screen = edt::Math::MakeTransform(world_range, screen_range);
 
@@ -172,7 +173,14 @@ void VerletApp::RenderGUI()
         GuiText("  Update positions {}", to_flt_ms(perf_stats_.sim_update.update_positions));
         GuiText("Render {}", to_flt_ms(perf_stats_.render.total));
         GuiText("  Set Circle Loop {}", to_flt_ms(perf_stats_.render.set_circle_loop));
-        ImGui::Checkbox("Enable emitter", &enable_emitter_);
+        if (ImGui::CollapsingHeader("Emitter"))
+        {
+            ImGui::Checkbox("Enabled", &enable_emitter_);
+            if (enable_emitter_)
+            {
+                ImGuiHelper::SliderUInt("Max objects", &emitter_max_objects_count_, 0uz, 150'000uz);
+            }
+        }
         GUI_Tools();
     }
     ImGui::End();
@@ -208,6 +216,9 @@ void VerletApp::GUI_Tools()
             case ToolType::MoveObjects:
                 tool_ = std::make_unique<MoveObjectsTool>(*this);
                 break;
+            case ToolType::DeleteObjects:
+                tool_ = std::make_unique<DeleteObjectsTool>(*this);
+                break;
             default:
                 tool_ = nullptr;
                 break;
@@ -237,7 +248,6 @@ void VerletApp::GUI_Tools()
         if (ImGui::BeginTabItem("Delete"))
         {
             use_tool(ToolType::DeleteObjects);
-            ImGui::Text("Left click to delete objects");  // NOLINT
             ImGui::EndTabItem();
         }
 
