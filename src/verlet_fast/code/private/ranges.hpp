@@ -4,10 +4,10 @@
 
 namespace verlet
 {
-template <typename Range>
+template <std::ranges::random_access_range Range>
 [[nodiscard]] constexpr inline auto RangeIndices(const Range& range)
 {
-    return std::views::iota(size_t{0}, std::ranges::size(range));
+    return std::views::iota(0uz, std::ranges::size(range));
 }
 
 template <std::ranges::random_access_range Range>
@@ -44,11 +44,8 @@ T0 vmin(T0&& val1, T1&& val2, Ts&&... vs)
 template <std::ranges::random_access_range... Range>
 [[nodiscard]] constexpr inline auto Zip(Range&... range)
 {
-    return std::views::iota(size_t{0}, vmin(range.size()...)) | std::views::transform(
-                                                              [&](const auto& index)
-                                                              {
-                                                                  return std::forward_as_tuple(range[index]...);
-                                                              });
+    return std::views::iota(0uz, vmin(range.size()...)) |
+           std::views::transform([&](const auto& index) { return std::forward_as_tuple(range[index]...); });
 }
 
 }  // namespace verlet

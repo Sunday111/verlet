@@ -196,7 +196,7 @@ void AppGUI::CollisionsSolver()
     GuiText("0 threads means collisions will be solved in the main thread");
     ImGuiHelper::SliderGetterSetter(
         "Threads Count",
-        size_t{0},
+        0uz,
         size_t{std::thread::hardware_concurrency()},
         std::bind_front(&VerletSolver::GetThreadsCount, &app_->solver),
         std::bind_front(&VerletSolver::SetThreadsCount, &app_->solver));

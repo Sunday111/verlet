@@ -27,7 +27,7 @@ public:
     void GuiText(std::string_view text)
     {
         auto a = text.data();
-        auto b = a + text.size();
+        auto b = a + text.size();  // NOLINT
         ImGui::TextUnformatted(a, b);
     }
 
