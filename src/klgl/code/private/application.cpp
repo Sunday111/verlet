@@ -243,7 +243,6 @@ const std::filesystem::path& Application::GetExecutableDir() const
 float Application::GetTimeSeconds() const
 {
     return state_->GetRelativeTimeSeconds();
-    return State::DurationToSeconds(State::GetTime() - state_->app_start_time_);
 }
 
 float Application::GetCurrentFrameStartTime() const

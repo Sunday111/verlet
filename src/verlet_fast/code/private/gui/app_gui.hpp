@@ -26,7 +26,9 @@ public:
     template <typename... Args>
     void GuiText(std::string_view text)
     {
-        ImGui::TextUnformatted(text.begin(), text.end());
+        auto a = text.data();
+        auto b = a + text.size();  // NOLINT
+        ImGui::TextUnformatted(a, b);
     }
 
     template <typename... Args>
