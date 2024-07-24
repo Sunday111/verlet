@@ -18,10 +18,7 @@ public:
     virtual void DrawGUI() {}
 
 protected:
-    VerletApp& GetApp() const
-    {
-        return *app_;
-    }
+    VerletApp& GetApp() const { return *app_; }
 
 private:
     VerletApp* app_;

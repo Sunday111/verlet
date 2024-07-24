@@ -21,10 +21,7 @@ public:
     ~MoveObjectsTool() override;
     void Tick() override;
     void DrawGUI() override;
-    ToolType GetToolType() const override
-    {
-        return ToolType::MoveObjects;
-    }
+    [[nodiscard]] ToolType GetToolType() const override { return ToolType::MoveObjects; }
 
 private:
     void ReleaseObject(const Vec2f& mouse_position);

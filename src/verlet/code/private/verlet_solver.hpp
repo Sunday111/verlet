@@ -11,7 +11,7 @@ using namespace edt::lazy_matrix_aliases;  // NOLINT
 template <typename T, auto extent = std::dynamic_extent>
 [[nodiscard]] constexpr inline auto IndicesView(std::span<T, extent> span)
 {
-    return std::views::iota(0uz, span.size());
+    return std::views::iota(size_t{0}, span.size());
 }
 
 struct VerletObject
@@ -41,7 +41,7 @@ struct VerletSolver
     void Update(std::span<VerletObject> objects, std::span<VerletLink> links, const float dt) const
     {
         const float sub_dt = dt / static_cast<float>(sub_steps);
-        for ([[maybe_unused]] const size_t index : std::views::iota(0uz, sub_steps))
+        for ([[maybe_unused]] const size_t index : std::views::iota(size_t{0}, sub_steps))
         {
             ApplyConstraint(objects);
             ApplyLinks(objects, links);

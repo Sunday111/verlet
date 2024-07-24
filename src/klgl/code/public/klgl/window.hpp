@@ -18,27 +18,12 @@ public:
     void MakeContextCurrent();
 
     [[nodiscard]] bool ShouldClose() const noexcept;
-    [[nodiscard]] uint32_t GetWidth() const noexcept
-    {
-        return width_;
-    }
-    [[nodiscard]] uint32_t GetHeight() const noexcept
-    {
-        return height_;
-    }
+    [[nodiscard]] uint32_t GetWidth() const noexcept { return width_; }
+    [[nodiscard]] uint32_t GetHeight() const noexcept { return height_; }
 
-    Vec2<uint32_t> GetSize() const
-    {
-        return {width_, height_};
-    }
-    Vec2f GetSize2f() const
-    {
-        return GetSize().Cast<float>();
-    }
-    [[nodiscard]] GLFWwindow* GetGlfwWindow() const noexcept
-    {
-        return window_;
-    }
+    Vec2<uint32_t> GetSize() const { return {width_, height_}; }
+    Vec2f GetSize2f() const { return GetSize().Cast<float>(); }
+    [[nodiscard]] GLFWwindow* GetGlfwWindow() const noexcept { return window_; }
     [[nodiscard]] float GetAspect() const noexcept
     {
         return static_cast<float>(GetWidth()) / static_cast<float>(GetHeight());

@@ -21,23 +21,23 @@ enable_lto_globally()
 option(EDT_WITH_TESTS "" ON)
 add_subdirectory(cloned_modules/edt SYSTEM)
 
-# https://github.com/google/googletest v1.15.0
-option(INSTALL_GTEST "" OFF)
-option(BUILD_GMOCK "" OFF)
-add_subdirectory(cloned_modules/google/googletest/1_15_0 SYSTEM)
+# https://github.com/Sunday111/CppReflection for_yae
+add_subdirectory(cloned_modules/CppReflection SYSTEM)
+
+# https://github.com/fmtlib/fmt 10.1.1
+add_subdirectory(cloned_modules/fmt/10_1_1 SYSTEM)
 
 # https://github.com/google/benchmark v1.8.3
 option(BENCHMARK_ENABLE_TESTING "" OFF)
 add_subdirectory(cloned_modules/google/googlebench/1_8_3 SYSTEM)
 
+# https://github.com/google/googletest v1.15.0
+option(INSTALL_GTEST "" OFF)
+option(BUILD_GMOCK "" OFF)
+add_subdirectory(cloned_modules/google/googletest/1_15_0 SYSTEM)
+
 # https://github.com/martinus/unordered_dense v4.1.2
 add_subdirectory(cloned_modules/martinus/unordered_dense SYSTEM)
-
-# https://github.com/fmtlib/fmt 10.1.1
-add_subdirectory(cloned_modules/fmt/10_1_1 SYSTEM)
-
-# https://github.com/Sunday111/CppReflection for_yae
-add_subdirectory(cloned_modules/CppReflection SYSTEM)
 
 # https://github.com/nlohmann/json develop
 add_subdirectory(cloned_modules/nlohmann/json SYSTEM)
@@ -56,17 +56,17 @@ add_subdirectory(cloned_modules/cpptrace SYSTEM)
 
 # --------------------------------- Own Modules ----------------------------------
 add_subdirectory(deps/yae/modules/examples/ecs)
+add_subdirectory(deps/yae/modules/examples/ecs_benchmark)
 add_subdirectory(deps/yae/modules/examples/ecs_tests)
-add_subdirectory(deps/yae/modules/examples/yae_example_library)
-add_subdirectory(deps/yae/modules/examples/yae_example_header_only)
-add_subdirectory(deps/yae/modules/examples/yae_example_tests_main)
-add_subdirectory(deps/yae/modules/examples/yae_example_tests)
 add_subdirectory(deps/yae/modules/examples/yae_example_benchmark)
 add_subdirectory(deps/yae/modules/examples/yae_example_benchmark_main)
-add_subdirectory(deps/yae/modules/examples/ecs_benchmark)
+add_subdirectory(deps/yae/modules/examples/yae_example_library)
+add_subdirectory(deps/yae/modules/examples/yae_example_header_only)
 add_subdirectory(deps/yae/modules/examples/yae_example_executable)
+add_subdirectory(deps/yae/modules/examples/yae_example_tests)
+add_subdirectory(deps/yae/modules/examples/yae_example_tests_main)
 add_subdirectory(src/klgl)
-add_subdirectory(src/verlet_fast)
 add_subdirectory(src/verlet)
+add_subdirectory(src/verlet_fast)
 
 enable_testing()

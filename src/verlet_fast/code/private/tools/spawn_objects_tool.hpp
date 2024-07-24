@@ -9,10 +9,7 @@ public:
     using Tool::Tool;
     void Tick() override;
     void DrawGUI() override;
-    ToolType GetToolType() const override
-    {
-        return ToolType::SpawnObjects;
-    }
+    [[nodiscard]] ToolType GetToolType() const override { return ToolType::SpawnObjects; }
 
 private:
     bool spawn_movable_objects_ = true;

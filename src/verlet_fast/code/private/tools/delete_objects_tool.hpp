@@ -10,10 +10,7 @@ public:
     using Tool::Tool;
     void Tick() override;
     void DrawGUI() override;
-    ToolType GetToolType() const override
-    {
-        return ToolType::DeleteObjects;
-    }
+    [[nodiscard]] ToolType GetToolType() const override { return ToolType::DeleteObjects; }
 
 private:
     float delete_radius_ = 1.f;

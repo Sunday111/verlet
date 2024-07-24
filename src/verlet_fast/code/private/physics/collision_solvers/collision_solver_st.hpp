@@ -11,10 +11,7 @@ class CollisionSolverST : public CollisionSolver
 {
 public:
     explicit CollisionSolverST(VerletSolver& solver) : solver_(&solver) {}
-    [[nodiscard]] size_t GetThreadsCount() const override
-    {
-        return 0;
-    }
+    [[nodiscard]] size_t GetThreadsCount() const override { return 0; }
     void SolveCollisions() override;
 
     VerletSolver* solver_{};

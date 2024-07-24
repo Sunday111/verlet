@@ -19,7 +19,7 @@ void InstancedPainter::Initialize()
 void InstancedPainter::Render()
 {
     mesh_->Bind();
-    for (const size_t batch_index : std::views::iota(0uz, batches_.size()))
+    for (const size_t batch_index : std::views::iota(size_t{0}, batches_.size()))
     {
         auto& batch = batches_[batch_index];
         // number of circles initialized for the current batch

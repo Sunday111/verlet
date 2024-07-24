@@ -15,10 +15,7 @@ public:
     [[nodiscard]] virtual const cppreflection::Type& GetType() const = 0;
     virtual void DrawGUI() {}
 
-    [[nodiscard]] const VerletApp& GetApp() const
-    {
-        return *app_;
-    }
+    [[nodiscard]] const VerletApp& GetApp() const { return *app_; }
 
 private:
     const VerletApp* app_ = nullptr;

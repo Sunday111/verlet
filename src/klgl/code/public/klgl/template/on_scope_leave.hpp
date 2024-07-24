@@ -12,10 +12,7 @@ auto OnScopeLeave(Fn&& fn)
     {
         explicit Guard(Fn&& on_leave) : on_leave_(std::forward<Fn>(on_leave)) {}
         Guard(Guard&) = delete;
-        Guard(Guard&& another) noexcept : on_leave_(std::move(another.on_leave_))
-        {
-            another.empty_ = true;
-        }
+        Guard(Guard&& another) noexcept : on_leave_(std::move(another.on_leave_)) { another.empty_ = true; }
         ~Guard()
         {
             if (!empty_)

@@ -3,7 +3,6 @@
 #include "EverydayTools/Preprocessor/Stringify.hpp"
 #include "fmt/core.h"
 
-
 namespace klgl
 {
 

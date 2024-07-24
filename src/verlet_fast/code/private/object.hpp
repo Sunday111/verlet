@@ -22,15 +22,9 @@ public:
     Vec3<uint8_t> color;
     bool movable : 1 {};
 
-    bool IsMovable() const
-    {
-        return movable;
-    }
+    bool IsMovable() const { return movable; }
 
-    [[nodiscard]] static constexpr float GetRadius()
-    {
-        return 0.5f;
-    }
+    [[nodiscard]] static constexpr float GetRadius() { return 0.5f; }
 
     //////
     uint8_t reserved_property_that_goes_last : 1 {};

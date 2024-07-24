@@ -36,10 +36,7 @@ public:
     using Tool::Tool;
     void Tick() override;
     void DrawGUI() override;
-    ToolType GetToolType() const override
-    {
-        return ToolType::SpawnObjects;
-    }
+    ToolType GetToolType() const override { return ToolType::SpawnObjects; }
 
 private:
     float radius_ = 1.f;
@@ -60,10 +57,7 @@ public:
     ~MoveObjectsTool() override;
     void Tick() override;
     void DrawGUI() override;
-    ToolType GetToolType() const override
-    {
-        return ToolType::MoveObjects;
-    }
+    ToolType GetToolType() const override { return ToolType::MoveObjects; }
 
 private:
     void ReleaseObject(const Vec2f& mouse_position);

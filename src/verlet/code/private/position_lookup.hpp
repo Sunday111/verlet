@@ -146,25 +146,13 @@ public:
         return static_cast<uint8_t>(yi * GetDimSize() + xi);
     }
 
-    uint16_t GetNextInSameRegion(const size_t object_index) const
-    {
-        return object_to_ll_[object_index].next;
-    }
+    uint16_t GetNextInSameRegion(const size_t object_index) const { return object_to_ll_[object_index].next; }
 
-    const Region& GetRegion(const Vec2f& p) const
-    {
-        return regions_[PositionToRegionIndex(p)];
-    }
+    const Region& GetRegion(const Vec2f& p) const { return regions_[PositionToRegionIndex(p)]; }
 
-    [[nodiscard]] std::span<const Region> Regions() const
-    {
-        return regions_;
-    }
+    [[nodiscard]] std::span<const Region> Regions() const { return regions_; }
 
-    [[nodiscard]] uint8_t GetDimSize() const
-    {
-        return num_side_regions_;
-    }
+    [[nodiscard]] uint8_t GetDimSize() const { return num_side_regions_; }
 
 private:
     [[nodiscard]] uint8_t ToDimIndex(const float coord, const float coord_begin, const float region_extent) const

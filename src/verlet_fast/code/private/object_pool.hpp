@@ -55,44 +55,27 @@ public:
     [[nodiscard]] auto Identifiers(this Self& self)
     {
         return RangeIndices(self.entries_) |
-               std::views::filter(
-                   [&](const size_t index) -> bool
-                   {
-                       return self.entries_[index].data_.back();
-                   }) |
-               std::views::transform(
-                   [&](const size_t index)
-                   {
-                       return ObjectId::FromValue(index);
-                   });
+               std::views::filter([&](const size_t index) -> bool { return self.entries_[index].data_.back(); }) |
+               std::views::transform([&](const size_t index) { return ObjectId::FromValue(index); });
     }
 
     template <typename Self>
     [[nodiscard]] auto IdentifiersAndObjects(this Self& self)
     {
-        return self.Identifiers() | std::views::transform(
-                                        [&](ObjectId id) -> std::tuple<ObjectId, VerletObject&>
-                                        {
-                                            return {id, self.Get(id)};
-                                        });
+        return self.Identifiers() |
+               std::views::transform(
+                   [&](ObjectId id) -> std::tuple<ObjectId, VerletObject&> { return {id, self.Get(id)}; });
     }
 
     template <typename Self>
     [[nodiscard]] auto Objects(this Self& self)
     {
-        return self.Identifiers() | std::views::transform(
-                                        [&](ObjectId id) -> decltype(auto)
-                                        {
-                                            return self.Get(id);
-                                        });
+        return self.Identifiers() | std::views::transform([&](ObjectId id) -> decltype(auto) { return self.Get(id); });
     }
 
     std::tuple<ObjectId, VerletObject&> Alloc();
     void Free(ObjectId id);
-    size_t ObjectsCount() const
-    {
-        return count_;
-    }
+    size_t ObjectsCount() const { return count_; }
 
 private:
     template <typename Self>

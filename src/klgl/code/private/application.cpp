@@ -48,10 +48,7 @@ struct Application::State
         last_frame_duration_seconds_ = DurationToSeconds<float>(current_frame_start_time - previous_frame_start_time);
     }
 
-    static TimePoint GetTime()
-    {
-        return Clock::now();
-    }
+    static TimePoint GetTime() { return Clock::now(); }
 
     template <std::floating_point Result = float, typename Duration>
     static Result DurationToSeconds(Duration&& duration)
@@ -61,10 +58,7 @@ struct Application::State
             .count();
     }
 
-    float GetRelativeTimeSeconds() const
-    {
-        return State::DurationToSeconds(GetTime() - app_start_time_);
-    }
+    float GetRelativeTimeSeconds() const { return State::DurationToSeconds(GetTime() - app_start_time_); }
 
     float GetCurrentFrameStartTime() const
     {

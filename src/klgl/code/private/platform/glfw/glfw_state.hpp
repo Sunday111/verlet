@@ -10,10 +10,7 @@ namespace klgl
 class GlfwState
 {
 public:
-    ~GlfwState()
-    {
-        Uninitialize();
-    }
+    ~GlfwState() { Uninitialize(); }
 
     void Initialize()
     {

@@ -20,40 +20,19 @@ public:
     void SendValue() const;
     void SetValue(std::span<const uint8_t> new_value);
     void SetType(edt::GUID type_guid);
-    void SetName(Name name)
-    {
-        name_ = name;
-    }
-    void SetLocation(uint32_t location)
-    {
-        location_ = location;
-    }
+    void SetName(Name name) { name_ = name; }
+    void SetLocation(uint32_t location) { location_ = location; }
     void EnsureTypeMatch(edt::GUID type_guid) const;
 
     [[nodiscard]] bool IsEmpty() const noexcept;
-    [[nodiscard]] std::string_view GetNameView()
-    {
-        return GetName().GetView();
-    }
+    [[nodiscard]] std::string_view GetNameView() { return GetName().GetView(); }
 
-    [[nodiscard]] Name GetName() const noexcept
-    {
-        return name_;
-    }
-    [[nodiscard]] edt::GUID GetTypeGUID() const noexcept
-    {
-        return type_guid_;
-    }
-    [[nodiscard]] uint32_t GetLocation() const noexcept
-    {
-        return location_;
-    }
+    [[nodiscard]] Name GetName() const noexcept { return name_; }
+    [[nodiscard]] edt::GUID GetTypeGUID() const noexcept { return type_guid_; }
+    [[nodiscard]] uint32_t GetLocation() const noexcept { return location_; }
 
     //[[nodiscard]] std::span<uint8_t> GetValue() noexcept { return value_; }
-    [[nodiscard]] std::span<const uint8_t> GetValue() const noexcept
-    {
-        return value_;
-    }
+    [[nodiscard]] std::span<const uint8_t> GetValue() const noexcept { return value_; }
 
     ShaderUniform& operator=(const ShaderUniform&) = delete;
     ShaderUniform& operator=(ShaderUniform&& another) noexcept;

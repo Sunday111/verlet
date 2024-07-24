@@ -18,22 +18,10 @@ public:
 
     void Bind() const;
     void SetPixels(std::span<const Vec3<uint8_t>> pixel_data);
-    Vec2<size_t> GetSize() const
-    {
-        return {width_, height_};
-    }
-    size_t GetWidth() const
-    {
-        return width_;
-    }
-    size_t GetHeight() const
-    {
-        return height_;
-    }
-    std::optional<GLuint> GetTexture() const
-    {
-        return texture_;
-    }
+    Vec2<size_t> GetSize() const { return {width_, height_}; }
+    size_t GetWidth() const { return width_; }
+    size_t GetHeight() const { return height_; }
+    std::optional<GLuint> GetTexture() const { return texture_; }
 
 private:
     std::optional<GLuint> texture_;

@@ -20,15 +20,9 @@ public:
 
     std::string_view GetView() const;
 
-    [[nodiscard]] friend inline bool operator==(const Name& a, const Name& b) noexcept
-    {
-        return a.id_ == b.id_;
-    }
+    [[nodiscard]] friend inline bool operator==(const Name& a, const Name& b) noexcept { return a.id_ == b.id_; }
 
-    [[nodiscard]] friend inline bool operator<(const Name& a, const Name& b) noexcept
-    {
-        return a.id_ < b.id_;
-    }
+    [[nodiscard]] friend inline bool operator<(const Name& a, const Name& b) noexcept { return a.id_ < b.id_; }
 
 private:
     [[nodiscard]] bool IsValid() const noexcept;
