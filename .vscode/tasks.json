@@ -4,7 +4,7 @@
         {
             "label": "YAE: Generate",
             "type": "shell",
-            "command": "C:/data/soft/Python/3_12/python.exe",
+            "command": "/usr/bin/python3",
             "args": [
                 "${workspaceFolder}/deps/yae/scripts/make_project_files.py",
                 "--project_dir=${workspaceFolder}"
