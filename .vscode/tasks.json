@@ -19,6 +19,12 @@
                 "CMake: configure"
             ],
             "problemMatcher": []
+        },
+        {
+            "label": "Apply clang-format",
+            "type": "shell",
+            "command": "find ./src -regex '.*\\.\\(cpp\\|hpp\\)' -exec clang-format -i {} \\;",
+            "problemMatcher": []
         }
     ]
 }
