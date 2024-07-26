@@ -16,6 +16,7 @@ public:
     explicit AppGUI(VerletApp& app) : app_{&app} {}
 
     void Render();
+    void Camera();
     void Perf();
     void Emitter();
     void Tools();

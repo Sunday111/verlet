@@ -24,6 +24,7 @@ void AppGUI::Render()
     {
         app_->shader_->DrawDetails();
 
+        Camera();
         Perf();
         Emitter();
         Tools();
@@ -32,6 +33,20 @@ void AppGUI::Render()
         CollisionsSolver();
     }
     ImGui::End();
+}
+
+void AppGUI::Camera()
+{
+    if (!ImGui::CollapsingHeader("Camera")) return;
+    ImGui::SliderFloat("Zoom", &app_->camera_zoom_, 0.1f, 5.f);
+    GuiText("Eye");
+    ImGui::SliderFloat("x", &app_->camera_eye_.x(), app_->world_range.x.begin, app_->world_range.x.end);
+    ImGui::SliderFloat("y", &app_->camera_eye_.y(), app_->world_range.y.begin, app_->world_range.y.end);
+    if (ImGui::Button("Reset"))
+    {
+        app_->camera_zoom_ = 1.f;
+        app_->camera_eye_ = {};
+    }
 }
 
 void AppGUI::Perf()

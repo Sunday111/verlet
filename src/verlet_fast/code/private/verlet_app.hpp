@@ -84,6 +84,8 @@ public:
 
     // Rendering
     std::unique_ptr<klgl::Shader> shader_;
+    float camera_zoom_ = 1.f;
+    Vec2f camera_eye_{};
 
     InstancedPainter circle_painter_{};
 

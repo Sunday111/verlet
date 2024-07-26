@@ -28,7 +28,7 @@ void VerletApp::InitializeRendering()
 
     // klgl::OpenGl::SetClearColor(Vec4f{255, 245, 153, 255} / 255.f);
     klgl::OpenGl::SetClearColor({});
-    GetWindow().SetSize(1920, 1080);
+    GetWindow().SetSize(1000, 1000);
     GetWindow().SetTitle("Verlet");
 
     const auto content_dir = GetExecutableDir() / "content";
@@ -130,6 +130,36 @@ void VerletApp::Render()
     AppGUI{*this}.Render();
 }
 
+static constexpr edt::Mat3f TranslationMatrix(const Vec2f translation)
+{
+    auto m = edt::Mat3f::Identity();
+    m(0, 2) = translation.x();
+    m(1, 2) = translation.y();
+    return m;
+}
+
+static constexpr edt::Mat3f ScaleMatrix(const Vec2f scale)
+{
+    auto m = edt::Mat3f::Identity();
+    m(0, 0) = scale.x();
+    m(1, 1) = scale.y();
+    return m;
+}
+
+constexpr edt::Mat3f WorldToCameraTransform(Vec2f camera_pos, Vec2f camera_scale)
+{
+    auto t = TranslationMatrix(0.f - camera_pos);
+    auto s = ScaleMatrix(camera_scale);
+    return s.MatMul(t);
+}
+
+constexpr edt::Mat3f AffineTransform(const edt::FloatRange2Df& from, const edt::FloatRange2Df& to)
+{
+    auto t = TranslationMatrix(from.Uniform(0.5f) - to.Uniform(0.5f));
+    auto s = ScaleMatrix(from.Extent() / to.Extent());
+    return s.MatMul(t);
+}
+
 void VerletApp::RenderWorld()
 {
     ObjectColorFunction color_function = [](const VerletObject& object)
@@ -140,14 +170,21 @@ void VerletApp::RenderWorld()
 
     const klgl::ScopeAnnotation annotation("Render World");
 
+    const auto world_space = world_range;
+    const auto camera_space =
+        edt::FloatRange2Df::FromMinMax(world_space.Min() / camera_zoom_, world_space.Max() / camera_zoom_)
+            .Shifted(camera_eye_);
+    const auto screen_space = edt::FloatRange2Df::FromMinMax(Vec2f{} - 1, Vec2f{} + 1);
+    auto world_to_camera = AffineTransform(world_space, camera_space);
+    auto camera_to_view = edt::Math::MakeTransform(camera_space, screen_space);
+    auto world_to_view = camera_to_view.MatMul(world_to_camera);
+
     circle_painter_.num_circles_ = 0;
-    const edt::FloatRange2D<float> screen_range{.x = {-1, 1}, .y = {-1, 1}};
-    const Mat3f world_to_screen = edt::Math::MakeTransform(world_range, screen_range);
 
     auto paint_instanced_object = [&, next_instance_index = 0uz](const VerletObject& object) mutable
     {
-        const auto screen_pos = TransformPos(world_to_screen, object.position);
-        const auto screen_size = TransformVector(world_to_screen, object.GetRadius() + Vec2f{});
+        const auto screen_pos = TransformPos(world_to_view, object.position);
+        const auto screen_size = TransformVector(world_to_view, object.GetRadius() + Vec2f{});
         const auto& color = color_function(object);
         circle_painter_.SetCircle(next_instance_index++, screen_pos, color, screen_size);
     };
