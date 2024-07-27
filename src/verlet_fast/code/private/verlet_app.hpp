@@ -41,15 +41,10 @@ public:
 
     void Initialize() override;
     void InitializeRendering();
-    void Tick() override
-    {
-        Super::Tick();
-        UpdateWorldRange();
-        UpdateSimulation();
-        Render();
-    }
+    void Tick() override;
 
     void UpdateWorldRange();
+    void UpdateCamera();
     void UpdateSimulation();
     void Render();
     void RenderWorld();

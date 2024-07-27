@@ -1,5 +1,9 @@
 #pragma once
 
+#include <EverydayTools/Template/TaggedIdentifier.hpp>
+#include <functional>
+#include <vector>
+
 #include "EverydayTools/Math/Matrix.hpp"
 
 struct GLFWwindow;
@@ -8,6 +12,9 @@ namespace klgl
 {
 
 using namespace edt::lazy_matrix_aliases;  // NOLINT
+
+struct WindowEventListenerIdTag;
+using WindowEventListenerId = edt::TaggedIdentifier<WindowEventListenerIdTag, size_t>;
 
 class Window
 {

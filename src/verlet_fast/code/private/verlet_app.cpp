@@ -6,6 +6,8 @@
 #include "gui/app_gui.hpp"
 #include "klgl/opengl/debug/annotations.hpp"
 #include "klgl/opengl/gl_api.hpp"
+#include "klgl/reflection/matrix_reflect.hpp"
+#include "klgl/reflection/reflected_value_array.hpp"
 #include "tools/move_objects_tool.hpp"
 #include "tools/spawn_objects_tool.hpp"
 
@@ -20,6 +22,15 @@ void VerletApp::Initialize()
     Super::Initialize();
     spawn_color_strategy_ = std::make_unique<SpawnColorStrategyRainbow>(*this);
     InitializeRendering();
+}
+
+void VerletApp::Tick()
+{
+    Super::Tick();
+    UpdateWorldRange();
+    UpdateCamera();
+    UpdateSimulation();
+    Render();
 }
 
 void VerletApp::InitializeRendering()
@@ -86,6 +97,11 @@ void VerletApp::UpdateWorldRange()
     adjust_range(world_range.x, sim_area.x);
     adjust_range(world_range.y, sim_area.y);
     solver.SetSimArea(sim_area);
+}
+
+void VerletApp::UpdateCamera()
+{
+    klgl::ReflectedValueArray arr(*cppreflection::GetTypeInfo<Vec2f>());
 }
 
 void VerletApp::UpdateSimulation()

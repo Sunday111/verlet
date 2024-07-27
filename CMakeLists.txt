@@ -68,5 +68,6 @@ add_subdirectory(deps/yae/modules/examples/yae_example_executable)
 add_subdirectory(src/klgl)
 add_subdirectory(src/verlet_fast)
 add_subdirectory(src/verlet)
+add_subdirectory(src/klgl_tests)
 
 enable_testing()

@@ -12,6 +12,7 @@ set(module_source_files
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/platform/glfw/glfw_state.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/platform/os/os.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/read_file.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/code/private/reflection/reflected_value_array.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/shader/shader.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/shader/shader_define.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/shader/shader_uniform.cpp
@@ -20,6 +21,7 @@ set(module_source_files
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/window.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/application.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/error_handling.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/events/event_manager.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/macro/warning_suppress.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/mesh/mesh_data.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/mesh/procedural_mesh_generator.hpp
@@ -31,6 +33,7 @@ set(module_source_files
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/platform/os/os.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/read_file.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/reflection/matrix_reflect.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/reflection/reflected_value_array.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/reflection/register_types.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/shader/define_handle.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/shader/sampler_uniform.hpp

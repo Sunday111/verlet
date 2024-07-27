@@ -1,0 +1,12 @@
+{
+    "ModuleType": "Executable",
+    "EnableTesting": true,
+    "Dependencies": {
+        "Public": [
+            "klgl"
+        ],
+        "Private": [
+            "gtest_main"
+        ]
+    }
+}
