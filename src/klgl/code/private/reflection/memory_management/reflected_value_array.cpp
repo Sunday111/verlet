@@ -11,8 +11,8 @@ void ReflectedValueArray::MoveObjects(const cppreflection::Type& type, uint8_t* 
     {
         // move existing objects to the new buffer and delete old object
         const size_t offset = instance_size * i;
-        special_members.moveConstructor(to + offset, from + offset);  // NOLINT
-        special_members.destructor(from + offset);                    // NOLINT
+        special_members.moveConstructor(to + offset, from + offset);
+        special_members.destructor(from + offset);
     }
 }
 
@@ -29,7 +29,7 @@ void ReflectedValueArray::Realloc(size_t new_capacity, size_t shift_begin, size_
         MoveObjects(*type_, first_object_, new_first_object, shift_begin);
         MoveObjects(
             *type_,
-            first_object_ + shift_begin * instance_size_,  // NOLINT
+            first_object_ + shift_begin * instance_size_,
             new_first_object + (shift_begin + shift_size) * instance_size_,
             count_ - shift_begin);
     }
@@ -45,8 +45,10 @@ void ReflectedValueArray::Realloc(size_t new_capacity, size_t shift_begin, size_
 
 void ReflectedValueArray::Reserve(size_t new_capacity)
 {
-    if (new_capacity <= capacity_) return;
-    Realloc(new_capacity, 0, 0);
+    if (new_capacity > capacity_)
+    {
+        Realloc(new_capacity, 0, 0);
+    }
 }
 
 void ReflectedValueArray::Resize(size_t count)
@@ -61,7 +63,7 @@ void ReflectedValueArray::Resize(size_t count)
         for (size_t i = count_; i != count; ++i)
         {
             const size_t offset = instance_size_ * i;
-            const auto new_object = first_object_ + offset;  // NOLINT
+            const auto new_object = first_object_ + offset;
             special_members.defaultConstructor(new_object);
         }
     }
@@ -71,7 +73,7 @@ void ReflectedValueArray::Resize(size_t count)
         for (size_t i = count_; i != count; ++i)
         {
             const size_t offset = instance_size_ * i;
-            const auto object = first_object_ + offset;  // NOLINT
+            const auto object = first_object_ + offset;
             special_members.defaultConstructor(object);
         }
     }
@@ -81,7 +83,7 @@ void ReflectedValueArray::Resize(size_t count)
         for (size_t i = count; i != count_; ++i)
         {
             const size_t offset = instance_size_ * i;
-            const auto object = first_object_ + offset;  // NOLINT
+            const auto object = first_object_ + offset;
             special_members.destructor(object);
         }
     }
@@ -94,17 +96,12 @@ void ReflectedValueArray::Erase(const size_t index)
     assert(index < Size());
     auto& special_members = type_->GetSpecialMembers();
 
-    uint8_t* current = first_object_;
-    std::advance(current, instance_size_ * index);
-
-    uint8_t* last = first_object_;
-    std::advance(last, instance_size_ * (count_ - 1));
+    uint8_t* current = first_object_ + instance_size_ * index;
+    uint8_t* last = first_object_ + instance_size_ * (count_ - 1);
 
     while (current != last)
     {
-        auto next = current;
-        std::advance(next, instance_size_);
-
+        auto next = current + instance_size_;
         special_members.moveAssign(current, next);
         current = next;
     }
@@ -124,8 +121,7 @@ void ReflectedValueArray::Insert(const size_t index)
         Realloc(count_ + 1, index, 1);
 
         // Still have to init new object
-        uint8_t* p = first_object_;
-        std::advance(p, instance_size_ * index);
+        uint8_t* p = first_object_ + instance_size_ * index;
         special_members.defaultConstructor(p);
 
         ++count_;
@@ -135,34 +131,28 @@ void ReflectedValueArray::Insert(const size_t index)
         // push back lucky case - just init the new element at the end
         if (index == count_)
         {
-            uint8_t* p = first_object_;
-            std::advance(p, instance_size_ * count_);
+            uint8_t* p = first_object_ + instance_size_ * count_;
             special_members.defaultConstructor(p);
             ++count_;
             return;
         }
 
-        uint8_t* current = first_object_;
-        std::advance(current, instance_size_ * count_);
+        uint8_t* current = first_object_ + instance_size_ * count_;
 
         // initialize the last element using the move constructor
         {
-            auto prev = current;
-            std::advance(prev, -static_cast<std::ptrdiff_t>(instance_size_));
+            auto prev = current - instance_size_;
             special_members.moveConstructor(current, prev);
             current = prev;
         }
 
         ++count_;
 
-        uint8_t* inserted = first_object_;
-        std::advance(inserted, instance_size_ * index);
+        uint8_t* inserted = first_object_ + instance_size_ * index;
 
         while (current != inserted)
         {
-            auto prev = current;
-            std::advance(prev, -static_cast<std::ptrdiff_t>(instance_size_));
-
+            auto prev = current - instance_size_;
             special_members.moveAssign(current, prev);
             current = prev;
         }
@@ -184,7 +174,7 @@ std::tuple<ReflectedValueArray::BufferPtr, uint8_t*> ReflectedValueArray::MakeNe
         offset = alignment - (address % alignment);
     }
 
-    return {BufferPtr(ptr), ptr + offset};  // NOLINT
+    return {BufferPtr(ptr), ptr + offset};
 }
 
 }  // namespace klgl

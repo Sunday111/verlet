@@ -12,7 +12,7 @@ set(module_source_files
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/platform/glfw/glfw_state.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/platform/os/os.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/read_file.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/code/private/reflection/reflected_value_array.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/code/private/reflection/memory_management/reflected_value_array.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/shader/shader.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/shader/shader_define.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/shader/shader_uniform.cpp

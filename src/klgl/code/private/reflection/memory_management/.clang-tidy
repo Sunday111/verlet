@@ -1,0 +1,6 @@
+Checks: "-cppcoreguidelines-pro-bounds-pointer-arithmetic,\
+"
+WarningsAsErrors: '*'
+InheritParentConfig: true
+# Use clang-format
+FormatStyle: file

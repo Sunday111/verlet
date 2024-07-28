@@ -57,7 +57,7 @@ std::vector<ArrayAction> GenerateRandomActions(std::mt19937& rnd, size_t count)
     return actions;
 }
 
-TEST(ReflectedValueArray, FuzzyTest)  // NOLINT
+TEST(ReflectedValueArray, FuzzyTest)
 {
     UsageStats usage_stats_actual{};
     klgl::ReflectedValueArray array_actual(*cppreflection::GetTypeInfo<TestStruct>());
