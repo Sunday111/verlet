@@ -6,8 +6,6 @@
 #include "gui/app_gui.hpp"
 #include "klgl/opengl/debug/annotations.hpp"
 #include "klgl/opengl/gl_api.hpp"
-#include "klgl/reflection/matrix_reflect.hpp"
-#include "klgl/reflection/reflected_value_array.hpp"
 #include "tools/move_objects_tool.hpp"
 #include "tools/spawn_objects_tool.hpp"
 
@@ -99,10 +97,7 @@ void VerletApp::UpdateWorldRange()
     solver.SetSimArea(sim_area);
 }
 
-void VerletApp::UpdateCamera()
-{
-    klgl::ReflectedValueArray arr(*cppreflection::GetTypeInfo<Vec2f>());
-}
+void VerletApp::UpdateCamera() {}
 
 void VerletApp::UpdateSimulation()
 {
