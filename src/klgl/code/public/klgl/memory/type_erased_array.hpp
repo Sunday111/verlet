@@ -17,12 +17,23 @@ private:
 public:
     struct TypeInfo
     {
-        cppreflection::TypeSpecialMembers special_members;
+        [[nodiscard]] constexpr bool operator==(const TypeInfo&) const = default;
+        [[nodiscard]] constexpr bool operator!=(const TypeInfo&) const = default;
+
+        cppreflection::TypeSpecialMembers special_members{};
         uint32_t alignment = 0;
         uint32_t object_size = 0;
     };
 
     explicit TypeErasedArray(TypeInfo type_info) : type_(type_info) {}
+    TypeErasedArray(TypeErasedArray&& other) noexcept { MoveFrom(other); }
+    TypeErasedArray& operator=(TypeErasedArray&& other) noexcept { return MoveFrom(other); }  // NOLINT
+    TypeErasedArray(const TypeErasedArray& other) { CopyFrom(other); }
+    TypeErasedArray& operator=(const TypeErasedArray& other) noexcept { return CopyFrom(other); }  // NOLINT
+
+    void Clear(bool release_memory = false);
+    TypeErasedArray& MoveFrom(TypeErasedArray& other);
+    TypeErasedArray& CopyFrom(const TypeErasedArray& other);
 
     void Reserve(size_t new_capacity);
     void Resize(size_t count);
@@ -52,7 +63,10 @@ public:
 
 private:
     static std::tuple<BufferPtr, uint8_t*> MakeNewBuffer(const TypeInfo& type, size_t objects_count);
-    static void MoveObjects(const TypeInfo& type, uint8_t* from, uint8_t* to, size_t count);
+    static void MoveAndDestroyObjects(const TypeInfo& type, uint8_t* from, uint8_t* to, size_t count);
+    static void DestroyObjects(const TypeInfo& type, uint8_t* first, size_t count);
+    static void CopyObjects(const TypeInfo& type, uint8_t* from, uint8_t* to, size_t count);
+
     void Realloc(size_t new_capacity, size_t shift_begin, size_t shift_size);
 
 private:

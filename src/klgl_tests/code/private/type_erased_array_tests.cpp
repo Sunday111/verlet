@@ -38,7 +38,10 @@ struct TypeReflectionProvider<TestStruct>
 
 }  // namespace cppreflection
 
-TEST(TypeErrasedArray, FuzzyTest)
+namespace klgl
+{
+
+TEST(TypeErasedArray, ResizeInsertErase)
 {
     UsageStats usage_stats_actual{};
     auto array_actual = klgl::ReflectionUtils::MakeTypeErasedArray(*cppreflection::GetTypeInfo<TestStruct>());
@@ -214,3 +217,215 @@ TEST(TypeErrasedArray, FuzzyTest)
         }
     }
 }
+
+template <typename SrcType, typename DstType>
+    requires(std::is_copy_assignable_v<SrcType> && std::is_copy_assignable_v<DstType>) bool
+CopyAssignGenericTest()
+{
+    constexpr unsigned kSeed = 12345;
+    std::mt19937 rnd(kSeed);  // NOLINT
+
+    // fill arrays with same size
+    constexpr size_t kMaxSize = 50;
+    std::uniform_int_distribution<int> value_distr(-99999, 99999);
+
+    for (size_t dst_capacity = 0; dst_capacity <= kMaxSize; ++dst_capacity)
+    {
+        for (size_t dst_size = 0; dst_size <= kMaxSize; ++dst_size)
+        {
+            for (size_t src_size = 0; src_size != kMaxSize; ++src_size)
+            {
+                auto array_dst = klgl::TypeErasedArray::Create<DstType>();
+                array_dst.Reserve(dst_capacity);
+                array_dst.Resize(dst_size);
+
+                auto array_src = klgl::TypeErasedArray::Create<SrcType>();
+                array_src.Reserve(src_size);
+                array_src.Resize(src_size);
+
+                {
+                    auto adapter_dst = klgl::MakeTypeErasedArrayAdapter<DstType>(array_dst);
+                    auto adapter_src = klgl::MakeTypeErasedArrayAdapter<SrcType>(array_src);
+                    for (size_t i = 0; i != std::max(src_size, dst_size); ++i)
+                    {
+                        if (i < dst_size)
+                        {
+                            adapter_dst[i] = DstType::Rnd(rnd);
+                        }
+
+                        if (i < src_size)
+                        {
+                            adapter_src[i] = SrcType::Rnd(rnd);
+                        }
+                    }
+                }
+
+                auto same_at = [&](const size_t index)
+                {
+                    auto adapter_dst = klgl::MakeTypeErasedArrayAdapter<SrcType>(array_dst);
+                    auto adapter_src = klgl::MakeTypeErasedArrayAdapter<SrcType>(array_src);
+
+                    if (adapter_dst[index] != adapter_src[index])
+                    {
+                        fmt::println("Values at index {} are different", index);
+                        return false;
+                    }
+
+                    return true;
+                };
+
+                array_dst = array_src;
+
+                if (array_dst.Size() != array_src.Size())
+                {
+                    fmt::println(
+                        "Arrays have different sizes after assignment. Src size: {}. Dst size: {}",
+                        array_src.Size(),
+                        array_dst.Size());
+                    return false;
+                }
+
+                if (!std::ranges::all_of(std::views::iota(size_t{0}, array_dst.Size()), same_at))
+                {
+                    return false;
+                }
+            }
+        }
+    }
+
+    return true;
+}
+
+template <typename T>
+    requires(std::is_integral_v<T> || std::is_floating_point_v<T>)
+struct CopyableType
+{
+    T value = 42;
+    bool operator==(const CopyableType&) const = default;
+    bool operator!=(const CopyableType&) const = default;
+    static CopyableType Rnd(std::mt19937& rnd) { return {.value = static_cast<T>(rnd())}; }
+};
+
+TEST(TypeErasedArray, CopyAssignSameTypes)
+{
+    ASSERT_TRUE((CopyAssignGenericTest<CopyableType<int>, CopyableType<int>>()));
+}
+
+TEST(TypeErasedArray, CopyAssignDifferentTypes)
+{
+    ASSERT_TRUE((CopyAssignGenericTest<CopyableType<int>, CopyableType<float>>()));
+}
+
+template <typename T>
+    requires(std::is_integral_v<T> || std::is_floating_point_v<T>)
+struct MovableType
+{
+    std::unique_ptr<T> value;
+    bool operator==(const MovableType& other) const
+    {
+        if (!value && !other.value) return true;
+        if (value && other.value && *value == *other.value) return true;
+        return false;
+    }
+    bool operator!=(const MovableType&) const = default;
+
+    MovableType Copy() const { return {.value = value ? std::make_unique<T>(*value) : nullptr}; }
+    static MovableType Rnd(std::mt19937& rnd) { return {.value = std::make_unique<T>(static_cast<T>(rnd()))}; }
+};
+
+template <typename SrcType, typename DstType>
+    requires(std::is_move_assignable_v<SrcType> && std::is_move_assignable_v<DstType>) bool
+MoveAssignGenericTest()
+{
+    constexpr unsigned kSeed = 12345;
+    std::mt19937 rnd(kSeed);  // NOLINT
+
+    // fill arrays with same size
+    constexpr size_t kMaxSize = 50;
+    std::uniform_int_distribution<int> value_distr(-99999, 99999);
+
+    std::vector<SrcType> src_copy;
+
+    for (size_t dst_capacity = 0; dst_capacity <= kMaxSize; ++dst_capacity)
+    {
+        for (size_t dst_size = 0; dst_size <= kMaxSize; ++dst_size)
+        {
+            for (size_t src_size = 0; src_size != kMaxSize; ++src_size)
+            {
+                auto array_dst = klgl::TypeErasedArray::Create<DstType>();
+                array_dst.Reserve(dst_capacity);
+                array_dst.Resize(dst_size);
+
+                auto array_src = klgl::TypeErasedArray::Create<SrcType>();
+                array_src.Reserve(src_size);
+                array_src.Resize(src_size);
+                auto adapter_src = klgl::MakeTypeErasedArrayAdapter<SrcType>(array_src);
+
+                {
+                    auto adapter_dst = klgl::MakeTypeErasedArrayAdapter<DstType>(array_dst);
+                    for (size_t i = 0; i != std::max(src_size, dst_size); ++i)
+                    {
+                        if (i < dst_size)
+                        {
+                            adapter_dst[i] = DstType::Rnd(rnd);
+                        }
+
+                        if (i < src_size)
+                        {
+                            adapter_src[i] = SrcType::Rnd(rnd);
+                        }
+                    }
+                }
+
+                auto same_at = [&](const size_t index)
+                {
+                    auto adapter_dst = klgl::MakeTypeErasedArrayAdapter<SrcType>(array_dst);
+
+                    if (adapter_dst[index] != src_copy[index])
+                    {
+                        fmt::println("Values at index {} are different", index);
+                        return false;
+                    }
+
+                    return true;
+                };
+
+                src_copy.resize(array_src.Size());
+                for (size_t i = 0; i != array_src.Size(); ++i)
+                {
+                    src_copy[i] = adapter_src[i].Copy();
+                }
+
+                array_dst = std::move(array_src);
+
+                if (array_dst.Size() != src_copy.size())
+                {
+                    fmt::println(
+                        "After move assignment destination array has different size from copy made beforehand."
+                        "Expected size: {}. Actual size: {}",
+                        src_copy.size(),
+                        array_dst.Size());
+                    return false;
+                }
+
+                if (!std::ranges::all_of(std::views::iota(size_t{0}, array_dst.Size()), same_at))
+                {
+                    return false;
+                }
+            }
+        }
+    }
+
+    return true;
+}
+
+TEST(TypeErasedArray, MoveConstructorSameTypes)
+{
+    ASSERT_TRUE((MoveAssignGenericTest<MovableType<int>, MovableType<int>>()));
+}
+
+TEST(TypeErasedArray, MoveConstructorDifferentTypes)
+{
+    ASSERT_TRUE((MoveAssignGenericTest<MovableType<int>, MovableType<float>>()));
+}
+}  // namespace klgl

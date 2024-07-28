@@ -4,6 +4,148 @@
 
 namespace klgl
 {
+
+void TypeErasedArray::Clear(bool release_memory)
+{
+    auto begin = first_object_;
+    auto end = begin + type_.object_size * count_;
+    for (auto p = begin; p != end; p += type_.object_size)
+    {
+        type_.special_members.destructor(p);
+    }
+
+    count_ = 0;
+
+    if (release_memory)
+    {
+        capacity_ = 0;
+        first_object_ = nullptr;
+        buffer_ = nullptr;
+    }
+}
+
+TypeErasedArray& TypeErasedArray::MoveFrom(TypeErasedArray& other)
+{
+    type_ = other.type_;
+    other.type_ = {};
+
+    count_ = other.count_;
+    other.count_ = {};
+
+    capacity_ = other.capacity_;
+    other.capacity_ = {};
+
+    first_object_ = other.first_object_;
+    other.first_object_ = {};
+
+    buffer_ = std::move(other.buffer_);
+
+    return *this;
+}
+
+TypeErasedArray& TypeErasedArray::CopyFrom(const TypeErasedArray& other)
+{
+    if (type_ == other.type_)
+    {
+        if (other.count_ <= capacity_)
+        {
+            // 1. Same type, enough space
+
+            // copy assign
+            {
+                auto src = other.first_object_;
+                auto dst = first_object_;
+                auto dst_end = first_object_ + std::min(count_, other.count_) * type_.object_size;
+                while (dst != dst_end)
+                {
+                    type_.special_members.copyAssign(dst, src);
+                    dst += type_.object_size;
+                    src += type_.object_size;
+                }
+            }
+
+            if (other.count_ > count_)
+            {
+                // move construct
+                auto src = other.first_object_ + count_ * type_.object_size;
+                auto dst = first_object_ + count_ * type_.object_size;
+                auto dst_end = first_object_ + other.count_ * type_.object_size;
+                while (dst != dst_end)
+                {
+                    type_.special_members.moveConstructor(dst, src);
+                    src += type_.object_size;
+                    dst += type_.object_size;
+                }
+            }
+            else
+            {
+                // call destructor on excessive amount
+                auto p = first_object_ + other.count_ * type_.object_size;
+                auto last = first_object_ + count_ * type_.object_size;
+                while (p != last)
+                {
+                    type_.special_members.destructor(p);
+                    p += type_.object_size;
+                }
+            }
+
+            count_ = other.count_;
+        }
+        else
+        {
+            // 2. Same type but need more memory
+
+            Clear();
+            Realloc(other.count_, 0, 0);
+
+            // move construct new objects here.
+            auto src = other.first_object_;
+            auto dst = first_object_;
+            auto dst_end = first_object_ + other.count_ * type_.object_size;
+            while (dst != dst_end)
+            {
+                type_.special_members.moveConstructor(dst, src);
+                dst += type_.object_size;
+                src += type_.object_size;
+            }
+
+            count_ = other.count_;
+        }
+    }
+    else
+    {
+        // 3. Different types
+
+        Clear();
+        if (capacity_ != 0)
+        {
+            // 3.1. Try to reuse the memory used by objects of previous type
+
+            // num bytes used for alignment plus bytes used for objects
+            const size_t num_bytes = std::bit_cast<size_t>(buffer_.get()) - std::bit_cast<size_t>(first_object_) +
+                                     capacity_ * type_.object_size;
+
+            size_t offset = 0;
+            if (const size_t address = std::bit_cast<size_t>(buffer_.get()); address % other.type_.alignment)
+            {
+                offset = other.type_.alignment - (address % other.type_.alignment);
+            }
+
+            capacity_ = (num_bytes - std::min(offset, num_bytes)) / other.type_.object_size;
+            // might be invalid pointer but it should not be dereferenced as capacity will be zero in this case
+            first_object_ = buffer_.get() + offset;
+        }
+
+        type_ = other.type_;
+        Reserve(other.count_);
+
+        // Run this method again but this time with the same type and enough space (case 1)
+        CopyFrom(other);
+    }
+
+    return *this;
+}
+
 std::tuple<TypeErasedArray::BufferPtr, uint8_t*> TypeErasedArray::MakeNewBuffer(
     const TypeInfo& type,
     size_t objects_count)
@@ -20,7 +162,7 @@ std::tuple<TypeErasedArray::BufferPtr, uint8_t*> TypeErasedArray::MakeNewBuffer(
     return {BufferPtr(ptr), ptr + offset};
 }
 
-void TypeErasedArray::MoveObjects(const TypeInfo& type, uint8_t* from, uint8_t* to, size_t count)
+void TypeErasedArray::MoveAndDestroyObjects(const TypeInfo& type, uint8_t* from, uint8_t* to, size_t count)
 {
     for (size_t i = 0; i != count; ++i)
     {
@@ -28,6 +170,15 @@ void TypeErasedArray::MoveObjects(const TypeInfo& type, uint8_t* from, uint8_t* 
         const size_t offset = type.object_size * i;
         type.special_members.moveConstructor(to + offset, from + offset);
         type.special_members.destructor(from + offset);
+    }
+}
+
+void TypeErasedArray::DestroyObjects(const TypeInfo& type, uint8_t* first, size_t count)
+{
+    auto end = first + count * type.object_size;
+    for (auto p = first; p != end; p += type.object_size)
+    {
+        type.special_members.destructor(p);
     }
 }
 
@@ -41,8 +192,8 @@ void TypeErasedArray::Realloc(size_t new_capacity, size_t shift_begin, size_t sh
     if (with_shift)
     {
         assert(!with_shift || (new_capacity - count_ >= shift_size));
-        MoveObjects(type_, first_object_, new_first_object, shift_begin);
-        MoveObjects(
+        MoveAndDestroyObjects(type_, first_object_, new_first_object, shift_begin);
+        MoveAndDestroyObjects(
             type_,
             first_object_ + shift_begin * type_.object_size,
             new_first_object + (shift_begin + shift_size) * type_.object_size,
@@ -50,7 +201,7 @@ void TypeErasedArray::Realloc(size_t new_capacity, size_t shift_begin, size_t sh
     }
     else
     {
-        MoveObjects(type_, first_object_, new_first_object, count_);
+        MoveAndDestroyObjects(type_, first_object_, new_first_object, count_);
     }
 
     std::swap(buffer_, new_buffer);
