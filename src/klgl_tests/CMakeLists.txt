@@ -2,7 +2,6 @@ cmake_minimum_required(VERSION 3.20)
 include(set_compiler_options)
 set(module_source_files
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/array_action.hpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/code/private/reflected_value_array_test.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/type_erased_array_tests.cpp)
 add_executable(klgl_tests ${module_source_files})
 set_generic_compiler_options(klgl_tests PRIVATE)

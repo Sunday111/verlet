@@ -1,28 +1,47 @@
 #include <random>
 #include <ranges>
 
+#include "CppReflection/GetTypeInfo.hpp"
+#include "CppReflection/StaticType/class.hpp"
 #include "array_action.hpp"
 #include "fmt/core.h"
 #include "gtest/gtest.h"
 #include "klgl/memory/type_erased_array.hpp"
 #include "klgl/memory/type_erased_array_adapter.hpp"
+#include "klgl/reflection/reflection_utils.hpp"
+
+struct UsageStats
+{
+    int32_t num_destroyed = 0;
+};
+
+struct TestStruct
+{
+    int a = 82;
+    float b = 123.45f;
+    std::unique_ptr<UsageStats, decltype([](UsageStats* s) { s->num_destroyed++; })> c;
+};
+
+namespace cppreflection
+{
+
+template <>
+struct TypeReflectionProvider<TestStruct>
+{
+    [[nodiscard]] inline constexpr static auto ReflectType()
+    {
+        return cppreflection::StaticClassTypeInfo<TestStruct>(
+            "TestStruct",
+            edt::GUID::Create("E331A808-897F-4CE6-89C5-48E1BA021BA1"));
+    }
+};
+
+}  // namespace cppreflection
 
 TEST(TypeErrasedArray, FuzzyTest)
 {
-    struct UsageStats
-    {
-        int32_t num_destroyed = 0;
-    };
-
-    struct TestStruct
-    {
-        int a = 82;
-        float b = 123.45f;
-        std::unique_ptr<UsageStats, decltype([](UsageStats* s) { s->num_destroyed++; })> c;
-    };
-
     UsageStats usage_stats_actual{};
-    auto array_actual = klgl::MakeTypeErasedArray<TestStruct>();
+    auto array_actual = klgl::ReflectionUtils::MakeTypeErasedArray(*cppreflection::GetTypeInfo<TestStruct>());
     auto adapter = klgl::MakeTypeErasedArrayAdapter<TestStruct>(array_actual);
 
     UsageStats usage_stats_expected{};
