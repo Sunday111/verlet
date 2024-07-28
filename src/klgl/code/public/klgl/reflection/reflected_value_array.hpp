@@ -20,8 +20,10 @@ public:
     {
     }
 
+    void Reserve(size_t count);
     void Resize(size_t count);
     void Erase(size_t index);
+    void Insert(size_t index);
 
     [[nodiscard]] size_t Size() const { return count_; }
     [[nodiscard]] const cppreflection::Type& GetType() const { return *type_; }
@@ -36,6 +38,9 @@ public:
 
 private:
     static std::tuple<BufferPtr, uint8_t*> MakeNewBuffer(const cppreflection::Type& type, size_t objects_count);
+
+    static void MoveObjects(const cppreflection::Type& type, uint8_t* from, uint8_t* to, size_t count);
+    void Realloc(size_t new_capacity, size_t shift_begin, size_t shift_size);
 
 private:
     const cppreflection::Type* type_{};
