@@ -9,9 +9,8 @@
 #include "EverydayTools/Math/Math.hpp"
 #include "EverydayTools/Math/Matrix.hpp"
 #include "EverydayTools/Template/Overload.hpp"
-#include "ankerl/unordered_dense.h"
+#include "klgl/template/tagged_id_hash.hpp"
 #include "object_pool.hpp"
-#include "tagged_id_hash.hpp"
 
 namespace verlet
 {

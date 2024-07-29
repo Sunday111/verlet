@@ -8,6 +8,7 @@
 #include <concepts>
 #include <utility>
 
+#include "klgl/events/event_manager.hpp"
 #include "klgl/opengl/debug/annotations.hpp"
 #include "klgl/opengl/debug/gl_debug_messenger.hpp"
 #include "klgl/platform/os/os.hpp"
@@ -84,6 +85,7 @@ struct Application::State
     float framerate_ = 0.0f;
     uint8_t current_frame_time_index_ = kFrameTimeHistorySize - 1;
     std::optional<float> target_framerate_;
+    EventManager event_manager_;
 };
 
 Application::Application()
@@ -257,6 +259,11 @@ float Application::GetLastFrameDurationSeconds() const
 void Application::SetTargetFramerate(std::optional<float> framerate)
 {
     state_->target_framerate_ = framerate;
+}
+
+EventManager& Application::GetEventManager()
+{
+    return state_->event_manager_;
 }
 
 }  // namespace klgl

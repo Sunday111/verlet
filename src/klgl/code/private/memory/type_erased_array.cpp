@@ -26,19 +26,28 @@ void TypeErasedArray::Clear(bool release_memory)
 
 TypeErasedArray& TypeErasedArray::MoveFrom(TypeErasedArray& other)
 {
-    type_ = other.type_;
-    other.type_ = {};
+    if (CapacityBytes() > other.CapacityBytes() && other.Size() == 0)
+    {
+        // Reuse capacity if rhs object is empty
+        Clear();
+        ChangeBufferType(other.type_);
+    }
+    else
+    {
+        type_ = other.type_;
+        other.type_ = {};
 
-    count_ = other.count_;
-    other.count_ = {};
+        count_ = other.count_;
+        other.count_ = {};
 
-    capacity_ = other.capacity_;
-    other.capacity_ = {};
+        capacity_ = other.capacity_;
+        other.capacity_ = {};
 
-    first_object_ = other.first_object_;
-    other.first_object_ = {};
+        first_object_ = other.first_object_;
+        other.first_object_ = {};
 
-    buffer_ = std::move(other.buffer_);
+        buffer_ = std::move(other.buffer_);
+    }
 
     return *this;
 }
@@ -115,28 +124,8 @@ TypeErasedArray& TypeErasedArray::CopyFrom(const TypeErasedArray& other)
     else
     {
         // 3. Different types
-
         Clear();
-        if (capacity_ != 0)
-        {
-            // 3.1. Try to reuse the memory used by objects of previous type
-
-            // num bytes used for alignment plus bytes used for objects
-            const size_t num_bytes = std::bit_cast<size_t>(buffer_.get()) - std::bit_cast<size_t>(first_object_) +
-                                     capacity_ * type_.object_size;
-
-            size_t offset = 0;
-            if (const size_t address = std::bit_cast<size_t>(buffer_.get()); address % other.type_.alignment)
-            {
-                offset = other.type_.alignment - (address % other.type_.alignment);
-            }
-
-            capacity_ = (num_bytes - std::min(offset, num_bytes)) / other.type_.object_size;
-            // might be invalid pointer but it should not be dereferenced as capacity will be zero in this case
-            first_object_ = buffer_.get() + offset;
-        }
-
-        type_ = other.type_;
+        ChangeBufferType(other.type_);
         Reserve(other.count_);
 
         // Run this method again but this time with the same type and enough space (case 1)
@@ -144,6 +133,36 @@ TypeErasedArray& TypeErasedArray::CopyFrom(const TypeErasedArray& other)
     }
 
     return *this;
+}
+
+[[nodiscard]] size_t TypeErasedArray::CapacityBytes() const
+{
+    if (capacity_ == 0) return 0;
+    return std::bit_cast<size_t>(buffer_.get()) - std::bit_cast<size_t>(first_object_) + capacity_ * type_.object_size;
+}
+
+void TypeErasedArray::ChangeBufferType(const TypeInfo& type)
+{
+    assert(count_ == 0);  // This is only allowed for empty arrays
+
+    // Try to reuse the memory used by objects of previous type
+    if (capacity_ != 0)
+    {
+        // num bytes used for alignment plus bytes used for objects
+        const size_t num_bytes = CapacityBytes();
+
+        size_t offset = 0;
+        if (const size_t address = std::bit_cast<size_t>(buffer_.get()); address % type.alignment)
+        {
+            offset = type.alignment - (address % type.alignment);
+        }
+
+        capacity_ = (num_bytes - std::min(offset, num_bytes)) / type.object_size;
+        // might be invalid pointer but it should not be dereferenced as capacity will be zero in this case
+        first_object_ = buffer_.get() + offset;
+    }
+
+    type_ = type;
 }
 
 std::tuple<TypeErasedArray::BufferPtr, uint8_t*> TypeErasedArray::MakeNewBuffer(

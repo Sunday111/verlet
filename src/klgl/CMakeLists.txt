@@ -48,6 +48,7 @@ set(module_source_files
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/template/get_enum_underlying.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/template/member_offset.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/template/on_scope_leave.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/template/tagged_id_hash.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/template/tuple_type_by_index.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/template/type_to_gl_type.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/texture/texture.hpp
@@ -62,6 +63,7 @@ target_link_libraries(klgl PUBLIC edt
                                   glad
                                   glfw
                                   imgui_glfw_cmake
-                                  cpptrace::cpptrace)
+                                  cpptrace::cpptrace
+                                  unordered_dense)
 target_include_directories(klgl PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/code/public)
 target_include_directories(klgl PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/code/private)

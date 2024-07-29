@@ -8,6 +8,7 @@ namespace klgl
 {
 
 class Window;
+class EventManager;
 
 class Application
 {
@@ -29,6 +30,8 @@ public:
     const Window& GetWindow() const;
 
     const std::filesystem::path& GetExecutableDir() const;
+
+    EventManager& GetEventManager();
 
     // Current time. Relative to app start
     float GetTimeSeconds() const;

@@ -41,6 +41,8 @@ public:
     void Erase(size_t index);
 
     [[nodiscard]] size_t Size() const { return count_; }
+    [[nodiscard]] size_t Capacity() const { return capacity_; }
+    [[nodiscard]] size_t CapacityBytes() const;
     [[nodiscard]] const TypeInfo& GetType() const { return type_; }
 
     template <typename Self>
@@ -66,6 +68,7 @@ private:
     static void MoveAndDestroyObjects(const TypeInfo& type, uint8_t* from, uint8_t* to, size_t count);
     static void DestroyObjects(const TypeInfo& type, uint8_t* first, size_t count);
     static void CopyObjects(const TypeInfo& type, uint8_t* from, uint8_t* to, size_t count);
+    void ChangeBufferType(const TypeInfo& type);
 
     void Realloc(size_t new_capacity, size_t shift_begin, size_t shift_size);
 

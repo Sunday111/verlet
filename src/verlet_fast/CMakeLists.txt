@@ -26,7 +26,6 @@ set(module_source_files
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/physics/verlet_solver.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/physics/verlet_solver.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/ranges.hpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/code/private/tagged_id_hash.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/tools/delete_objects_tool.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/tools/delete_objects_tool.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/tools/move_objects_tool.cpp
@@ -38,8 +37,7 @@ set(module_source_files
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/verlet_app.hpp)
 add_executable(verlet_fast ${module_source_files})
 set_generic_compiler_options(verlet_fast PRIVATE)
-target_link_libraries(verlet_fast PRIVATE klgl
-                                          unordered_dense)
+target_link_libraries(verlet_fast PRIVATE klgl)
 target_include_directories(verlet_fast PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/code/public)
 target_include_directories(verlet_fast PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/code/private)
 add_custom_command(TARGET verlet_fast

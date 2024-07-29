@@ -419,13 +419,210 @@ MoveAssignGenericTest()
     return true;
 }
 
-TEST(TypeErasedArray, MoveConstructorSameTypes)
+TEST(TypeErasedArray, MoveAssignSameTypes)
 {
     ASSERT_TRUE((MoveAssignGenericTest<MovableType<int>, MovableType<int>>()));
 }
 
-TEST(TypeErasedArray, MoveConstructorDifferentTypes)
+TEST(TypeErasedArray, MoveAssignDifferentTypes)
 {
     ASSERT_TRUE((MoveAssignGenericTest<MovableType<int>, MovableType<float>>()));
+}
+
+template <typename SrcType, typename DstType>
+    requires(std::is_copy_constructible_v<SrcType> && std::is_copy_constructible_v<DstType>) bool
+CopyConstructGenericTest()
+{
+    constexpr unsigned kSeed = 12345;
+    std::mt19937 rnd(kSeed);  // NOLINT
+
+    // fill arrays with same size
+    constexpr size_t kMaxSize = 50;
+    std::uniform_int_distribution<int> value_distr(-99999, 99999);
+
+    for (size_t src_size = 0; src_size != kMaxSize; ++src_size)
+    {
+        auto array_src = klgl::TypeErasedArray::Create<SrcType>();
+        auto adapter_src = klgl::MakeTypeErasedArrayAdapter<SrcType>(array_src);
+        array_src.Reserve(src_size);
+        array_src.Resize(src_size);
+
+        for (size_t i = 0; i != src_size; ++i)
+        {
+            if (i < src_size)
+            {
+                adapter_src[i] = SrcType::Rnd(rnd);
+            }
+        }
+
+        klgl::TypeErasedArray array_dst = array_src;
+        auto adapter_dst = klgl::MakeTypeErasedArrayAdapter<SrcType>(array_dst);
+
+        auto same_at = [&](const size_t index)
+        {
+            if (adapter_dst[index] != adapter_src[index])
+            {
+                fmt::println("Values at index {} are different", index);
+                return false;
+            }
+
+            return true;
+        };
+
+        array_dst = array_src;
+
+        if (array_dst.Size() != array_src.Size())
+        {
+            fmt::println(
+                "Arrays have different sizes after copy construction. Src size: {}. Dst size: {}",
+                array_src.Size(),
+                array_dst.Size());
+            return false;
+        }
+
+        if (!std::ranges::all_of(std::views::iota(size_t{0}, array_dst.Size()), same_at))
+        {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+TEST(TypeErasedArray, CopyConstructorSameTypes)
+{
+    ASSERT_TRUE((CopyConstructGenericTest<CopyableType<int>, CopyableType<int>>()));
+}
+
+TEST(TypeErasedArray, CopyConstructorDifferentTypes)
+{
+    ASSERT_TRUE((CopyConstructGenericTest<CopyableType<int>, CopyableType<float>>()));
+}
+
+template <typename SrcType, typename DstType>
+    requires(std::is_move_constructible_v<SrcType> && std::is_move_constructible_v<DstType>) bool
+MoveConstructGenericTest()
+{
+    constexpr unsigned kSeed = 12345;
+    std::mt19937 rnd(kSeed);  // NOLINT
+
+    // fill arrays with same size
+    constexpr size_t kMaxSize = 50;
+    std::uniform_int_distribution<int> value_distr(-99999, 99999);
+    std::vector<SrcType> src_copy;
+
+    for (size_t src_size = 0; src_size != kMaxSize; ++src_size)
+    {
+        auto array_src = klgl::TypeErasedArray::Create<SrcType>();
+        auto adapter_src = klgl::MakeTypeErasedArrayAdapter<SrcType>(array_src);
+        array_src.Reserve(src_size);
+        array_src.Resize(src_size);
+
+        {
+            for (size_t i = 0; i != src_size; ++i)
+            {
+                if (i < src_size)
+                {
+                    adapter_src[i] = SrcType::Rnd(rnd);
+                }
+            }
+        }
+
+        // Save the copy before move
+        src_copy.resize(array_src.Size());
+        for (size_t i = 0; i != array_src.Size(); ++i)
+        {
+            src_copy[i] = adapter_src[i].Copy();
+        }
+
+        auto array_dst = std::move(array_src);
+        auto adapter_dst = klgl::MakeTypeErasedArrayAdapter<SrcType>(array_dst);
+
+        auto same_at = [&](const size_t index)
+        {
+            if (adapter_dst[index] != src_copy[index])
+            {
+                fmt::println("Values at index {} are different", index);
+                return false;
+            }
+
+            return true;
+        };
+
+        if (array_dst.Size() != src_copy.size())
+        {
+            fmt::println(
+                "After move construct the resulting array has unexpected size. Expected size: {}. Actual size: {}",
+                src_copy.size(),
+                array_dst.Size());
+            return false;
+        }
+
+        if (!std::ranges::all_of(std::views::iota(size_t{0}, array_dst.Size()), same_at))
+        {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+TEST(TypeErasedArray, MoveConstructorSameTypes)
+{
+    ASSERT_TRUE((MoveConstructGenericTest<MovableType<int>, MovableType<int>>()));
+}
+
+TEST(TypeErasedArray, MoveConstructorDifferentTypes)
+{
+    ASSERT_TRUE((MoveConstructGenericTest<MovableType<int>, MovableType<float>>()));
+}
+
+TEST(TypeErasedArray, Experiment)
+{
+    // This is an array of strings now
+    auto array = klgl::TypeErasedArray::Create<std::string>();
+
+    // Since we know the contained type is string, an adaptor can be used to avoid delaing with cases
+    {
+        auto a = klgl::MakeTypeErasedArrayAdapter<std::string>(array);
+        array.Resize(4);
+        a[0] = "Hello";
+        a[1] = ",";
+        a[2] = "world";
+        a[3] = "!";
+
+        for (size_t i = 0; i != a.Size(); ++i)
+        {
+            fmt::print("{}", a[i]);
+        }
+        fmt::println("");
+    }
+
+    fmt::println("Number of bytes allocated for string array: {}", array.CapacityBytes());
+    fmt::println("String array capacity: {}", array.Capacity());
+
+    // Now convert this array to integer array
+    array = klgl::TypeErasedArray::Create<int>();
+
+    fmt::println("Int array size: {}", array.Size());
+    fmt::println("Number of bytes allocated for int array: {}", array.CapacityBytes());
+    fmt::println("Int array capacity: {}", array.Capacity());
+
+    {
+        auto a = klgl::MakeTypeErasedArrayAdapter<int>(array);
+        array.Resize(6);
+        a[0] = 4;
+        a[1] = 8;
+        a[2] = 15;
+        a[3] = 16;
+        a[4] = 23;
+        a[5] = 42;
+
+        for (size_t i = 0; i != a.Size(); ++i)
+        {
+            fmt::print("{} ", a[i]);
+        }
+        fmt::println("");
+    }
 }
 }  // namespace klgl

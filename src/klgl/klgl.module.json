@@ -9,7 +9,8 @@
             "glad",
             "glfw",
             "imgui_glfw_cmake",
-            "cpptrace"
+            "cpptrace",
+            "unordered_dense"
         ],
         "Private": []
     }

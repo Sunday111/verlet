@@ -6,8 +6,7 @@
     "Dependencies": {
         "Public": [],
         "Private": [
-            "klgl",
-            "unordered_dense"
+            "klgl"
         ]
     }
 }
