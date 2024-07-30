@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.20)
 include(set_compiler_options)
 set(module_source_files
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/application.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/code/private/events/event_manager.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/memory/type_erased_array.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/mesh/mesh_data.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/mesh/procedural_mesh_generator.cpp

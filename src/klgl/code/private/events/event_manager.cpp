@@ -9,7 +9,7 @@ IEventListener* EventManager::AddEventListener(std::unique_ptr<IEventListener> l
 {
     auto [iterator, inserted] = owned_listeners_.insert(std::move(listener));
     klgl::ErrorHandling::Ensure(inserted, "Attempt to register the same listener twice!");
-    return AddEventListener(*listener);
+    return AddEventListener(*iterator->get());
 }
 
 IEventListener* EventManager::AddEventListener(IEventListener& listener)
@@ -30,14 +30,17 @@ void EventManager::UpdateListenTypes(IEventListener* listener)
 
     auto previous_types = listener_info.registered_types;
 
-    for (const cppreflection::Type* type : listener->GetEventTypes())
     {
-        if (listener_info.registered_types.insert(type).second)
+        auto types = listener->GetEventTypes();
+        for (size_t index = 0; index != types.size(); ++index)
         {
-            klgl::ErrorHandling::Ensure(type, "IEventListener::GetEventTypes returns nullptr!");
-            auto callback = listener->MakeCallbackFunction(type);
-            klgl::ErrorHandling::Ensure(callback, "IEventListener::MakeCallbackFunction returns nullptr!");
-            type_lookup_[type].push_back({.listener = listener, .callback = callback});
+            if (auto type = types[index]; listener_info.registered_types.insert(type).second)
+            {
+                klgl::ErrorHandling::Ensure(type, "IEventListener::GetEventTypes returns nullptr!");
+                auto callback = listener->MakeCallbackFunction(index);
+                klgl::ErrorHandling::Ensure(callback, "IEventListener::MakeCallbackFunction returns nullptr!");
+                type_lookup_[type].push_back({.listener = listener, .callback = callback});
+            }
         }
     }
 
@@ -76,7 +79,7 @@ void EventManager::Emit(const cppreflection::Type* event_type, const void* event
     auto& type_data = iterator->second;
     for (auto& entry : type_data)
     {
-        entry.callback(event_type, entry.listener, event_data);
+        entry.callback(entry.listener, event_data);
     }
 }
 

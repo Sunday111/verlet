@@ -54,6 +54,9 @@ add_subdirectory(cloned_modules/imgui_glfw_cmake SYSTEM)
 # https://github.com/jeremy-rifkin/cpptrace main
 add_subdirectory(cloned_modules/cpptrace SYSTEM)
 
+# https://github.com/ericniebler/range-v3 0.12.0
+add_subdirectory(cloned_modules/range_v3 SYSTEM)
+
 # --------------------------------- Own Modules ----------------------------------
 add_subdirectory(deps/yae/modules/examples/ecs)
 add_subdirectory(deps/yae/modules/examples/ecs_tests)
