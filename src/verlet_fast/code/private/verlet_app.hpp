@@ -12,6 +12,12 @@
 #include "klgl/window.hpp"
 #include "physics/verlet_solver.hpp"
 
+namespace klgl::events
+{
+class IEventListener;
+class OnWindowResize;
+};  // namespace klgl::events
+
 namespace verlet
 {
 
@@ -49,6 +55,8 @@ public:
     void Render();
     void RenderWorld();
 
+    void OnWindowResize(const klgl::events::OnWindowResize&);
+
     [[nodiscard]] static constexpr Vec2f TransformPos(const Mat3f& mat, const Vec2f& pos)
     {
         Vec3f v3 = mat.MatMul(Vec3f{{pos.x(), pos.y(), 1.f}});
@@ -72,6 +80,8 @@ public:
         auto world_pos = TransformPos(window_to_world, Vec2f{x, y});
         return world_pos;
     }
+
+    std::unique_ptr<klgl::events::IEventListener> event_listener_;
 
     static constexpr edt::FloatRange<float> kMinSideRange{-100, 100};
     edt::FloatRange2D<float> world_range{.x = kMinSideRange, .y = kMinSideRange};

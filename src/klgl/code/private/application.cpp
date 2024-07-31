@@ -85,7 +85,7 @@ struct Application::State
     float framerate_ = 0.0f;
     uint8_t current_frame_time_index_ = kFrameTimeHistorySize - 1;
     std::optional<float> target_framerate_;
-    EventManager event_manager_;
+    events::EventManager event_manager_;
 };
 
 Application::Application()
@@ -261,7 +261,7 @@ void Application::SetTargetFramerate(std::optional<float> framerate)
     state_->target_framerate_ = framerate;
 }
 
-EventManager& Application::GetEventManager()
+events::EventManager& Application::GetEventManager()
 {
     return state_->event_manager_;
 }

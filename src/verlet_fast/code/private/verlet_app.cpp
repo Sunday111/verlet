@@ -4,6 +4,9 @@
 #include "coloring/spawn_color/spawn_color_strategy_rainbow.hpp"
 #include "coloring/tick_color/tick_color_strategy.hpp"
 #include "gui/app_gui.hpp"
+#include "klgl/events/event_listener_method.hpp"
+#include "klgl/events/event_manager.hpp"
+#include "klgl/events/window_events.hpp"
 #include "klgl/opengl/debug/annotations.hpp"
 #include "klgl/opengl/gl_api.hpp"
 #include "tools/move_objects_tool.hpp"
@@ -12,8 +15,16 @@
 namespace verlet
 {
 
-VerletApp::VerletApp() = default;
-VerletApp::~VerletApp() = default;
+VerletApp::VerletApp()
+{
+    event_listener_ = klgl::events::EventListenerMethodCallbacks<&VerletApp::OnWindowResize>::CreatePtr(this);
+    GetEventManager().AddEventListener(*event_listener_);
+}
+
+VerletApp::~VerletApp()
+{
+    GetEventManager().RemoveListener(event_listener_.get());
+}
 
 void VerletApp::Initialize()
 {
@@ -219,4 +230,5 @@ void VerletApp::RenderWorld()
         });
 }
 
+void VerletApp::OnWindowResize(const klgl::events::OnWindowResize&) {}
 }  // namespace verlet

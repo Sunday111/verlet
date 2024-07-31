@@ -2,7 +2,7 @@
 
 #include "klgl/error_handling.hpp"
 
-namespace klgl
+namespace klgl::events
 {
 
 IEventListener* EventManager::AddEventListener(std::unique_ptr<IEventListener> listener)
@@ -93,4 +93,4 @@ void EventManager::StopListeningEventType(IEventListener* listener, const cppref
         entries.erase(erase_begin, erase_end);
     }
 }
-}  // namespace klgl
+}  // namespace klgl::events

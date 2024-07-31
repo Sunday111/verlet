@@ -4,11 +4,15 @@
 #include <memory>
 #include <optional>
 
+namespace klgl::events
+{
+class EventManager;
+}
+
 namespace klgl
 {
 
 class Window;
-class EventManager;
 
 class Application
 {
@@ -31,7 +35,7 @@ public:
 
     const std::filesystem::path& GetExecutableDir() const;
 
-    EventManager& GetEventManager();
+    events::EventManager& GetEventManager();
 
     // Current time. Relative to app start
     float GetTimeSeconds() const;
