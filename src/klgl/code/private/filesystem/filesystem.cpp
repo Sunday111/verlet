@@ -1,14 +1,15 @@
-#include "klgl/read_file.hpp"
-
 #include <fmt/format.h>
 #include <fmt/std.h>
 
 #include <fstream>
 
+#include "klgl/filesystem/filesystem.hpp"
+
+
 namespace klgl
 {
 
-void ReadFile(const std::filesystem::path& path, std::vector<char>& buffer)
+void Filesystem::ReadFile(const std::filesystem::path& path, std::vector<char>& buffer)
 {
     std::ifstream file(path, std::ios::binary | std::ios::ate);
 

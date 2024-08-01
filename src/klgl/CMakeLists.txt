@@ -3,6 +3,7 @@ include(set_compiler_options)
 set(module_source_files
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/application.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/events/event_manager.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/code/private/filesystem/filesystem.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/memory/type_erased_array.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/mesh/mesh_data.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/mesh/procedural_mesh_generator.cpp
@@ -13,13 +14,12 @@ set(module_source_files
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/opengl/gl_api.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/platform/glfw/glfw_state.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/platform/os/os.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/code/private/read_file.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/reflection/reflection_utils.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/shader/shader.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/shader/shader_define.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/shader/shader_uniform.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/texture/texture.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/code/private/type_id_widget.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/code/private/ui/type_id_widget.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/window.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/application.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/error_handling.hpp
@@ -29,6 +29,7 @@ set(module_source_files
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/events/event_listener_method.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/events/event_manager.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/events/window_events.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/filesystem/filesystem.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/macro/warning_suppress.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/memory/type_erased_array.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/memory/type_erased_array_adapter.hpp
@@ -40,7 +41,6 @@ set(module_source_files
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/opengl/debug/gl_debug_messenger.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/opengl/gl_api.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/platform/os/os.hpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/read_file.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/reflection/matrix_reflect.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/reflection/reflection_utils.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/reflection/register_types.hpp
@@ -58,7 +58,7 @@ set(module_source_files
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/template/tuple_type_by_index.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/template/type_to_gl_type.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/texture/texture.hpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/type_id_widget.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/ui/type_id_widget.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/window.hpp)
 add_library(klgl STATIC ${module_source_files})
 set_generic_compiler_options(klgl PRIVATE)

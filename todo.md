@@ -1,6 +1,7 @@
-# Event system. The first use would be to report and gather preformance metrics
 # UI to change gravity
 # Limit velocity?
 # Camera
-- Zoom
-- Pan
+- handle window resize using event system
+- implement pan and zoom on WASD and move scroll
+# EventSystem
+- more tests and check if these templates work ok on windows

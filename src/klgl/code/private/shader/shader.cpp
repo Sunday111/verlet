@@ -11,7 +11,7 @@
 
 #include "CppReflection/TypeRegistry.hpp"
 #include "fmt/core.h"
-#include "klgl/read_file.hpp"
+#include "klgl/filesystem/filesystem.hpp"
 #include "klgl/reflection/matrix_reflect.hpp"  // IWYU pragma: keep (provides reflection for matrices)
 #include "klgl/shader/sampler_uniform.hpp"
 #include "klgl/shader/shader.hpp"
@@ -19,7 +19,7 @@
 #include "klgl/shader/shader_uniform.hpp"
 #include "klgl/template/on_scope_leave.hpp"
 #include "klgl/texture/texture.hpp"
-#include "klgl/type_id_widget.hpp"
+#include "klgl/ui/type_id_widget.hpp"
 #include "nlohmann/json.hpp"
 
 namespace klgl
@@ -34,7 +34,7 @@ CompileShader(GLuint shader, const std::filesystem::path& path, const std::vecto
 
     fmt::print("compiling shader {}\n", path.stem().string());
     std::vector<char> buffer;
-    ReadFile(path, buffer);
+    Filesystem::ReadFile(path, buffer);
 
     std::vector<const char*> shader_sources_heap;
     std::vector<GLint> shader_sources_lengths_heap;
