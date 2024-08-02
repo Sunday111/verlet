@@ -16,6 +16,8 @@ namespace klgl::events
 {
 class IEventListener;
 class OnWindowResize;
+class OnMouseMove;
+class OnMouseScroll;
 };  // namespace klgl::events
 
 namespace verlet
@@ -56,6 +58,8 @@ public:
     void RenderWorld();
 
     void OnWindowResize(const klgl::events::OnWindowResize&);
+    void OnMouseMove(const klgl::events::OnMouseMove&);
+    void OnMouseScroll(const klgl::events::OnMouseScroll&);
 
     [[nodiscard]] static constexpr Vec2f TransformPos(const Mat3f& mat, const Vec2f& pos)
     {

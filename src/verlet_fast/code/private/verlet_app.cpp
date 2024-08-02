@@ -17,7 +17,10 @@ namespace verlet
 
 VerletApp::VerletApp()
 {
-    event_listener_ = klgl::events::EventListenerMethodCallbacks<&VerletApp::OnWindowResize>::CreatePtr(this);
+    event_listener_ = klgl::events::EventListenerMethodCallbacks<
+        &VerletApp::OnWindowResize,
+        &VerletApp::OnMouseMove,
+        &VerletApp::OnMouseScroll>::CreatePtr(this);
     GetEventManager().AddEventListener(*event_listener_);
 }
 
@@ -230,5 +233,28 @@ void VerletApp::RenderWorld()
         });
 }
 
-void VerletApp::OnWindowResize(const klgl::events::OnWindowResize&) {}
+void VerletApp::OnWindowResize(const klgl::events::OnWindowResize& event)
+{
+    fmt::println(
+        "Window resize ({}x{}) -> ({}x{})",
+        event.previous.x(),
+        event.previous.y(),
+        event.current.x(),
+        event.current.y());
+}
+
+void VerletApp::OnMouseMove(const klgl::events::OnMouseMove& event)
+{
+    fmt::println(
+        "Mouse move ({}, {}) -> ({}, {})",
+        event.previous.x(),
+        event.previous.y(),
+        event.current.x(),
+        event.current.y());
+}
+
+void VerletApp::OnMouseScroll(const klgl::events::OnMouseScroll& event)
+{
+    fmt::println("Mouse scroll dx: {}, dy: {}", event.value.x(), event.value.y());
+}
 }  // namespace verlet

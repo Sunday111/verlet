@@ -137,7 +137,7 @@ void Application::Initialize()
             window_height = static_cast<uint32_t>(static_cast<float>(window_height) * y_scale);
         }
 
-        state_->window_ = std::make_unique<Window>(window_width, window_height);
+        state_->window_ = std::make_unique<Window>(*this, window_width, window_height);
     }
 
     // GLAD can be initialized only when glfw has window context

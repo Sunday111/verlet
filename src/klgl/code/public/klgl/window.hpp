@@ -1,8 +1,6 @@
 #pragma once
 
 #include <EverydayTools/Template/TaggedIdentifier.hpp>
-#include <functional>
-#include <vector>
 
 #include "EverydayTools/Math/Matrix.hpp"
 
@@ -13,13 +11,12 @@ namespace klgl
 
 using namespace edt::lazy_matrix_aliases;  // NOLINT
 
-struct WindowEventListenerIdTag;
-using WindowEventListenerId = edt::TaggedIdentifier<WindowEventListenerIdTag, size_t>;
+class Application;
 
 class Window
 {
 public:
-    Window(uint32_t width, uint32_t height);
+    Window(Application& app, uint32_t width, uint32_t height);
     ~Window();
 
     void MakeContextCurrent();
@@ -69,6 +66,7 @@ private:
     void OnMouseScroll([[maybe_unused]] float dx, float dy);
 
 private:
+    Application* app_ = nullptr;
     GLFWwindow* window_ = nullptr;
     Vec2f cursor_;
     uint32_t id_;

@@ -5,11 +5,18 @@
 #include <stdexcept>
 
 #include "GLFW/glfw3.h"
+#include "klgl/application.hpp"
+#include "klgl/events/event_manager.hpp"
+#include "klgl/events/window_events.hpp"
 
 namespace klgl
 {
 
-Window::Window(uint32_t width, uint32_t height) : id_(MakeWindowId()), width_(width), height_(height)
+Window::Window(Application& app, uint32_t width, uint32_t height)
+    : app_(&app),
+      id_(MakeWindowId()),
+      width_(width),
+      height_(height)
 {
     Create();
 }
@@ -123,13 +130,18 @@ void Window::Destroy()
 
 void Window::OnResize(int width, int height)
 {
+    Vec2i prev_size = {static_cast<int>(width_), static_cast<int>(height_)};
     width_ = static_cast<uint32_t>(width);
     height_ = static_cast<uint32_t>(height);
+
+    app_->GetEventManager().Emit(events::OnWindowResize{.previous = prev_size, .current{width, height}});
 }
 
 void Window::OnMouseMove(Vec2f new_cursor)
 {
+    auto prev = cursor_;
     cursor_ = new_cursor;
+    app_->GetEventManager().Emit(events::OnMouseMove{.previous = prev, .current = cursor_});
 }
 
 void Window::OnMouseButton(int button, int action, [[maybe_unused]] int mods)
@@ -151,6 +163,9 @@ void Window::OnMouseButton(int button, int action, [[maybe_unused]] int mods)
     }
 }
 
-void Window::OnMouseScroll([[maybe_unused]] float dx, [[maybe_unused]] float dy) {}
+void Window::OnMouseScroll(float dx, float dy)
+{
+    app_->GetEventManager().Emit(events::OnMouseScroll{.value = {dx, dy}});
+}
 
 }  // namespace klgl
