@@ -6,6 +6,7 @@
 #include "gui/app_gui.hpp"
 #include "klgl/events/event_listener_method.hpp"
 #include "klgl/events/event_manager.hpp"
+#include "klgl/events/mouse_events.hpp"
 #include "klgl/events/window_events.hpp"
 #include "klgl/opengl/debug/annotations.hpp"
 #include "klgl/opengl/gl_api.hpp"
@@ -111,7 +112,20 @@ void VerletApp::UpdateWorldRange()
     solver.SetSimArea(sim_area);
 }
 
-void VerletApp::UpdateCamera() {}
+void VerletApp::UpdateCamera()
+{
+    if (!ImGui::GetIO().WantCaptureKeyboard)
+    {
+        Vec2f offset{};
+        if (ImGui::IsKeyDown(ImGuiKey_W)) offset.y() += 1.f;
+        if (ImGui::IsKeyDown(ImGuiKey_S)) offset.y() -= 1.f;
+        if (ImGui::IsKeyDown(ImGuiKey_D)) offset.x() += 1.f;
+        if (ImGui::IsKeyDown(ImGuiKey_A)) offset.x() -= 1.f;
+
+        const auto e = world_range.Extent();
+        camera_eye_ += (GetLastFrameDurationSeconds() * e * offset) / (10.f * camera_zoom_);
+    }
+}
 
 void VerletApp::UpdateSimulation()
 {
@@ -255,6 +269,6 @@ void VerletApp::OnMouseMove(const klgl::events::OnMouseMove& event)
 
 void VerletApp::OnMouseScroll(const klgl::events::OnMouseScroll& event)
 {
-    fmt::println("Mouse scroll dx: {}, dy: {}", event.value.x(), event.value.y());
+    camera_zoom_ += event.value.y() / 20.f;
 }
 }  // namespace verlet

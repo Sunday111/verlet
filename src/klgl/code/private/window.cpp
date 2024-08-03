@@ -7,7 +7,9 @@
 #include "GLFW/glfw3.h"
 #include "klgl/application.hpp"
 #include "klgl/events/event_manager.hpp"
+#include "klgl/events/mouse_events.hpp"
 #include "klgl/events/window_events.hpp"
+
 
 namespace klgl
 {
