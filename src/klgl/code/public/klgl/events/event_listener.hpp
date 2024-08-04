@@ -1,6 +1,7 @@
 #pragma once
 
 #include <CppReflection/GetTypeInfo.hpp>
+#include <concepts>
 #include <memory>
 
 #include "event_listener_interface.hpp"
@@ -15,23 +16,30 @@ class EventListener final : public IEventListener
 public:
     static constexpr size_t kEventsCount = sizeof...(EventTypes);
 
+    template <size_t index>
+    using EventTypeByIndex = std::tuple_element_t<index, std::tuple<EventTypes...>>;
+
     std::vector<const cppreflection::Type*> GetEventTypes() const override
     {
         return {cppreflection::GetTypeInfo<EventTypes>()...};
     }
 
-    static EventListener FromFunctions(std::function<void(const EventTypes&)>... functions)
+    template <typename... Functors>
+        requires(sizeof...(Functors) == kEventsCount && (std::invocable<Functors, EventTypes> && ... && true))
+    static EventListener FromFunctions(Functors&&... functors)
     {
         EventListener result{};
-        result.typed_callbacks_ = {std::move(functions)...};
+        result.typed_callbacks_ = {std::forward<Functors>(functors)...};
         result.InitializeWrappers();
         return result;
     }
 
-    static std::unique_ptr<EventListener> PtrFromFunctions(std::function<void(const EventTypes&)>... functions)
+    template <typename... Functors>
+        requires(sizeof...(Functors) == kEventsCount && (std::invocable<Functors, EventTypes> && ... && true))
+    static std::unique_ptr<EventListener> PtrFromFunctions(Functors&&... functors)
     {
         auto ptr = std::make_unique<EventListener>();
-        *ptr = FromFunctions(std::move(functions)...);
+        *ptr = FromFunctions(std::forward<Functors>(functors)...);
         return ptr;
     }
 
@@ -41,9 +49,8 @@ private:
     template <size_t index>
     static void Callback(IEventListener* listener, const void* event_data)
     {
-        using EventType = std::tuple_element_t<index, std::tuple<EventTypes...>>;
         auto this_ = static_cast<EventListener*>(listener);
-        auto& event = *reinterpret_cast<const EventType*>(event_data);  // NOLINT
+        auto& event = *reinterpret_cast<const EventTypeByIndex<index>*>(event_data);  // NOLINT
         std::get<index>(this_->typed_callbacks_)(event);
     }
 

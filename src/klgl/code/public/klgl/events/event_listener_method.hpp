@@ -49,7 +49,7 @@ private:
         auto this_ = static_cast<EventListenerMethodCallbacks*>(listener);
         auto& event = *reinterpret_cast<const EventType*>(event_data);  // NOLINT
         static constexpr auto methods_tuple = std::make_tuple(methods...);
-        (*this_->object_.*std::get<index>(methods_tuple))(event);
+        std::invoke(std::get<index>(methods_tuple), this_->object_, event);
     }
 
     void InitializeWrappers()
