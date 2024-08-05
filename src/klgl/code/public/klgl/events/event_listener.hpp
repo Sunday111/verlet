@@ -2,6 +2,7 @@
 
 #include <CppReflection/GetTypeInfo.hpp>
 #include <concepts>
+#include <functional>
 #include <memory>
 
 #include "event_listener_interface.hpp"
@@ -51,7 +52,7 @@ private:
     {
         auto this_ = static_cast<EventListener*>(listener);
         auto& event = *reinterpret_cast<const EventTypeByIndex<index>*>(event_data);  // NOLINT
-        std::get<index>(this_->typed_callbacks_)(event);
+        std::invoke(std::get<index>(this_->typed_callbacks_), event);
     }
 
     void InitializeWrappers()

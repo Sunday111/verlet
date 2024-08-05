@@ -9,45 +9,39 @@ namespace klgl::events::detail
 template <typename Signature>
 struct FunctionSignatureImpl
 {
-    static constexpr bool is_function = false;
+    [[nodiscard]] static constexpr bool IsFunction() { return false; }
 };
 
 template <typename Return_, typename Object_, typename... Args_>
 struct FunctionSignatureImpl<Return_ (Object_::*)(Args_...)>
 {
-    static constexpr bool is_function = true;
-    static constexpr bool is_stateless = false;
-
     using Object = std::decay_t<Object_>;
     using Return = Return_;
     using Args = std::tuple<Args_...>;
 
+    [[nodiscard]] static constexpr bool IsFunction() { return true; }
     [[nodiscard]] static constexpr size_t NumArgs() { return sizeof...(Args_); }
 };
 
 template <typename Return_, typename Object_, typename... Args_>
 struct FunctionSignatureImpl<Return_ (Object_::*)(Args_...) const>
 {
-    static constexpr bool is_function = true;
-    static constexpr bool is_stateless = false;
-
     using Object = std::decay_t<Object_>;
     using Return = Return_;
     using Args = std::tuple<Args_...>;
 
+    [[nodiscard]] static constexpr bool IsFunction() { return true; }
     [[nodiscard]] static constexpr size_t NumArgs() { return sizeof...(Args_); }
 };
 
 template <typename Return_, typename... Args_>
 struct FunctionSignatureImpl<Return_ (*)(Args_...)>
 {
-    static constexpr bool is_function = true;
-    static constexpr bool is_stateless = false;
-
     using Object = void;
     using Return = Return_;
     using Args = std::tuple<Args_...>;
 
+    [[nodiscard]] static constexpr bool IsFunction() { return true; }
     [[nodiscard]] static constexpr size_t NumArgs() { return sizeof...(Args_); }
 };
 
@@ -55,7 +49,7 @@ template <typename Signature>
 using FunctionSignature = FunctionSignatureImpl<std::decay_t<Signature>>;
 
 template <typename T>
-concept FunctionOrMethod = FunctionSignature<T>::is_function;
+concept FunctionOrMethod = FunctionSignature<T>::IsFunction();
 
 template <FunctionOrMethod...>
 struct SignaturesPack;

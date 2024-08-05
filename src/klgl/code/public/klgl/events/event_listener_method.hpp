@@ -8,6 +8,20 @@
 
 namespace klgl::events
 {
+
+// This adapter over IEventListener provides a way to subscribe
+// some class to a few different events easily and with minimal memory overhead.
+// Template parameters are pointers to some class methods that will be called when event happens.
+// Types of events for subscribtion will be deduced from specified methods signatures.
+//
+// For example, if you class has these methods:
+//     void OnEvent1(const MyEvent1&);
+//     void OnEvent2(const MyEvent2&);
+// this listener can be created this way:
+//     listener = klgl::events::EventListenerMethodCallbacks<
+//          &MyClass::OnEvent1,
+//          &MyClass::OnEvent2>::CreatePtr(this);
+//     event_manager.AddEventListener(*listener_);
 template <auto... methods>
     requires(detail::ValidMethodEventListeners<methods...>)
 class EventListenerMethodCallbacks : public IEventListener
