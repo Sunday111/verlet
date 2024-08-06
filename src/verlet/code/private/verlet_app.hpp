@@ -5,7 +5,6 @@
 #include <imgui.h>
 
 #include "EverydayTools/Math/FloatRange.hpp"
-#include "EverydayTools/Math/Math.hpp"
 #include "instance_painter.hpp"
 #include "klgl/application.hpp"
 #include "klgl/shader/shader.hpp"
@@ -15,8 +14,6 @@
 namespace klgl::events
 {
 class IEventListener;
-class OnWindowResize;
-class OnMouseMove;
 class OnMouseScroll;
 };  // namespace klgl::events
 
@@ -26,6 +23,21 @@ namespace verlet
 class Tool;
 class SpawnColorStrategy;
 class TickColorStrategy;
+
+class VerletEmitter
+{
+public:
+    float last_emit_time = 0.0;
+    bool enabled = false;
+    size_t max_objects_count = 10000;
+};
+
+class Camera
+{
+public:
+    float zoom = 1.f;
+    Vec2f eye{};
+};
 
 class VerletApp : public klgl::Application
 {
@@ -44,6 +56,8 @@ public:
         RenderPerfStats render;
     };
 
+    static constexpr edt::FloatRange<float> kMinSideRange{-100, 100};
+
     VerletApp();
     ~VerletApp() override;
 
@@ -57,8 +71,6 @@ public:
     void Render();
     void RenderWorld();
 
-    void OnWindowResize(const klgl::events::OnWindowResize&);
-    void OnMouseMove(const klgl::events::OnMouseMove&);
     void OnMouseScroll(const klgl::events::OnMouseScroll&);
 
     [[nodiscard]] static constexpr Vec2f TransformPos(const Mat3f& mat, const Vec2f& pos)
@@ -71,43 +83,34 @@ public:
     {
         Vec3f v3 = mat.MatMul(Vec3f{{vec.x(), vec.y(), 0.f}});
         return Vec2f{{v3.x(), v3.y()}};
-    };
-
-    Vec2f GetMousePositionInWorldCoordinates() const
-    {
-        const auto window_size = GetWindow().GetSize().Cast<float>();
-        const auto window_range = edt::FloatRange2D<float>::FromMinMax({}, window_size);
-        const auto window_to_world = edt::Math::MakeTransform(window_range, world_range);
-
-        auto [x, y] = ImGui::GetMousePos();
-        y = window_range.y.Extent() - y;
-        auto world_pos = TransformPos(window_to_world, Vec2f{x, y});
-        return world_pos;
     }
 
-    std::unique_ptr<klgl::events::IEventListener> event_listener_;
+    [[nodiscard]] const PerfStats& GetPerfStats() const { return perf_stats_; }
 
-    static constexpr edt::FloatRange<float> kMinSideRange{-100, 100};
-    edt::FloatRange2D<float> world_range{.x = kMinSideRange, .y = kMinSideRange};
+    [[nodiscard]] VerletEmitter& GetEmitter() { return emitter_; }
+    [[nodiscard]] const VerletEmitter& GetEmitter() const { return emitter_; }
+    [[nodiscard]] Camera& GetCamera() { return camera_; }
+    [[nodiscard]] const Camera& GetCamera() const { return camera_; }
+    [[nodiscard]] const edt::FloatRange2Df& GetWorldRange() const { return world_range_; }
+    [[nodiscard]] const edt::Vec3f& GetBackgroundColor() const { return background_color_; }
+    void SetBackgroundColor(const Vec3f& background_color);
+
+    Vec2f GetMousePositionInWorldCoordinates() const;
+
     VerletSolver solver{};
-
-    // Rendering
-    std::unique_ptr<klgl::Shader> shader_;
-    float camera_zoom_ = 1.f;
-    Vec2f camera_eye_{};
-
-    InstancedPainter circle_painter_{};
-
-    // emitter
-    float last_emit_time = 0.0;
-    bool enable_emitter_ = false;
-    size_t emitter_max_objects_count_ = 10000;
-
     std::unique_ptr<Tool> tool_;
     std::unique_ptr<SpawnColorStrategy> spawn_color_strategy_;
     std::unique_ptr<TickColorStrategy> tick_color_strategy_;
 
+private:
+    std::unique_ptr<klgl::events::IEventListener> event_listener_;
+    edt::FloatRange2D<float> world_range_{.x = kMinSideRange, .y = kMinSideRange};
+    std::unique_ptr<klgl::Shader> shader_;
+    Camera camera_{};
+    InstancedPainter circle_painter_{};
+    VerletEmitter emitter_{};
     PerfStats perf_stats_{};
+    Vec3f background_color_{};
 };
 
 }  // namespace verlet

@@ -22,7 +22,13 @@ void AppGUI::Render()
     const klgl::ScopeAnnotation annotation("Render GUI");
     if (ImGui::Begin("Verlet"))
     {
-        app_->shader_->DrawDetails();
+        {
+            auto color = app_->GetBackgroundColor();
+            if (ImGui::ColorEdit3("Background color", color.data()))
+            {
+                app_->SetBackgroundColor(color);
+            }
+        }
 
         Camera();
         Perf();
@@ -38,14 +44,17 @@ void AppGUI::Render()
 void AppGUI::Camera()
 {
     if (!ImGui::CollapsingHeader("Camera")) return;
-    ImGui::SliderFloat("Zoom", &app_->camera_zoom_, 0.1f, 5.f);
+
+    auto& camera = app_->GetCamera();
+    ImGui::SliderFloat("Zoom", &camera.zoom, 0.1f, 5.f);
     GuiText("Eye");
-    ImGui::SliderFloat("x", &app_->camera_eye_.x(), app_->world_range.x.begin, app_->world_range.x.end);
-    ImGui::SliderFloat("y", &app_->camera_eye_.y(), app_->world_range.y.begin, app_->world_range.y.end);
+    const auto& world_range = app_->GetWorldRange();
+    ImGui::SliderFloat("x", &camera.eye.x(), world_range.x.begin, world_range.x.end);
+    ImGui::SliderFloat("y", &camera.eye.y(), world_range.y.begin, world_range.y.end);
     if (ImGui::Button("Reset"))
     {
-        app_->camera_zoom_ = 1.f;
-        app_->camera_eye_ = {};
+        camera.zoom = 1.f;
+        camera.eye = {};
     }
 }
 
@@ -57,26 +66,24 @@ void AppGUI::Perf()
         return std::chrono::duration_cast<std::chrono::duration<float, std::milli>>(duration);
     };
 
-    auto& solver = app_->solver;
-    auto& perf_stats = app_->perf_stats_;
-
+    const auto& stats = app_->GetPerfStats();
     GuiText("Framerate: {}", app_->GetFramerate());
-    GuiText("Objects count: {}", solver.objects.ObjectsCount());
-    GuiText("Sim update {}", to_flt_ms(perf_stats.sim_update.total));
-    GuiText("  Apply links {}", to_flt_ms(perf_stats.sim_update.apply_links));
-    GuiText("  Rebuild grid {}", to_flt_ms(perf_stats.sim_update.rebuild_grid));
-    GuiText("  Solve collisions {}", to_flt_ms(perf_stats.sim_update.solve_collisions));
-    GuiText("  Update positions {}", to_flt_ms(perf_stats.sim_update.update_positions));
-    GuiText("Render {}", to_flt_ms(perf_stats.render.total));
-    GuiText("  Set Circle Loop {}", to_flt_ms(perf_stats.render.set_circle_loop));
+    GuiText("Objects count: {}", app_->solver.objects.ObjectsCount());
+    GuiText("Sim update {}", to_flt_ms(stats.sim_update.total));
+    GuiText("  Apply links {}", to_flt_ms(stats.sim_update.apply_links));
+    GuiText("  Rebuild grid {}", to_flt_ms(stats.sim_update.rebuild_grid));
+    GuiText("  Solve collisions {}", to_flt_ms(stats.sim_update.solve_collisions));
+    GuiText("  Update positions {}", to_flt_ms(stats.sim_update.update_positions));
+    GuiText("Render {}", to_flt_ms(stats.render.total));
+    GuiText("  Set Circle Loop {}", to_flt_ms(stats.render.set_circle_loop));
 }
 
 void AppGUI::Emitter()
 {
     if (!ImGui::CollapsingHeader("Emitter")) return;
 
-    ImGui::Checkbox("Enabled", &app_->enable_emitter_);
-    ImGuiHelper::SliderUInt("Max objects", &app_->emitter_max_objects_count_, 0uz, 150'000uz);
+    ImGui::Checkbox("Enabled", &app_->GetEmitter().enabled);
+    ImGuiHelper::SliderUInt("Max objects", &app_->GetEmitter().max_objects_count, 0uz, 150'000uz);
 }
 
 void AppGUI::Tools()

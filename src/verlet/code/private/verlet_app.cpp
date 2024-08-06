@@ -7,7 +7,6 @@
 #include "klgl/events/event_listener_method.hpp"
 #include "klgl/events/event_manager.hpp"
 #include "klgl/events/mouse_events.hpp"
-#include "klgl/events/window_events.hpp"
 #include "klgl/opengl/debug/annotations.hpp"
 #include "klgl/opengl/gl_api.hpp"
 #include "tools/move_objects_tool.hpp"
@@ -18,10 +17,7 @@ namespace verlet
 
 VerletApp::VerletApp()
 {
-    event_listener_ = klgl::events::EventListenerMethodCallbacks<
-        &VerletApp::OnWindowResize,
-        &VerletApp::OnMouseMove,
-        &VerletApp::OnMouseScroll>::CreatePtr(this);
+    event_listener_ = klgl::events::EventListenerMethodCallbacks<&VerletApp::OnMouseScroll>::CreatePtr(this);
     GetEventManager().AddEventListener(*event_listener_);
 }
 
@@ -50,7 +46,6 @@ void VerletApp::InitializeRendering()
 {
     SetTargetFramerate({60.f});
 
-    // klgl::OpenGl::SetClearColor(Vec4f{255, 245, 153, 255} / 255.f);
     klgl::OpenGl::SetClearColor({});
     GetWindow().SetSize(1000, 1000);
     GetWindow().SetTitle("Verlet");
@@ -73,11 +68,11 @@ void VerletApp::UpdateWorldRange()
     {
         if (auto [width, height] = GetWindow().GetSize2f().Tuple(); width > height)
         {
-            return std::tuple{&world_range.y, &world_range.x, width / height};
+            return std::tuple{&world_range_.y, &world_range_.x, width / height};
         }
         else
         {
-            return std::tuple{&world_range.x, &world_range.y, height / width};
+            return std::tuple{&world_range_.x, &world_range_.y, height / width};
         }
     }();
 
@@ -107,8 +102,8 @@ void VerletApp::UpdateWorldRange()
     };
 
     auto sim_area = solver.GetSimArea();
-    adjust_range(world_range.x, sim_area.x);
-    adjust_range(world_range.y, sim_area.y);
+    adjust_range(world_range_.x, sim_area.x);
+    adjust_range(world_range_.y, sim_area.y);
     solver.SetSimArea(sim_area);
 }
 
@@ -122,8 +117,7 @@ void VerletApp::UpdateCamera()
         if (ImGui::IsKeyDown(ImGuiKey_D)) offset.x() += 1.f;
         if (ImGui::IsKeyDown(ImGuiKey_A)) offset.x() -= 1.f;
 
-        const auto e = world_range.Extent();
-        camera_eye_ += (GetLastFrameDurationSeconds() * e * offset) / (10.f * camera_zoom_);
+        camera_.eye += (GetLastFrameDurationSeconds() * world_range_.Extent() * offset) / (10.f * camera_.zoom);
     }
 }
 
@@ -134,8 +128,7 @@ void VerletApp::UpdateSimulation()
         tool_->Tick();
     }
 
-    // Emitter
-    if (enable_emitter_ && solver.objects.ObjectsCount() <= emitter_max_objects_count_)
+    if (emitter_.enabled && solver.objects.ObjectsCount() <= emitter_.max_objects_count)
     {
         auto color_fn = spawn_color_strategy_->GetColorFunction();
         for (uint32_t i{40}; i--;)
@@ -143,7 +136,7 @@ void VerletApp::UpdateSimulation()
             const float y = 50.f + 1.02f * static_cast<float>(i);
 
             {
-                auto [aid, object] = solver.objects.Alloc();
+                auto [id, object] = solver.objects.Alloc();
                 object.position = {0.6f, y};
                 object.old_position = {0.4f, y};
                 object.movable = true;
@@ -151,7 +144,7 @@ void VerletApp::UpdateSimulation()
             }
 
             {
-                auto [bid, object] = solver.objects.Alloc();
+                auto [id, object] = solver.objects.Alloc();
                 object.position = {-0.6f, y};
                 object.old_position = {-0.4f, y};
                 object.movable = true;
@@ -209,12 +202,11 @@ void VerletApp::RenderWorld()
 
     const klgl::ScopeAnnotation annotation("Render World");
 
-    const auto world_space = world_range;
     const auto camera_space =
-        edt::FloatRange2Df::FromMinMax(world_space.Min() / camera_zoom_, world_space.Max() / camera_zoom_)
-            .Shifted(camera_eye_);
+        edt::FloatRange2Df::FromMinMax(world_range_.Min() / camera_.zoom, world_range_.Max() / camera_.zoom)
+            .Shifted(camera_.eye);
     const auto screen_space = edt::FloatRange2Df::FromMinMax(Vec2f{} - 1, Vec2f{} + 1);
-    auto world_to_camera = AffineTransform(world_space, camera_space);
+    auto world_to_camera = AffineTransform(world_range_, camera_space);
     auto camera_to_view = edt::Math::MakeTransform(camera_space, screen_space);
     auto world_to_view = camera_to_view.MatMul(world_to_camera);
 
@@ -247,28 +239,28 @@ void VerletApp::RenderWorld()
         });
 }
 
-void VerletApp::OnWindowResize(const klgl::events::OnWindowResize& event)
-{
-    fmt::println(
-        "Window resize ({}x{}) -> ({}x{})",
-        event.previous.x(),
-        event.previous.y(),
-        event.current.x(),
-        event.current.y());
-}
-
-void VerletApp::OnMouseMove(const klgl::events::OnMouseMove& event)
-{
-    fmt::println(
-        "Mouse move ({}, {}) -> ({}, {})",
-        event.previous.x(),
-        event.previous.y(),
-        event.current.x(),
-        event.current.y());
-}
-
 void VerletApp::OnMouseScroll(const klgl::events::OnMouseScroll& event)
 {
-    camera_zoom_ += event.value.y() / 20.f;
+    camera_.zoom += event.value.y() / 20.f;
+}
+
+void VerletApp::SetBackgroundColor(const Vec3f& background_color)
+{
+    if (background_color_ == background_color) return;
+    background_color_ = background_color;
+    const auto& v = background_color_;
+    klgl::OpenGl::SetClearColor(Vec4f{v.x(), v.y(), v.z(), 1.f});
+}
+
+Vec2f VerletApp::GetMousePositionInWorldCoordinates() const
+{
+    const auto window_size = GetWindow().GetSize().Cast<float>();
+    const auto window_range = edt::FloatRange2D<float>::FromMinMax({}, window_size);
+    const auto window_to_world = edt::Math::MakeTransform(window_range, world_range_);
+
+    auto [x, y] = ImGui::GetMousePos();
+    y = window_range.y.Extent() - y;
+    auto world_pos = TransformPos(window_to_world, Vec2f{x, y});
+    return world_pos;
 }
 }  // namespace verlet
