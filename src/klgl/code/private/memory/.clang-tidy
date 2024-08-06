@@ -1,7 +1,0 @@
-# a lot of memory management happens here so this check is rather annoying than useful
-Checks: "-cppcoreguidelines-pro-bounds-pointer-arithmetic,\
-"
-WarningsAsErrors: '*'
-InheritParentConfig: true
-# Use clang-format
-FormatStyle: file

@@ -1,7 +1,7 @@
 {
     "name": "Verlet",
     "modules_dir": "src",
-    "cloned_modules_dir": "cloned_modules",
+    "cloned_dependencies_dir": "cloned_dependencies",
     "enable_lto_globally": true,
     "cpp": {
         "standard": "23"

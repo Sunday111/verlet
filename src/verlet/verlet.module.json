@@ -4,6 +4,9 @@
         "content"
     ],
     "Dependencies": {
+        "GitPackages": [
+            "https://github.com/Sunday111/klgl"
+        ],
         "Public": [],
         "Private": [
             "klgl"
