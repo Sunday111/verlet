@@ -18,13 +18,13 @@ enable_lto_globally()
 # ---------------------------- External Dependencies -----------------------------
 
 # https://github.com/glfw/glfw master
-add_subdirectory(cloned_dependencies/glfw SYSTEM)
+add_subdirectory(cloned_dependencies/glfw/glfw SYSTEM)
 
 # https://github.com/Sunday111/imgui_glfw_cmake main
-add_subdirectory(cloned_dependencies/imgui_glfw_cmake SYSTEM)
+add_subdirectory(cloned_dependencies/Sunday111/imgui_glfw_cmake SYSTEM)
 
 # https://github.com/jeremy-rifkin/cpptrace main
-add_subdirectory(cloned_dependencies/cpptrace SYSTEM)
+add_subdirectory(cloned_dependencies/jeremy-rifkin/cpptrace SYSTEM)
 
 # https://github.com/ericniebler/range-v3 0.12.0
 add_subdirectory(cloned_dependencies/range_v3 SYSTEM)
@@ -34,13 +34,13 @@ add_subdirectory(cloned_dependencies/nlohmann/json SYSTEM)
 
 # https://github.com/Sunday111/EverydayTools for_yae
 option(EDT_WITH_TESTS "" ON)
-add_subdirectory(cloned_dependencies/edt SYSTEM)
+add_subdirectory(cloned_dependencies/Sunday111/EverydayTools SYSTEM)
 
 # https://github.com/fmtlib/fmt 10.1.1
 add_subdirectory(cloned_dependencies/fmt/10_1_1 SYSTEM)
 
 # https://github.com/Sunday111/CppReflection for_yae
-add_subdirectory(cloned_dependencies/CppReflection SYSTEM)
+add_subdirectory(cloned_dependencies/Sunday111/CppReflection SYSTEM)
 
 # https://github.com/Sunday111/glad main
 add_subdirectory(cloned_dependencies/Sunday111/glad SYSTEM)
@@ -55,7 +55,7 @@ add_subdirectory(cloned_dependencies/google/googletest/1_15_0 SYSTEM)
 
 # https://github.com/google/benchmark v1.8.3
 option(BENCHMARK_ENABLE_TESTING "" OFF)
-add_subdirectory(cloned_dependencies/google/googlebench/1_8_3 SYSTEM)
+add_subdirectory(cloned_dependencies/google/benchmark/1_8_3 SYSTEM)
 
 # --------------------------------- Own Modules ----------------------------------
 add_subdirectory(cloned_dependencies/Sunday111/klgl/klgl)

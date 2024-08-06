@@ -5,7 +5,7 @@
     ],
     "Dependencies": {
         "GitPackages": [
-            "https://github.com/Sunday111/klgl"
+            "https://github.com/Sunday111/klgl main"
         ],
         "Public": [],
         "Private": [
