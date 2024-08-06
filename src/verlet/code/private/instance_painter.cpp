@@ -4,6 +4,7 @@
 
 #include "klgl/mesh/procedural_mesh_generator.hpp"
 #include "mesh_vertex.hpp"
+#include "ranges.hpp"
 
 namespace verlet
 {
@@ -19,30 +20,21 @@ void InstancedPainter::Initialize()
 void InstancedPainter::Render()
 {
     mesh_->Bind();
-    for (const size_t batch_index : std::views::iota(size_t{0}, batches_.size()))
+    for (auto [batch_index, batch] : Enumerate(batches_))
     {
-        auto& batch = batches_[batch_index];
+        if (num_circles_ <= batch_index * batch.kBatchSize) break;
+
         // number of circles initialized for the current batch
-        const size_t num_locally_initialized = num_initialized_ % batch.kBatchSize;
         const size_t num_locally_used = std::min(num_circles_ - batch_index * batch.kBatchSize, batch.kBatchSize);
 
-        // if we have new elements since last render - send color and scale for new elements
-        if (num_locally_used > num_locally_initialized)
-        {
-            const edt::IntRange update_range{num_locally_initialized, num_locally_used};
-            batch.UpdateColorsVBO(update_range);
-            batch.UpdateScaleVBO(update_range);
-        }
-        else
-        {
-            klgl::OpenGl::EnableVertexAttribArray(kColorAttribLoc);
-            klgl::OpenGl::BindBuffer(GL_ARRAY_BUFFER, *batch.opt_color_vbo);
-            klgl::OpenGl::EnableVertexAttribArray(kScaleAttribLoc);
-            klgl::OpenGl::BindBuffer(GL_ARRAY_BUFFER, *batch.opt_scale_vbo);
-        }
-
         // Update all offsets
-        batch.UpdateTranslationsVBO({0, num_locally_used});
+        batch.UpdateBuffers();
+        klgl::OpenGl::EnableVertexAttribArray(kColorAttribLoc);
+        klgl::OpenGl::BindBuffer(GL_ARRAY_BUFFER, *batch.opt_color_vbo);
+        klgl::OpenGl::EnableVertexAttribArray(kScaleAttribLoc);
+        klgl::OpenGl::BindBuffer(GL_ARRAY_BUFFER, *batch.opt_scale_vbo);
+        klgl::OpenGl::EnableVertexAttribArray(kTranslationAttribLoc);
+        klgl::OpenGl::BindBuffer(GL_ARRAY_BUFFER, *batch.opt_translation_vbo);
         mesh_->DrawInstanced(num_locally_used);
     }
 }

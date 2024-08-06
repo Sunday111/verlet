@@ -10,39 +10,56 @@
 #include "klgl/application.hpp"
 #include "klgl/shader/shader.hpp"
 #include "klgl/window.hpp"
-#include "verlet_solver.hpp"
+#include "physics/verlet_solver.hpp"
+
+namespace klgl::events
+{
+class IEventListener;
+class OnWindowResize;
+class OnMouseMove;
+class OnMouseScroll;
+};  // namespace klgl::events
 
 namespace verlet
 {
 
 class Tool;
+class SpawnColorStrategy;
+class TickColorStrategy;
 
 class VerletApp : public klgl::Application
 {
 public:
-    using Clock = std::chrono::high_resolution_clock;
-    using TimePoint = typename Clock::time_point;
     using Super = klgl::Application;
+
+    struct RenderPerfStats
+    {
+        std::chrono::nanoseconds total;
+        std::chrono::nanoseconds set_circle_loop;
+    };
+
+    struct PerfStats
+    {
+        VerletSolver::UpdateStats sim_update;
+        RenderPerfStats render;
+    };
 
     VerletApp();
     ~VerletApp() override;
 
     void Initialize() override;
     void InitializeRendering();
-    void Tick() override
-    {
-        Super::Tick();
-        UpdateWorldRange();
-        UpdateSimulation();
-        Render();
-    }
+    void Tick() override;
 
     void UpdateWorldRange();
+    void UpdateCamera();
     void UpdateSimulation();
     void Render();
     void RenderWorld();
-    void RenderGUI();
-    void GUI_Tools();
+
+    void OnWindowResize(const klgl::events::OnWindowResize&);
+    void OnMouseMove(const klgl::events::OnMouseMove&);
+    void OnMouseScroll(const klgl::events::OnMouseScroll&);
 
     [[nodiscard]] static constexpr Vec2f TransformPos(const Mat3f& mat, const Vec2f& pos)
     {
@@ -68,35 +85,29 @@ public:
         return world_pos;
     }
 
-    static constexpr edt::FloatRange<float> kMinSideRange{-100, 100};
-    edt::FloatRange2D<float> world_range{.x = {-100.f, 100.f}, .y = {-100.f, 100.f}};
-    VerletSolver solver{
-        .gravity = Vec2f{0.f, -kMinSideRange.Extent() / 1.f},
-        .constraint_radius = kMinSideRange.Extent() / 2.f,
-    };
+    std::unique_ptr<klgl::events::IEventListener> event_listener_;
 
-    std::vector<VerletObject> objects;
-    std::vector<VerletLink> links;
-    float last_emit_time = 0.0;
+    static constexpr edt::FloatRange<float> kMinSideRange{-100, 100};
+    edt::FloatRange2D<float> world_range{.x = kMinSideRange, .y = kMinSideRange};
+    VerletSolver solver{};
 
     // Rendering
     std::unique_ptr<klgl::Shader> shader_;
+    float camera_zoom_ = 1.f;
+    Vec2f camera_eye_{};
 
-    template <typename... Args>
-    const char* FormatTemp(const fmt::format_string<Args...> fmt, Args&&... args)
-    {
-        temp_string_for_formatting_.clear();
-        fmt::format_to(std::back_inserter(temp_string_for_formatting_), fmt, std::forward<Args>(args)...);
-        return temp_string_for_formatting_.data();
-    }
-
-    std::string temp_string_for_formatting_{};
     InstancedPainter circle_painter_{};
-    std::chrono::milliseconds last_sim_update_duration_{};
 
+    // emitter
+    float last_emit_time = 0.0;
     bool enable_emitter_ = false;
+    size_t emitter_max_objects_count_ = 10000;
 
     std::unique_ptr<Tool> tool_;
+    std::unique_ptr<SpawnColorStrategy> spawn_color_strategy_;
+    std::unique_ptr<TickColorStrategy> tick_color_strategy_;
+
+    PerfStats perf_stats_{};
 };
 
 }  // namespace verlet

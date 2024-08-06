@@ -1,27 +1,57 @@
 #include "verlet_app.hpp"
 
 #include "EverydayTools/Time/MeasureTime.hpp"
+#include "coloring/spawn_color/spawn_color_strategy_rainbow.hpp"
+#include "coloring/tick_color/tick_color_strategy.hpp"
+#include "gui/app_gui.hpp"
+#include "klgl/events/event_listener_method.hpp"
+#include "klgl/events/event_manager.hpp"
+#include "klgl/events/mouse_events.hpp"
+#include "klgl/events/window_events.hpp"
 #include "klgl/opengl/debug/annotations.hpp"
-#include "tool.hpp"
+#include "klgl/opengl/gl_api.hpp"
+#include "tools/move_objects_tool.hpp"
+#include "tools/spawn_objects_tool.hpp"
 
 namespace verlet
 {
 
-VerletApp::VerletApp() = default;
-VerletApp::~VerletApp() = default;
+VerletApp::VerletApp()
+{
+    event_listener_ = klgl::events::EventListenerMethodCallbacks<
+        &VerletApp::OnWindowResize,
+        &VerletApp::OnMouseMove,
+        &VerletApp::OnMouseScroll>::CreatePtr(this);
+    GetEventManager().AddEventListener(*event_listener_);
+}
+
+VerletApp::~VerletApp()
+{
+    GetEventManager().RemoveListener(event_listener_.get());
+}
 
 void VerletApp::Initialize()
 {
     Super::Initialize();
-    objects.reserve(3000);
+    spawn_color_strategy_ = std::make_unique<SpawnColorStrategyRainbow>(*this);
     InitializeRendering();
+}
+
+void VerletApp::Tick()
+{
+    Super::Tick();
+    UpdateWorldRange();
+    UpdateCamera();
+    UpdateSimulation();
+    Render();
 }
 
 void VerletApp::InitializeRendering()
 {
     SetTargetFramerate({60.f});
 
-    klgl::OpenGl::SetClearColor(Vec4f{255, 245, 153, 255} / 255.f);
+    // klgl::OpenGl::SetClearColor(Vec4f{255, 245, 153, 255} / 255.f);
+    klgl::OpenGl::SetClearColor({});
     GetWindow().SetSize(1000, 1000);
     GetWindow().SetTitle("Verlet");
 
@@ -53,154 +83,192 @@ void VerletApp::UpdateWorldRange()
 
     *smaller = kMinSideRange;
     *bigger = smaller->Enlarged(smaller->Extent() * (ratio - 1.f) * 0.5f);
+
+    static constexpr float kMaxExtentChangePerTick = 0.5f;
+    auto adjust_range = [](const edt::FloatRange<float>& world, edt::FloatRange<float>& sim)
+    {
+        if (world.begin < sim.begin)
+        {
+            sim.begin = world.begin;
+        }
+        else
+        {
+            sim.begin += std::min(kMaxExtentChangePerTick, world.begin - sim.begin);
+        }
+
+        if (world.end > sim.end)
+        {
+            sim.end = world.end;
+        }
+        else
+        {
+            sim.end -= std::min(kMaxExtentChangePerTick, sim.end - world.end);
+        }
+    };
+
+    auto sim_area = solver.GetSimArea();
+    adjust_range(world_range.x, sim_area.x);
+    adjust_range(world_range.y, sim_area.y);
+    solver.SetSimArea(sim_area);
+}
+
+void VerletApp::UpdateCamera()
+{
+    if (!ImGui::GetIO().WantCaptureKeyboard)
+    {
+        Vec2f offset{};
+        if (ImGui::IsKeyDown(ImGuiKey_W)) offset.y() += 1.f;
+        if (ImGui::IsKeyDown(ImGuiKey_S)) offset.y() -= 1.f;
+        if (ImGui::IsKeyDown(ImGuiKey_D)) offset.x() += 1.f;
+        if (ImGui::IsKeyDown(ImGuiKey_A)) offset.x() -= 1.f;
+
+        const auto e = world_range.Extent();
+        camera_eye_ += (GetLastFrameDurationSeconds() * e * offset) / (10.f * camera_zoom_);
+    }
 }
 
 void VerletApp::UpdateSimulation()
 {
-    const float time = GetTimeSeconds();
-    const float dt = GetLastFrameDurationSeconds();
-
-    auto spawn_with_velocity = [&](const Vec2f& position, const Vec2f& velocity, const float radius) -> VerletObject&
-    {
-        objects.push_back({
-            .position = position,
-            .old_position = solver.MakePreviousPosition(position, velocity, dt),
-            .color = edt::Math::GetRainbowColors(time),
-            .radius = radius,
-            .movable = true,
-        });
-        return objects.back();
-    };
-
     if (tool_)
     {
         tool_->Tick();
     }
 
     // Emitter
-    if (enable_emitter_ && time - last_emit_time > 0.1f)
+    if (enable_emitter_ && solver.objects.ObjectsCount() <= emitter_max_objects_count_)
     {
-        const Vec2f emitter_pos = world_range.Uniform({0.5, 0.85f});
-        last_emit_time = time;
-        constexpr float velocity_mag = 0.1f;
-        constexpr float emitter_rotation_speed = 3.0f;
-        const float emitter_angle = edt::kPi<float> * std::sin(time * emitter_rotation_speed) / 4;
-        const Vec2f emitter_direction = edt::Math::MakeRotationMatrix(emitter_angle).MatMul(Vec2f{{0.f, -1.f}});
-        spawn_with_velocity(emitter_pos, emitter_direction * velocity_mag, 2.f + std::sin(3 * time));
+        auto color_fn = spawn_color_strategy_->GetColorFunction();
+        for (uint32_t i{40}; i--;)
+        {
+            const float y = 50.f + 1.02f * static_cast<float>(i);
+
+            {
+                auto [aid, object] = solver.objects.Alloc();
+                object.position = {0.6f, y};
+                object.old_position = {0.4f, y};
+                object.movable = true;
+                object.color = color_fn(object);
+            }
+
+            {
+                auto [bid, object] = solver.objects.Alloc();
+                object.position = {-0.6f, y};
+                object.old_position = {-0.4f, y};
+                object.movable = true;
+                object.color = color_fn(object);
+            }
+        }
     }
 
-    last_sim_update_duration_ = edt::MeasureTime<std::chrono::milliseconds>(
-        std::bind_front(&VerletSolver::Update, &solver),
-        objects,
-        links,
-        dt);
+    perf_stats_.sim_update = solver.Update();
 }
 
 void VerletApp::Render()
 {
     RenderWorld();
-    RenderGUI();
+    AppGUI{*this}.Render();
+}
+
+static constexpr edt::Mat3f TranslationMatrix(const Vec2f translation)
+{
+    auto m = edt::Mat3f::Identity();
+    m(0, 2) = translation.x();
+    m(1, 2) = translation.y();
+    return m;
+}
+
+static constexpr edt::Mat3f ScaleMatrix(const Vec2f scale)
+{
+    auto m = edt::Mat3f::Identity();
+    m(0, 0) = scale.x();
+    m(1, 1) = scale.y();
+    return m;
+}
+
+constexpr edt::Mat3f WorldToCameraTransform(Vec2f camera_pos, Vec2f camera_scale)
+{
+    auto t = TranslationMatrix(0.f - camera_pos);
+    auto s = ScaleMatrix(camera_scale);
+    return s.MatMul(t);
+}
+
+constexpr edt::Mat3f AffineTransform(const edt::FloatRange2Df& from, const edt::FloatRange2Df& to)
+{
+    auto t = TranslationMatrix(from.Uniform(0.5f) - to.Uniform(0.5f));
+    auto s = ScaleMatrix(from.Extent() / to.Extent());
+    return s.MatMul(t);
 }
 
 void VerletApp::RenderWorld()
 {
+    ObjectColorFunction color_function = [](const VerletObject& object)
+    {
+        return object.color;
+    };
+    if (tick_color_strategy_) color_function = tick_color_strategy_->GetColorFunction();
+
     const klgl::ScopeAnnotation annotation("Render World");
 
-    klgl::OpenGl::Clear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+    const auto world_space = world_range;
+    const auto camera_space =
+        edt::FloatRange2Df::FromMinMax(world_space.Min() / camera_zoom_, world_space.Max() / camera_zoom_)
+            .Shifted(camera_eye_);
+    const auto screen_space = edt::FloatRange2Df::FromMinMax(Vec2f{} - 1, Vec2f{} + 1);
+    auto world_to_camera = AffineTransform(world_space, camera_space);
+    auto camera_to_view = edt::Math::MakeTransform(camera_space, screen_space);
+    auto world_to_view = camera_to_view.MatMul(world_to_camera);
 
-    const edt::FloatRange2D<float> screen_range{.x = {-1, 1}, .y = {-1, 1}};
-    const Mat3f world_to_screen = edt::Math::MakeTransform(world_range, screen_range);
+    circle_painter_.num_circles_ = 0;
 
-    [[maybe_unused]] auto to_screen_coord = [&](const Vec2f& plot_pos)
+    auto paint_instanced_object = [&, next_instance_index = 0uz](const VerletObject& object) mutable
     {
-        return TransformPos(world_to_screen, plot_pos);
+        const auto screen_pos = TransformPos(world_to_view, object.position);
+        const auto screen_size = TransformVector(world_to_view, object.GetRadius() + Vec2f{});
+        const auto& color = color_function(object);
+        circle_painter_.SetCircle(next_instance_index++, screen_pos, color, screen_size);
     };
 
-    size_t circle_index = 0;
+    perf_stats_.render.total = edt::MeasureTime(
+        [&]
+        {
+            klgl::OpenGl::Clear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
-    // Draw constraint
-    circle_painter_.SetCircle(circle_index++, Vec2f{}, {}, 2 * solver.constraint_radius / world_range.Extent());
+            perf_stats_.render.set_circle_loop = edt::MeasureTime(
+                [&]
+                {
+                    for (const VerletObject& object : solver.objects.Objects())
+                    {
+                        paint_instanced_object(object);
+                    }
+                });
 
-    for (auto& object : objects)
-    {
-        const auto screen_pos = to_screen_coord(object.position);
-        const auto screen_size = TransformVector(world_to_screen, object.radius + Vec2f{});
-        const auto& color = object.color;
-
-        circle_painter_.SetCircle(circle_index++, screen_pos, color, screen_size);
-    }
-
-    shader_->Use();
-    circle_painter_.Render();
+            shader_->Use();
+            circle_painter_.Render();
+        });
 }
 
-void VerletApp::RenderGUI()
+void VerletApp::OnWindowResize(const klgl::events::OnWindowResize& event)
 {
-    const klgl::ScopeAnnotation annotation("Render GUI");
-    if (ImGui::Begin("Settings"))
-    {
-        shader_->DrawDetails();
-        ImGui::Text("%s", FormatTemp("Framerate: {}", GetFramerate()));                      // NOLINT
-        ImGui::Text("%s", FormatTemp("Objects count: {}", objects.size()));                  // NOLINT
-        ImGui::Text("%s", FormatTemp("Sim update duration {}", last_sim_update_duration_));  // NOLINT
-        ImGui::Checkbox("Enable emitter", &enable_emitter_);
-        GUI_Tools();
-    }
+    fmt::println(
+        "Window resize ({}x{}) -> ({}x{})",
+        event.previous.x(),
+        event.previous.y(),
+        event.current.x(),
+        event.current.y());
 }
 
-void VerletApp::GUI_Tools()
+void VerletApp::OnMouseMove(const klgl::events::OnMouseMove& event)
 {
-    ImGuiTabBarFlags tab_bar_flags = ImGuiTabBarFlags_None | ImGuiTabBarFlags_DrawSelectedOverline;
+    fmt::println(
+        "Mouse move ({}, {}) -> ({}, {})",
+        event.previous.x(),
+        event.previous.y(),
+        event.current.x(),
+        event.current.y());
+}
 
-    auto use_tool = [&](const ToolType tool_type)
-    {
-        if (!tool_ || tool_->GetToolType() != tool_type)
-        {
-            switch (tool_type)
-            {
-            case ToolType::SpawnObjects:
-                tool_ = std::make_unique<SpawnObjectsTool>(*this);
-                break;
-            case ToolType::MoveObjects:
-                tool_ = std::make_unique<MoveObjectsTool>(*this);
-                break;
-            default:
-                tool_ = nullptr;
-                break;
-            }
-        }
-
-        if (tool_)
-        {
-            tool_->DrawGUI();
-        }
-    };
-
-    if (ImGui::BeginTabBar("Tools", tab_bar_flags))
-    {
-        if (ImGui::BeginTabItem("Spawn"))
-        {
-            use_tool(ToolType::SpawnObjects);
-            ImGui::EndTabItem();
-        }
-
-        if (ImGui::BeginTabItem("Move"))
-        {
-            use_tool(ToolType::MoveObjects);
-            ImGui::EndTabItem();
-        }
-
-        if (ImGui::BeginTabItem("Delete"))
-        {
-            use_tool(ToolType::DeleteObjects);
-            ImGui::Text("Left click to delete objects");  // NOLINT
-            ImGui::EndTabItem();
-        }
-
-        ImGui::EndTabBar();
-    }
-
-    ImGui::Separator();
-    ImGui::End();
+void VerletApp::OnMouseScroll(const klgl::events::OnMouseScroll& event)
+{
+    camera_zoom_ += event.value.y() / 20.f;
 }
 }  // namespace verlet

@@ -28,6 +28,7 @@ set(module_source_files
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/events/event_listener_interface.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/events/event_listener_method.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/events/event_manager.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/events/mouse_events.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/events/window_events.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/filesystem/filesystem.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/klgl/macro/warning_suppress.hpp
