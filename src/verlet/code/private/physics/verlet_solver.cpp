@@ -101,8 +101,8 @@ VerletSolver::UpdateStats VerletSolver::Update()
         {
             for ([[maybe_unused]] const size_t index : std::views::iota(0uz, kNumSubSteps))
             {
-                stats.apply_links += edt::MeasureTime(std::bind_front(&VerletSolver::ApplyLinks, this));
                 stats.rebuild_grid += edt::MeasureTime(std::bind_front(&VerletSolver::RebuildGrid, this));
+                stats.apply_links += edt::MeasureTime(std::bind_front(&VerletSolver::ApplyLinks, this));
                 stats.solve_collisions +=
                     edt::MeasureTime(std::bind_front(&CollisionSolver::SolveCollisions, collision_solver_.get()));
                 stats.update_positions += edt::MeasureTime(std::bind_front(&VerletSolver::UpdatePosition, this));

@@ -24,19 +24,22 @@ void TickColorStrategyVelocity::DrawGUI()
 
 edt::Vec3<uint8_t> TickColorStrategyVelocity::Gradient(float fraction)
 {
-    edt::Vec3<uint8_t> rgb{};
+    edt::Vec3<uint8_t> rgba{};
 
     if (fraction >= 0.5f)
     {
-        rgb[0] = static_cast<uint8_t>(255 * (2 * fraction - 1) + 0.5f);
-        rgb[1] = static_cast<uint8_t>(510 * (1 - fraction) + 0.5f);
+        rgba[0] = static_cast<uint8_t>(255 * (2 * fraction - 1) + 0.5f);
+        rgba[1] = static_cast<uint8_t>(510 * (1 - fraction) + 0.5f);
     }
     else
     {
-        rgb[1] = static_cast<uint8_t>(510 * fraction + 0.5f);
-        rgb[2] = static_cast<uint8_t>(255 * (1 - 2 * fraction) + 0.5f);
+        rgba[1] = static_cast<uint8_t>(510 * fraction + 0.5f);
+        rgba[2] = static_cast<uint8_t>(255 * (1 - 2 * fraction) + 0.5f);
     }
-    return rgb;
+
+    // rgba[3] = 255;
+
+    return rgba;
 }
 
 const cppreflection::Type& TickColorStrategyVelocity::GetType() const

@@ -21,7 +21,7 @@ CollisionSolverMT::CollisionSolverMT(VerletSolver& solver, size_t threads_count)
 CollisionSolverMT::~CollisionSolverMT()
 {
     std::ranges::for_each(threads_, &std::jthread::request_stop);
-    SolveCollisions();
+    sync_point_.arrive_and_wait();
     std::ranges::for_each(threads_, &std::jthread::join);
 }
 
@@ -36,6 +36,7 @@ void CollisionSolverMT::ThreadEntry(const std::stop_token& stop_token, VerletSol
     while (!stop_token.stop_requested())
     {
         sync_point_.arrive_and_wait();
+        if (stop_token.stop_requested()) break;
         solver.SolveCollisions(thread_index, threads_.size());
         sync_point_.arrive_and_wait();
     }

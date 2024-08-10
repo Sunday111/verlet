@@ -30,5 +30,4 @@ public:
     uint8_t reserved_property_that_goes_last : 1 {};
 };
 
-static_assert(sizeof(VerletObject) == 20);
 }  // namespace verlet

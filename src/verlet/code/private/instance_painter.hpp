@@ -4,9 +4,14 @@
 #include <memory>
 
 #include "EverydayTools/Math/IntRange.hpp"
-#include "klgl/mesh/mesh_data.hpp"
 #include "klgl/opengl/gl_api.hpp"
 #include "klgl/template/type_to_gl_type.hpp"
+
+namespace klgl
+{
+class Texture;
+class MeshOpenGL;
+}  // namespace klgl
 
 namespace verlet
 {
@@ -16,10 +21,11 @@ using namespace edt::lazy_matrix_aliases;  // NOLINT
 class InstancedPainter
 {
 public:
-    static constexpr GLuint kVertexAttribLoc = 0;       // not instanced
-    static constexpr GLuint kColorAttribLoc = 1;        // instanced
-    static constexpr GLuint kTranslationAttribLoc = 2;  // instanced
-    static constexpr GLuint kScaleAttribLoc = 3;        // instanced
+    static constexpr GLuint kVertexAttribLoc = 0;       // same for all instances
+    static constexpr GLuint kTexCoordAttribLoc = 1;     // same for all instances
+    static constexpr GLuint kColorAttribLoc = 2;        // instanced
+    static constexpr GLuint kTranslationAttribLoc = 3;  // instanced
+    static constexpr GLuint kScaleAttribLoc = 4;        // instanced
 
     struct Batch
     {
@@ -132,6 +138,12 @@ public:
         edt::IntRange<size_t> dirty_scales{0, 0};
     };
 
+public:
+    InstancedPainter();
+    InstancedPainter(InstancedPainter&&) = delete;
+    InstancedPainter(const InstancedPainter&) = delete;
+    ~InstancedPainter();
+
     void SetCircle(const size_t index, const Vec2f& translation, const Vec3<uint8_t>& color, const Vec2f scale)
     {
         auto [batch, index_in_batch] = DecomposeIndex(index);
@@ -151,6 +163,7 @@ public:
         return {batches_[batch_index], index_in_batch};
     }
 
+    std::unique_ptr<klgl::Texture> texture_;
     std::unique_ptr<klgl::MeshOpenGL> mesh_;
     std::vector<Batch> batches_;
     size_t num_initialized_ = 0;

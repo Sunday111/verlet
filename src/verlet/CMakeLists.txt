@@ -14,6 +14,7 @@ set(module_source_files
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/instance_painter.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/instance_painter.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/main.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/code/private/mesh_vertex.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/mesh_vertex.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/object.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/object_pool.cpp

@@ -13,10 +13,15 @@ void SpawnObjectsTool::Tick()
     {
         const auto mouse_position = app_.GetMousePositionInWorldCoordinates();
 
+        auto rgb = edt::Math::GetRainbowColors(app_.GetTimeSeconds());
+
         auto [spawned_object_id, new_object] = app_.solver.objects.Alloc();
         new_object.position = mouse_position;
         new_object.old_position = mouse_position;
-        new_object.color = edt::Math::GetRainbowColors(app_.GetTimeSeconds());
+        new_object.color.x() = rgb.x();
+        new_object.color.y() = rgb.y();
+        new_object.color.z() = rgb.z();
+        new_object.color.z() = 255;
         new_object.movable = spawn_movable_objects_;
 
         if (link_spawned_to_previous_ && previous_spawned_.IsValid())
