@@ -21,7 +21,7 @@ void SpawnObjectsTool::Tick()
         new_object.color.x() = rgb.x();
         new_object.color.y() = rgb.y();
         new_object.color.z() = rgb.z();
-        new_object.color.z() = 255;
+        new_object.color.w() = 255;
         new_object.movable = spawn_movable_objects_;
 
         if (link_spawned_to_previous_ && previous_spawned_.IsValid())

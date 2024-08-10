@@ -19,7 +19,7 @@ public:
 
     Vec2f position{};
     Vec2f old_position{};
-    Vec3<uint8_t> color;
+    Vec4<uint8_t> color;
     bool movable : 1 {};
 
     bool IsMovable() const { return movable; }

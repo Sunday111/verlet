@@ -13,7 +13,7 @@ public:
     void DrawGUI() override;
 
 private:
-    static edt::Vec3<uint8_t> Gradient(float fraction);
+    static edt::Vec4<uint8_t> Gradient(float fraction);
 
 private:
     float red_speed_ = 20.f;

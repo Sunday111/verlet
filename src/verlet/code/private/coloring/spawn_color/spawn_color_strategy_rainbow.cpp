@@ -9,11 +9,11 @@ namespace verlet
     return [t = phase_ + frequency_ * GetApp().GetTimeSeconds()]([[maybe_unused]] const VerletObject& object)
     {
         auto rgb = edt::Math::GetRainbowColors(t);
-        Vec3<uint8_t> c;
+        Vec4<uint8_t> c;
         c.x() = rgb.x();
         c.y() = rgb.y();
         c.z() = rgb.z();
-        // c.w() = 255;
+        c.w() = 255;
         return c;
     };
 }

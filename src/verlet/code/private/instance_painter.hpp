@@ -118,7 +118,7 @@ public:
             }
         }
 
-        void SetValue(const size_t index, const Vec3<uint8_t>& color_, const Vec2f& translation_, const Vec2f& scale_)
+        void SetValue(const size_t index, const Vec4<uint8_t>& color_, const Vec2f& translation_, const Vec2f& scale_)
         {
             SetValueAtIndexHelper(color, color_, index, dirty_colors);
             SetValueAtIndexHelper(translation, translation_, index, dirty_translations);
@@ -126,7 +126,7 @@ public:
         }
 
         std::optional<GLuint> opt_color_vbo{};
-        std::array<Vec3<uint8_t>, kBatchSize> color{};
+        std::array<Vec4<uint8_t>, kBatchSize> color{};
         edt::IntRange<size_t> dirty_colors{0, 0};
 
         std::optional<GLuint> opt_translation_vbo{};
@@ -144,7 +144,7 @@ public:
     InstancedPainter(const InstancedPainter&) = delete;
     ~InstancedPainter();
 
-    void SetCircle(const size_t index, const Vec2f& translation, const Vec3<uint8_t>& color, const Vec2f scale)
+    void SetCircle(const size_t index, const Vec2f& translation, const Vec4<uint8_t>& color, const Vec2f scale)
     {
         auto [batch, index_in_batch] = DecomposeIndex(index);
         batch.SetValue(index_in_batch, color, translation, scale);

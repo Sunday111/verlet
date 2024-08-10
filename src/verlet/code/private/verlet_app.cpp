@@ -224,6 +224,8 @@ void VerletApp::RenderWorld()
         [&]
         {
             klgl::OpenGl::Clear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+            klgl::OpenGl::EnableBlending();
+            glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
             perf_stats_.render.set_circle_loop = edt::MeasureTime(
                 [&]

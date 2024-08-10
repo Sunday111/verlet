@@ -6,5 +6,5 @@
 namespace verlet
 {
 class VerletObject;
-using ObjectColorFunction = std::function<edt::Vec3<uint8_t>(const VerletObject&)>;
+using ObjectColorFunction = std::function<edt::Vec4<uint8_t>(const VerletObject&)>;
 }  // namespace verlet

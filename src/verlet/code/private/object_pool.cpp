@@ -25,7 +25,7 @@ std::tuple<ObjectId, VerletObject&> ObjectPool::Alloc()
 void ObjectPool::Free(ObjectId id)
 {
     assert(valid_ones_.erase(id) == 1);
-    assert(GetSlot(id).AsObject().reserved_property_that_goes_last);
+    assert(GetSlot(id).data_.back() != 0);
     auto& free_slot = ConvertObjectSlotToFreeSlot(GetSlot(id));
     free_slot.next_free_ = first_free_;
     first_free_ = id;

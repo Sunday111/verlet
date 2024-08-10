@@ -89,7 +89,7 @@ private:
     {
         auto& object = entry.AsObject();
         new (&object) VerletObject();
-        object.reserved_property_that_goes_last = true;
+        entry.data_.back() |= 0b1000000;
         return object;
     }
 

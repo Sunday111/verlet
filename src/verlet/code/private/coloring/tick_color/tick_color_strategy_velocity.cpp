@@ -22,9 +22,9 @@ void TickColorStrategyVelocity::DrawGUI()
     ImGui::SliderFloat("Red Speed", &red_speed_, 1.f, 20.f);
 }
 
-edt::Vec3<uint8_t> TickColorStrategyVelocity::Gradient(float fraction)
+edt::Vec4<uint8_t> TickColorStrategyVelocity::Gradient(float fraction)
 {
-    edt::Vec3<uint8_t> rgba{};
+    edt::Vec4<uint8_t> rgba{};
 
     if (fraction >= 0.5f)
     {
@@ -37,7 +37,7 @@ edt::Vec3<uint8_t> TickColorStrategyVelocity::Gradient(float fraction)
         rgba[2] = static_cast<uint8_t>(255 * (1 - 2 * fraction) + 0.5f);
     }
 
-    // rgba[3] = 255;
+    rgba[3] = 255;
 
     return rgba;
 }
