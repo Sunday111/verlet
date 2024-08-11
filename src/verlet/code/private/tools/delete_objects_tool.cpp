@@ -28,6 +28,15 @@ void DeleteObjectsTool::Tick()
     }
 }
 
+void DeleteObjectsTool::DrawInWorld()
+{
+    auto& painter = app_.GetPainter();
+    const auto mouse_pos = app_.GetMousePositionInWorldCoordinates();
+    const auto screen_pos = edt::Math::TransformPos(app_.GetWorldToViewTransform(), mouse_pos);
+    const auto screen_size = edt::Math::TransformVector(app_.GetWorldToViewTransform(), delete_radius_ + Vec2f{});
+    painter.DrawObject(screen_pos, {255, 0, 0, 127}, screen_size);
+}
+
 void DeleteObjectsTool::DrawGUI()
 {
     ImGui::Text("Left click to delete objects");  // NOLINT

@@ -9,11 +9,72 @@
 #include "klgl/events/mouse_events.hpp"
 #include "klgl/opengl/debug/annotations.hpp"
 #include "klgl/opengl/gl_api.hpp"
+#include "klgl/shader/shader.hpp"
+#include "klgl/texture/procedural_texture_generator.hpp"
+#include "klgl/texture/texture.hpp"
 #include "tools/move_objects_tool.hpp"
 #include "tools/spawn_objects_tool.hpp"
 
 namespace verlet
 {
+
+edt::FloatRange2Df Camera::ComputeRange(const edt::FloatRange2Df& world_range) const
+{
+    const auto half_world_extent = world_range.Extent() / 2;
+    const auto half_camera_extent = half_world_extent / GetZoom();
+    return edt::FloatRange2Df::FromMinMax(GetEye() - half_camera_extent, GetEye() + half_camera_extent);
+}
+
+void Camera::Update(const edt::FloatRange2Df& world_range)
+{
+    range_ = ComputeRange(world_range);
+    if (zoom_animation_ && zoom_animation_->Update(zoom_)) zoom_animation_ = std::nullopt;
+    if (eye_animation_ && eye_animation_->Update(eye_)) eye_animation_ = std::nullopt;
+}
+
+void Camera::Zoom(const float delta)
+{
+    if (animate)
+    {
+        float final_value = zoom_ + delta;
+        if (zoom_animation_)
+        {
+            final_value = zoom_animation_->final_value + delta;
+        }
+
+        zoom_animation_ = ValueAnimation{
+            .start_value = zoom_,
+            .final_value = final_value,
+            .duration_seconds = zoom_animation_diration_seconds,
+        };
+    }
+    else
+    {
+        zoom_ += delta;
+    }
+}
+
+void Camera::Pan(const Vec2f& delta)
+{
+    if (animate)
+    {
+        edt::Vec2f final_value = eye_ + delta;
+        if (eye_animation_)
+        {
+            final_value = eye_animation_->final_value + delta;
+        }
+
+        eye_animation_ = ValueAnimation{
+            .start_value = eye_,
+            .final_value = final_value,
+            .duration_seconds = zoom_animation_diration_seconds,
+        };
+    }
+    else
+    {
+        eye_ += delta;
+    }
+}
 
 VerletApp::VerletApp()
 {
@@ -57,7 +118,15 @@ void VerletApp::InitializeRendering()
     shader_ = std::make_unique<klgl::Shader>("just_color.shader.json");
     shader_->Use();
 
-    circle_painter_.Initialize();
+    {
+        // Generate circle mask texture
+        constexpr auto size = Vec2<size_t>{} + 128;
+        texture_ = klgl::Texture::CreateEmpty(size.x(), size.y(), GL_RGBA);
+        const auto pixels = klgl::ProceduralTextureGenerator::CircleMask(size, 2);
+        texture_->SetPixels(pixels);
+    }
+
+    instance_painter_.Initialize();
 }
 
 void VerletApp::UpdateWorldRange()
@@ -109,6 +178,8 @@ void VerletApp::UpdateWorldRange()
 
 void VerletApp::UpdateCamera()
 {
+    camera_.Update(world_range_);
+
     if (!ImGui::GetIO().WantCaptureKeyboard)
     {
         Vec2f offset{};
@@ -117,7 +188,7 @@ void VerletApp::UpdateCamera()
         if (ImGui::IsKeyDown(ImGuiKey_D)) offset.x() += 1.f;
         if (ImGui::IsKeyDown(ImGuiKey_A)) offset.x() -= 1.f;
 
-        camera_.eye += (GetLastFrameDurationSeconds() * world_range_.Extent() * offset) / (10.f * camera_.zoom);
+        camera_.Pan((GetLastFrameDurationSeconds() * camera_.GetRange().Extent() * offset) * camera_.pan_speed);
     }
 }
 
@@ -158,38 +229,27 @@ void VerletApp::UpdateSimulation()
 
 void VerletApp::Render()
 {
+    UpdateRenderTransforms();
     RenderWorld();
     AppGUI{*this}.Render();
 }
 
-static constexpr edt::Mat3f TranslationMatrix(const Vec2f translation)
+void VerletApp::UpdateRenderTransforms()
 {
-    auto m = edt::Mat3f::Identity();
-    m(0, 2) = translation.x();
-    m(1, 2) = translation.y();
-    return m;
-}
+    const auto screen_range = edt::FloatRange2Df::FromMinMax({}, GetWindow().GetSize2f());
+    const auto view_range = edt::FloatRange2Df::FromMinMax(Vec2f{} - 1, Vec2f{} + 1);
+    const auto camera_to_world_vector = world_range_.Uniform(.5f) - camera_.GetEye();
+    const auto camera_extent = camera_.GetRange().Extent();
 
-static constexpr edt::Mat3f ScaleMatrix(const Vec2f scale)
-{
-    auto m = edt::Mat3f::Identity();
-    m(0, 0) = scale.x();
-    m(1, 1) = scale.y();
-    return m;
-}
+    world_to_camera_ = edt::Math::TranslationMatrix(camera_to_world_vector);
+    auto camera_to_view_ = edt::Math::ScaleMatrix(view_range.Extent() / camera_extent);
+    world_to_view_ = camera_to_view_.MatMul(world_to_camera_);
 
-constexpr edt::Mat3f WorldToCameraTransform(Vec2f camera_pos, Vec2f camera_scale)
-{
-    auto t = TranslationMatrix(0.f - camera_pos);
-    auto s = ScaleMatrix(camera_scale);
-    return s.MatMul(t);
-}
-
-constexpr edt::Mat3f AffineTransform(const edt::FloatRange2Df& from, const edt::FloatRange2Df& to)
-{
-    auto t = TranslationMatrix(from.Uniform(0.5f) - to.Uniform(0.5f));
-    auto s = ScaleMatrix(from.Extent() / to.Extent());
-    return s.MatMul(t);
+    const auto screen_to_view =
+        edt::Math::TranslationMatrix(Vec2f{} - 1).MatMul(edt::Math::ScaleMatrix(2 / screen_range.Extent()));
+    const auto view_to_camera = edt::Math::ScaleMatrix(camera_extent / view_range.Extent());
+    const auto camera_to_world = edt::Math::TranslationMatrix(0 - camera_to_world_vector);
+    screen_to_world_ = camera_to_world.MatMul(view_to_camera).MatMul(screen_to_view);
 }
 
 void VerletApp::RenderWorld()
@@ -202,22 +262,14 @@ void VerletApp::RenderWorld()
 
     const klgl::ScopeAnnotation annotation("Render World");
 
-    const auto camera_space =
-        edt::FloatRange2Df::FromMinMax(world_range_.Min() / camera_.zoom, world_range_.Max() / camera_.zoom)
-            .Shifted(camera_.eye);
-    const auto screen_space = edt::FloatRange2Df::FromMinMax(Vec2f{} - 1, Vec2f{} + 1);
-    auto world_to_camera = AffineTransform(world_range_, camera_space);
-    auto camera_to_view = edt::Math::MakeTransform(camera_space, screen_space);
-    auto world_to_view = camera_to_view.MatMul(world_to_camera);
+    instance_painter_.num_objects_ = 0;
 
-    circle_painter_.num_circles_ = 0;
-
-    auto paint_instanced_object = [&, next_instance_index = 0uz](const VerletObject& object) mutable
+    auto paint_instanced_object = [&](const VerletObject& object) mutable
     {
-        const auto screen_pos = TransformPos(world_to_view, object.position);
-        const auto screen_size = TransformVector(world_to_view, object.GetRadius() + Vec2f{});
+        const auto screen_pos = edt::Math::TransformPos(world_to_view_, object.position);
+        const auto screen_size = edt::Math::TransformVector(world_to_view_, object.GetRadius() + Vec2f{});
         const auto& color = color_function(object);
-        circle_painter_.SetCircle(next_instance_index++, screen_pos, color, screen_size);
+        instance_painter_.DrawObject(screen_pos, color, screen_size);
     };
 
     perf_stats_.render.total = edt::MeasureTime(
@@ -236,14 +288,23 @@ void VerletApp::RenderWorld()
                     }
                 });
 
+            if (tool_)
+            {
+                tool_->DrawInWorld();
+            }
+
             shader_->Use();
-            circle_painter_.Render();
+            texture_->Bind();
+            instance_painter_.Render();
         });
 }
 
 void VerletApp::OnMouseScroll(const klgl::events::OnMouseScroll& event)
 {
-    camera_.zoom += event.value.y() / 20.f;
+    if (!ImGui::GetIO().WantCaptureMouse)
+    {
+        camera_.Zoom(event.value.y() * camera_.zoom_speed);
+    }
 }
 
 void VerletApp::SetBackgroundColor(const Vec3f& background_color)
@@ -256,13 +317,9 @@ void VerletApp::SetBackgroundColor(const Vec3f& background_color)
 
 Vec2f VerletApp::GetMousePositionInWorldCoordinates() const
 {
-    const auto window_size = GetWindow().GetSize().Cast<float>();
-    const auto window_range = edt::FloatRange2D<float>::FromMinMax({}, window_size);
-    const auto window_to_world = edt::Math::MakeTransform(window_range, world_range_);
-
+    const auto screen_range = edt::FloatRange2Df::FromMinMax({}, GetWindow().GetSize2f());  // 0 -> resolution
     auto [x, y] = ImGui::GetMousePos();
-    y = window_range.y.Extent() - y;
-    auto world_pos = TransformPos(window_to_world, Vec2f{x, y});
-    return world_pos;
+    y = screen_range.y.Extent() - y;
+    return edt::Math::TransformPos(screen_to_world_, Vec2f{x, y});
 }
 }  // namespace verlet

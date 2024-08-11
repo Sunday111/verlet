@@ -17,6 +17,7 @@ public:
     explicit Tool(VerletApp& app) : app_(app) {}
     virtual ~Tool() = default;
     virtual void Tick() {}
+    virtual void DrawInWorld() {}
     virtual void DrawGUI() {}
     virtual ToolType GetToolType() const = 0;
 

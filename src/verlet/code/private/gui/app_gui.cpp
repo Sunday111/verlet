@@ -43,19 +43,25 @@ void AppGUI::Render()
 
 void AppGUI::Camera()
 {
-    if (!ImGui::CollapsingHeader("Camera")) return;
+    // if (!ImGui::CollapsingHeader("Camera")) return;
 
-    auto& camera = app_->GetCamera();
-    ImGui::SliderFloat("Zoom", &camera.zoom, 0.1f, 5.f);
-    GuiText("Eye");
-    const auto& world_range = app_->GetWorldRange();
-    ImGui::SliderFloat("x", &camera.eye.x(), world_range.x.begin, world_range.x.end);
-    ImGui::SliderFloat("y", &camera.eye.y(), world_range.y.begin, world_range.y.end);
-    if (ImGui::Button("Reset"))
-    {
-        camera.zoom = 1.f;
-        camera.eye = {};
-    }
+    // auto& camera = app_->GetCamera();
+    // ImGui::SliderFloat("Zoom", &camera.zoom, 0.1f, 5.f);
+
+    // const auto& world_range = app_->GetWorldRange();
+    // GuiText("Eye");
+    // ImGui::SliderFloat("x", &camera.eye.x(), world_range.x.begin, world_range.x.end);
+    // ImGui::SliderFloat("y", &camera.eye.y(), world_range.y.begin, world_range.y.end);
+    // ImGui::Separator();
+
+    // ImGui::SliderFloat("Pan speed", &camera.pan_speed, 0.0001f, 1.f);
+    // ImGui::SliderFloat("Zoom speed", &camera.zoom_speed, 0.0001f, 1.f);
+
+    // if (ImGui::Button("Reset"))
+    // {
+    //     camera.zoom = 1.f;
+    //     camera.eye = {};
+    // }
 }
 
 void AppGUI::Perf()

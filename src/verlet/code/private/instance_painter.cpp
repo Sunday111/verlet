@@ -4,7 +4,6 @@
 
 #include "klgl/mesh/mesh_data.hpp"
 #include "klgl/mesh/procedural_mesh_generator.hpp"
-#include "klgl/texture/texture.hpp"
 #include "mesh_vertex.hpp"
 #include "ranges.hpp"
 
@@ -29,27 +28,6 @@ void InstancedPainter::Initialize()
     mesh_->Bind();
     RegisterAttribute<&MeshVertex::position>(kVertexAttribLoc, false);
     RegisterAttribute<&MeshVertex::texture_coordinates>(kTexCoordAttribLoc, false);
-
-    // Generate circle mask texture
-    texture_ = klgl::Texture::CreateEmpty(128, 128, GL_RGBA);
-    const auto size = texture_->GetSize();
-    const auto sizef = size.Cast<float>();
-    std::vector<Vec4<uint8_t>> pixels;
-    pixels.reserve(size.x() * size.y());
-
-    for (const size_t y : std::views::iota(0uz, size.y()))
-    {
-        const float yf = (static_cast<float>(y) / sizef.y()) - 0.5f;
-        for (const size_t x : std::views::iota(0uz, size.x()))
-        {
-            const float xf = (static_cast<float>(x) / sizef.x()) - 0.5f;
-            const uint8_t opacity = (xf * xf + yf * yf < 0.25f) ? 255 : 0;
-            // pixels.push_back(Vec4<uint8_t>{} + opacity);
-            pixels.push_back({255, 255, 255, opacity});
-        }
-    }
-
-    texture_->SetPixels(pixels);
 }
 
 void InstancedPainter::Render()
@@ -57,10 +35,10 @@ void InstancedPainter::Render()
     mesh_->Bind();
     for (auto [batch_index, batch] : Enumerate(batches_))
     {
-        if (num_circles_ <= batch_index * batch.kBatchSize) break;
+        if (num_objects_ <= batch_index * batch.kBatchSize) break;
 
         // number of circles initialized for the current batch
-        const size_t num_locally_used = std::min(num_circles_ - batch_index * batch.kBatchSize, batch.kBatchSize);
+        const size_t num_locally_used = std::min(num_objects_ - batch_index * batch.kBatchSize, batch.kBatchSize);
 
         // Update all offsets
         batch.UpdateBuffers();

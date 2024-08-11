@@ -9,7 +9,6 @@
 
 namespace klgl
 {
-class Texture;
 class MeshOpenGL;
 }  // namespace klgl
 
@@ -144,8 +143,9 @@ public:
     InstancedPainter(const InstancedPainter&) = delete;
     ~InstancedPainter();
 
-    void SetCircle(const size_t index, const Vec2f& translation, const Vec4<uint8_t>& color, const Vec2f scale)
+    void DrawObject(const Vec2f& translation, const Vec4<uint8_t>& color, const Vec2f scale)
     {
+        const size_t index = num_objects_++;
         auto [batch, index_in_batch] = DecomposeIndex(index);
         batch.SetValue(index_in_batch, color, translation, scale);
     }
@@ -158,16 +158,14 @@ public:
     {
         const size_t batch_index = index / Batch::kBatchSize;
         const size_t index_in_batch = index % Batch::kBatchSize;
-        num_circles_ = std::max(num_circles_, index + 1);
         batches_.resize(std::max(batches_.size(), batch_index + 1));
         return {batches_[batch_index], index_in_batch};
     }
 
-    std::unique_ptr<klgl::Texture> texture_;
     std::unique_ptr<klgl::MeshOpenGL> mesh_;
     std::vector<Batch> batches_;
     size_t num_initialized_ = 0;
-    size_t num_circles_ = 0;
+    size_t num_objects_ = 0;
 };
 
 }  // namespace verlet
