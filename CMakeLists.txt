@@ -17,6 +17,11 @@ enable_lto_globally()
 
 # ---------------------------- External Dependencies -----------------------------
 
+# https://github.com/Sunday111/ass main
+option(ASS_ENABLE_TESTING "" ON)
+option(ASS_FETCH_GOOGLE_TESTS "" OFF)
+add_subdirectory(cloned_dependencies/Sunday111/ass SYSTEM)
+
 # https://github.com/Sunday111/EverydayTools for_yae
 option(EDT_WITH_TESTS "" ON)
 add_subdirectory(cloned_dependencies/Sunday111/EverydayTools SYSTEM)
