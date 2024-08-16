@@ -121,7 +121,7 @@ void VerletApp::InitializeRendering()
     {
         // Generate circle mask texture
         constexpr auto size = Vec2<size_t>{} + 128;
-        texture_ = klgl::Texture::CreateEmpty(size, {.channels_format = GL_RGBA, .channel_type = GL_UNSIGNED_BYTE});
+        texture_ = klgl::Texture::CreateEmpty(size, GL_RGBA8);
         const auto pixels = klgl::ProceduralTextureGenerator::CircleMask(size, 2);
         texture_->SetPixelsRGBA(pixels);
     }
