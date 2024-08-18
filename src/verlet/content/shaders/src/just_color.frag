@@ -6,5 +6,5 @@ uniform sampler2D uTexture;
 
 void main()
 {
-    FragColor = Color * texture(uTexture, TexCoord);
+    FragColor = Color * texture(uTexture, TexCoord).r;
 }

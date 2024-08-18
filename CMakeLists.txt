@@ -50,6 +50,9 @@ add_subdirectory(cloned_dependencies/jeremy-rifkin/cpptrace SYSTEM)
 # https://github.com/martinus/unordered_dense v4.1.2
 add_subdirectory(cloned_dependencies/martinus/unordered_dense SYSTEM)
 
+# https://github.com/Neargye/magic_enum v0.9.6
+add_subdirectory(cloned_dependencies/Neargye/magic_enum SYSTEM)
+
 # https://github.com/google/benchmark v1.8.3
 option(BENCHMARK_ENABLE_TESTING "" OFF)
 add_subdirectory(cloned_dependencies/google/benchmark/1_8_3 SYSTEM)
