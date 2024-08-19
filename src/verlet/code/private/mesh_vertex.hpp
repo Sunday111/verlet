@@ -31,7 +31,7 @@ void RegisterAttribute(const GLuint location, const bool normalized)
     klgl::OpenGl::VertexAttribPointer(
         location,
         GlTypeTraits::Size,
-        GlTypeTraits::Type,
+        GlTypeTraits::AttribComponentType,
         normalized,
         vertex_stride,
         reinterpret_cast<void*>(member_stride));  // NOLINT

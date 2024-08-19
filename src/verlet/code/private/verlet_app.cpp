@@ -124,6 +124,8 @@ void VerletApp::InitializeRendering()
         texture_ = klgl::Texture::CreateEmpty(size, klgl::GlTextureInternalFormat::R8);
         const auto pixels = klgl::ProceduralTextureGenerator::CircleMask(size, 2);
         texture_->SetPixels<klgl::GlPixelBufferLayout::R>(std::span{pixels});
+        klgl::OpenGl::SetTexture2dMinFilter(klgl::GlTextureFilter::Nearest);
+        klgl::OpenGl::SetTexture2dMagFilter(klgl::GlTextureFilter::Linear);
     }
 
     instance_painter_.Initialize();

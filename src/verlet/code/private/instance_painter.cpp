@@ -43,11 +43,11 @@ void InstancedPainter::Render()
         // Update all offsets
         batch.UpdateBuffers();
         klgl::OpenGl::EnableVertexAttribArray(kColorAttribLoc);
-        klgl::OpenGl::BindBuffer(GL_ARRAY_BUFFER, *batch.opt_color_vbo);
+        klgl::OpenGl::BindBuffer(klgl::GlBufferType::Array, *batch.opt_color_vbo);
         klgl::OpenGl::EnableVertexAttribArray(kScaleAttribLoc);
-        klgl::OpenGl::BindBuffer(GL_ARRAY_BUFFER, *batch.opt_scale_vbo);
+        klgl::OpenGl::BindBuffer(klgl::GlBufferType::Array, *batch.opt_scale_vbo);
         klgl::OpenGl::EnableVertexAttribArray(kTranslationAttribLoc);
-        klgl::OpenGl::BindBuffer(GL_ARRAY_BUFFER, *batch.opt_translation_vbo);
+        klgl::OpenGl::BindBuffer(klgl::GlBufferType::Array, *batch.opt_translation_vbo);
         mesh_->DrawInstanced(num_locally_used);
     }
 }

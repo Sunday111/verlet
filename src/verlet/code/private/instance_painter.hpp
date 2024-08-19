@@ -47,11 +47,11 @@ public:
 
             using GlTypeTraits = klgl::TypeToGlType<ValueType>;
 
-            klgl::OpenGl::BindBuffer(GL_ARRAY_BUFFER, *vbo);
+            klgl::OpenGl::BindBuffer(klgl::GlBufferType::Array, *vbo);
             if (must_initialize)
             {
                 // Have to copy the whole array first time to initialize the buffer and specify usage
-                klgl::OpenGl::BufferData(GL_ARRAY_BUFFER, std::span{values}, GL_DYNAMIC_DRAW);
+                klgl::OpenGl::BufferData(klgl::GlBufferType::Array, std::span{values}, klgl::GlUsage::DynamicDraw);
             }
             else
             {
@@ -61,18 +61,18 @@ public:
                     static_cast<GLintptr>(elements_to_update.Extent() * sizeof(ValueType)),
                     &values[elements_to_update.begin]);
             }
-            klgl::OpenGl::BindBuffer(GL_ARRAY_BUFFER, 0);
+            klgl::OpenGl::BindBuffer(klgl::GlBufferType::Array, 0);
 
             klgl::OpenGl::EnableVertexAttribArray(location);
-            klgl::OpenGl::BindBuffer(GL_ARRAY_BUFFER, *vbo);
+            klgl::OpenGl::BindBuffer(klgl::GlBufferType::Array, *vbo);
             klgl::OpenGl::VertexAttribPointer(
                 location,
                 GlTypeTraits::Size,
-                GlTypeTraits::Type,
+                GlTypeTraits::AttribComponentType,
                 normalize_values,
                 sizeof(ValueType),
                 nullptr);
-            klgl::OpenGl::BindBuffer(GL_ARRAY_BUFFER, 0);
+            klgl::OpenGl::BindBuffer(klgl::GlBufferType::Array, 0);
             glVertexAttribDivisor(
                 location,
                 1);  // IMPORTANT - use 1 element from offsets array for one rendered instance
