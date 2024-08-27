@@ -9,6 +9,7 @@
 #include "klgl/events/mouse_events.hpp"
 #include "klgl/opengl/debug/annotations.hpp"
 #include "klgl/opengl/gl_api.hpp"
+#include "klgl/reflection/matrix_reflect.hpp"  // IWYU pragma: keep
 #include "klgl/shader/shader.hpp"
 #include "klgl/texture/procedural_texture_generator.hpp"
 #include "klgl/texture/texture.hpp"
@@ -108,7 +109,7 @@ void VerletApp::InitializeRendering()
     SetTargetFramerate({60.f});
 
     klgl::OpenGl::SetClearColor({});
-    GetWindow().SetSize(1000, 1000);
+    GetWindow().SetSize(2000, 1000);
     GetWindow().SetTitle("Verlet");
 
     shader_ = std::make_unique<klgl::Shader>("just_color.shader.json");
@@ -264,10 +265,11 @@ void VerletApp::RenderWorld()
 
     auto paint_instanced_object = [&](const VerletObject& object) mutable
     {
-        const auto screen_pos = edt::Math::TransformPos(world_to_view_, object.position);
-        const auto screen_size = edt::Math::TransformVector(world_to_view_, object.GetRadius() + Vec2f{});
         const auto& color = color_function(object);
-        instance_painter_.DrawObject(screen_pos, color, screen_size);
+        // const auto screen_pos = edt::Math::TransformPos(world_to_view_, object.position);
+        // const auto screen_size = edt::Math::TransformVector(world_to_view_, object.GetRadius() + Vec2f{});
+        // instance_painter_.DrawObject(screen_pos, color, screen_size);
+        instance_painter_.DrawObject(object.position, color, object.GetRadius() + Vec2f{});
     };
 
     perf_stats_.render.total = edt::MeasureTime(
@@ -292,6 +294,9 @@ void VerletApp::RenderWorld()
             }
 
             shader_->Use();
+            shader_->SetUniform(u_world_to_view_, world_to_view_);
+            shader_->SendUniforms();
+
             texture_->Bind();
             instance_painter_.Render();
         });

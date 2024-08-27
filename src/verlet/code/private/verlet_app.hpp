@@ -7,6 +7,7 @@
 #include "EverydayTools/Math/FloatRange.hpp"
 #include "instance_painter.hpp"
 #include "klgl/application.hpp"
+#include "klgl/shader/uniform_handle.hpp"
 #include "klgl/window.hpp"
 #include "physics/verlet_solver.hpp"
 
@@ -159,6 +160,7 @@ private:
 
     edt::FloatRange2D<float> world_range_{.x = kMinSideRange, .y = kMinSideRange};
 
+    klgl::UniformHandle u_world_to_view_ = klgl::UniformHandle("u_world_to_view");
     std::unique_ptr<klgl::Shader> shader_;
     std::unique_ptr<klgl::Texture> texture_;
 
