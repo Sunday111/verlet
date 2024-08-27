@@ -5,6 +5,7 @@
 
 #include "EverydayTools/Math/IntRange.hpp"
 #include "klgl/opengl/gl_api.hpp"
+#include "klgl/opengl/object.hpp"
 #include "klgl/template/type_to_gl_type.hpp"
 
 namespace klgl
@@ -36,18 +37,18 @@ public:
 
         template <typename ValueType>
         static void UpdateVBO(
-            std::optional<GLuint>& vbo,
+            klgl::GlObject<klgl::GlBufferId>& vbo,
             const GLuint location,
             const std::array<ValueType, kBatchSize>& values,
             const edt::IntRange<size_t> elements_to_update,
             bool normalize_values)
         {
-            const bool must_initialize = !vbo.has_value();
-            if (must_initialize) vbo = klgl::OpenGl::GenBuffer();
+            const bool must_initialize = !vbo.IsValid();
+            if (must_initialize) vbo = klgl::GlObject<klgl::GlBufferId>::CreateFrom(klgl::OpenGl::GenBuffer());
 
             using GlTypeTraits = klgl::TypeToGlType<ValueType>;
 
-            klgl::OpenGl::BindBuffer(klgl::GlBufferType::Array, *vbo);
+            klgl::OpenGl::BindBuffer(klgl::GlBufferType::Array, vbo);
             if (must_initialize)
             {
                 // Have to copy the whole array first time to initialize the buffer and specify usage
@@ -61,10 +62,10 @@ public:
                     static_cast<GLintptr>(elements_to_update.Extent() * sizeof(ValueType)),
                     &values[elements_to_update.begin]);
             }
-            klgl::OpenGl::BindBuffer(klgl::GlBufferType::Array, 0);
+            klgl::OpenGl::BindBuffer(klgl::GlBufferType::Array, {});
 
             klgl::OpenGl::EnableVertexAttribArray(location);
-            klgl::OpenGl::BindBuffer(klgl::GlBufferType::Array, *vbo);
+            klgl::OpenGl::BindBuffer(klgl::GlBufferType::Array, vbo);
             klgl::OpenGl::VertexAttribPointer(
                 location,
                 GlTypeTraits::Size,
@@ -72,7 +73,7 @@ public:
                 normalize_values,
                 sizeof(ValueType),
                 nullptr);
-            klgl::OpenGl::BindBuffer(klgl::GlBufferType::Array, 0);
+            klgl::OpenGl::BindBuffer(klgl::GlBufferType::Array, {});
             glVertexAttribDivisor(
                 location,
                 1);  // IMPORTANT - use 1 element from offsets array for one rendered instance
@@ -124,15 +125,15 @@ public:
             SetValueAtIndexHelper(scale, scale_, index, dirty_scales);
         }
 
-        std::optional<GLuint> opt_color_vbo{};
+        klgl::GlObject<klgl::GlBufferId> opt_color_vbo{};
         std::array<Vec4<uint8_t>, kBatchSize> color{};
         edt::IntRange<size_t> dirty_colors{0, 0};
 
-        std::optional<GLuint> opt_translation_vbo{};
+        klgl::GlObject<klgl::GlBufferId> opt_translation_vbo{};
         std::array<Vec2f, kBatchSize> translation{};
         edt::IntRange<size_t> dirty_translations{0, 0};
 
-        std::optional<GLuint> opt_scale_vbo{};
+        klgl::GlObject<klgl::GlBufferId> opt_scale_vbo{};
         std::array<Vec2f, kBatchSize> scale{};
         edt::IntRange<size_t> dirty_scales{0, 0};
     };

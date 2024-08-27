@@ -111,10 +111,6 @@ void VerletApp::InitializeRendering()
     GetWindow().SetSize(1000, 1000);
     GetWindow().SetTitle("Verlet");
 
-    const auto content_dir = GetExecutableDir() / "content";
-    const auto shaders_dir = content_dir / "shaders";
-    klgl::Shader::shaders_dir_ = shaders_dir;
-
     shader_ = std::make_unique<klgl::Shader>("just_color.shader.json");
     shader_->Use();
 
@@ -124,8 +120,8 @@ void VerletApp::InitializeRendering()
         texture_ = klgl::Texture::CreateEmpty(size, klgl::GlTextureInternalFormat::R8);
         const auto pixels = klgl::ProceduralTextureGenerator::CircleMask(size, 2);
         texture_->SetPixels<klgl::GlPixelBufferLayout::R>(std::span{pixels});
-        klgl::OpenGl::SetTexture2dMinFilter(klgl::GlTextureFilter::Nearest);
-        klgl::OpenGl::SetTexture2dMagFilter(klgl::GlTextureFilter::Linear);
+        klgl::OpenGl::SetTextureMinFilter(klgl::GlTargetTextureType::Texture2d, klgl::GlTextureFilter::Nearest);
+        klgl::OpenGl::SetTextureMagFilter(klgl::GlTargetTextureType::Texture2d, klgl::GlTextureFilter::Linear);
     }
 
     instance_painter_.Initialize();

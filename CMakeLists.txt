@@ -79,5 +79,8 @@ add_subdirectory(deps/yae/modules/examples/yae_example_executable)
 add_subdirectory(deps/yae/modules/examples/yae_example_tests)
 add_subdirectory(deps/yae/modules/examples/yae_example_tests_main)
 add_subdirectory(cloned_dependencies/Sunday111/klgl/klgl_tests)
+add_subdirectory(cloned_dependencies/Sunday111/klgl/samples/minimal_quad)
+add_subdirectory(cloned_dependencies/Sunday111/klgl/samples/textured_quad)
+add_subdirectory(cloned_dependencies/Sunday111/klgl/samples/two_textures)
 
 enable_testing()

@@ -4,7 +4,7 @@
 
 #include "klgl/mesh/mesh_data.hpp"
 #include "klgl/mesh/procedural_mesh_generator.hpp"
-#include "mesh_vertex.hpp"
+#include "klgl/template/register_attribute.hpp"
 #include "ranges.hpp"
 
 namespace verlet
@@ -12,6 +12,17 @@ namespace verlet
 
 InstancedPainter::InstancedPainter() = default;
 InstancedPainter::~InstancedPainter() = default;
+
+struct MeshVertex
+{
+    static MeshVertex FromMeshData(const klgl::MeshData& data, const size_t index)
+    {
+        return MeshVertex{.position = data.vertices[index], .texture_coordinates = data.texture_coordinates[index]};
+    }
+
+    edt::Vec2f position{};
+    edt::Vec2f texture_coordinates{};
+};
 
 void InstancedPainter::Initialize()
 {
@@ -26,8 +37,8 @@ void InstancedPainter::Initialize()
 
     mesh_ = klgl::MeshOpenGL::MakeFromData(std::span{vertices}, std::span{data.indices}, data.topology);
     mesh_->Bind();
-    RegisterAttribute<&MeshVertex::position>(kVertexAttribLoc, false);
-    RegisterAttribute<&MeshVertex::texture_coordinates>(kTexCoordAttribLoc, false);
+    klgl::RegisterAttribute<&MeshVertex::position>(kVertexAttribLoc, false);
+    klgl::RegisterAttribute<&MeshVertex::texture_coordinates>(kTexCoordAttribLoc, false);
 }
 
 void InstancedPainter::Render()
@@ -43,11 +54,11 @@ void InstancedPainter::Render()
         // Update all offsets
         batch.UpdateBuffers();
         klgl::OpenGl::EnableVertexAttribArray(kColorAttribLoc);
-        klgl::OpenGl::BindBuffer(klgl::GlBufferType::Array, *batch.opt_color_vbo);
+        klgl::OpenGl::BindBuffer(klgl::GlBufferType::Array, batch.opt_color_vbo);
         klgl::OpenGl::EnableVertexAttribArray(kScaleAttribLoc);
-        klgl::OpenGl::BindBuffer(klgl::GlBufferType::Array, *batch.opt_scale_vbo);
+        klgl::OpenGl::BindBuffer(klgl::GlBufferType::Array, batch.opt_scale_vbo);
         klgl::OpenGl::EnableVertexAttribArray(kTranslationAttribLoc);
-        klgl::OpenGl::BindBuffer(klgl::GlBufferType::Array, *batch.opt_translation_vbo);
+        klgl::OpenGl::BindBuffer(klgl::GlBufferType::Array, batch.opt_translation_vbo);
         mesh_->DrawInstanced(num_locally_used);
     }
 }
