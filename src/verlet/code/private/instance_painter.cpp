@@ -15,7 +15,7 @@ InstancedPainter::~InstancedPainter() = default;
 
 struct MeshVertex
 {
-    static MeshVertex FromMeshData(const klgl::MeshData& data, const size_t index)
+    static MeshVertex FromMeshData(const klgl::GeneratedMeshData2d& data, const size_t index)
     {
         return MeshVertex{.position = data.vertices[index], .texture_coordinates = data.texture_coordinates[index]};
     }
