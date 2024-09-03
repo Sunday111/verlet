@@ -42,4 +42,4 @@ target_include_directories(verlet PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/code/priva
 add_custom_command(TARGET verlet
     POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy_directory
     "${CMAKE_CURRENT_SOURCE_DIR}/content"
-    $<TARGET_FILE_DIR:verlet>/content)
+    ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/content)

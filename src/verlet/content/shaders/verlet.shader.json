@@ -1,0 +1,6 @@
+{
+    "vertex": "verlet.vert",
+    "fragment": "verlet.frag",
+    "glsl_version": "330 core",
+    "definitions": []
+}
