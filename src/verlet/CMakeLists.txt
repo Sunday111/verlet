@@ -39,7 +39,7 @@ set_generic_compiler_options(verlet PRIVATE)
 target_link_libraries(verlet PRIVATE klgl)
 target_include_directories(verlet PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/code/public)
 target_include_directories(verlet PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/code/private)
-add_custom_command(TARGET verlet
-    POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy_directory
-    "${CMAKE_CURRENT_SOURCE_DIR}/content"
-    ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/content)
+add_custom_target(verlet_copy_files ALL
+    ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/content" ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/content
+)
+add_dependencies(verlet_copy_files verlet)

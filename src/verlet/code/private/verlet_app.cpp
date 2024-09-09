@@ -247,7 +247,7 @@ void VerletApp::UpdateRenderTransforms()
     const auto screen_to_view =
         edt::Math::TranslationMatrix(Vec2f{} - 1).MatMul(edt::Math::ScaleMatrix(2 / screen_range.Extent()));
     const auto view_to_camera = edt::Math::ScaleMatrix(camera_extent / view_range.Extent());
-    const auto camera_to_world = edt::Math::TranslationMatrix(0 - camera_to_world_vector);
+    const auto camera_to_world = edt::Math::TranslationMatrix(-camera_to_world_vector);
     screen_to_world_ = camera_to_world.MatMul(view_to_camera).MatMul(screen_to_view);
 }
 
@@ -294,7 +294,7 @@ void VerletApp::RenderWorld()
             }
 
             shader_->Use();
-            shader_->SetUniform(u_world_to_view_, world_to_view_);
+            shader_->SetUniform(u_world_to_view_, world_to_view_.Transposed());
             shader_->SendUniforms();
 
             texture_->Bind();

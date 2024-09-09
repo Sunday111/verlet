@@ -37,8 +37,8 @@ void InstancedPainter::Initialize()
 
     mesh_ = klgl::MeshOpenGL::MakeFromData(std::span{vertices}, std::span{data.indices}, data.topology);
     mesh_->Bind();
-    klgl::RegisterAttribute<&MeshVertex::position>(kVertexAttribLoc, false);
-    klgl::RegisterAttribute<&MeshVertex::texture_coordinates>(kTexCoordAttribLoc, false);
+    klgl::RegisterAttribute<&MeshVertex::position>(kVertexAttribLoc);
+    klgl::RegisterAttribute<&MeshVertex::texture_coordinates>(kTexCoordAttribLoc);
 }
 
 void InstancedPainter::Render()
@@ -51,7 +51,6 @@ void InstancedPainter::Render()
         // number of circles initialized for the current batch
         const size_t num_locally_used = std::min(num_objects_ - batch_index * batch.kBatchSize, batch.kBatchSize);
 
-        // Update all offsets
         batch.UpdateBuffers();
         klgl::OpenGl::EnableVertexAttribArray(kColorAttribLoc);
         klgl::OpenGl::BindBuffer(klgl::GlBufferType::Array, batch.opt_color_vbo);
