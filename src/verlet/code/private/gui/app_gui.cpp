@@ -6,8 +6,8 @@
 #include "coloring/spawn_color/spawn_color_strategy_rainbow.hpp"
 #include "coloring/tick_color/tick_color_strategy.hpp"
 #include "coloring/tick_color/tick_color_strategy_velocity.hpp"
-#include "imgui_helpers.hpp"
 #include "klgl/opengl/debug/annotations.hpp"
+#include "klgl/ui/imgui_helpers.hpp"
 #include "tools/delete_objects_tool.hpp"
 #include "tools/move_objects_tool.hpp"
 #include "tools/spawn_objects_tool.hpp"
@@ -89,7 +89,7 @@ void AppGUI::Emitter()
     if (!ImGui::CollapsingHeader("Emitter")) return;
 
     ImGui::Checkbox("Enabled", &app_->GetEmitter().enabled);
-    ImGuiHelper::SliderUInt("Max objects", &app_->GetEmitter().max_objects_count, 0uz, 150'000uz);
+    klgl::ImGuiHelper::SliderUInt("Max objects", &app_->GetEmitter().max_objects_count, 0uz, 150'000uz);
 }
 
 void AppGUI::Tools()
@@ -222,7 +222,7 @@ void AppGUI::CollisionsSolver()
 {
     if (!ImGui::CollapsingHeader("Collisions Solver")) return;
     GuiText("0 threads means collisions will be solved in the main thread");
-    ImGuiHelper::SliderGetterSetter(
+    klgl::ImGuiHelper::SliderGetterSetter(
         "Threads Count",
         0uz,
         size_t{std::thread::hardware_concurrency()},
