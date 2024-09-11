@@ -112,7 +112,7 @@ void VerletApp::InitializeRendering()
     GetWindow().SetSize(2000, 1000);
     GetWindow().SetTitle("Verlet");
 
-    shader_ = std::make_unique<klgl::Shader>("verlet.shader.json");
+    shader_ = std::make_unique<klgl::Shader>("verlet");
     shader_->Use();
 
     {
