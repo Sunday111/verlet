@@ -1,13 +1,13 @@
 #include "batch_thread_pool.hpp"
-#include <ranges>
-#include <functional>
+
 #include <algorithm>
+#include <functional>
+#include <ranges>
 
 namespace verlet
 {
 
-BatchThreadPool::BatchThreadPool(size_t threads_count)
-    : sync_point_(static_cast<int32_t>(threads_count + 1))
+BatchThreadPool::BatchThreadPool(size_t threads_count) : sync_point_(static_cast<int32_t>(threads_count + 1))
 {
     for (const size_t thread_index : std::views::iota(size_t{0}, threads_count))
     {
@@ -22,9 +22,7 @@ BatchThreadPool::~BatchThreadPool()
     std::ranges::for_each(threads_, &std::jthread::join);
 }
 
-void BatchThreadPool::ThreadEntry(
-    const std::stop_token& stop_token,
-    const size_t thread_index)
+void BatchThreadPool::ThreadEntry(const std::stop_token& stop_token, const size_t thread_index)
 {
     while (!stop_token.stop_requested())
     {
@@ -43,4 +41,4 @@ void BatchThreadPool::RunBatch(Callback callback, void* context)
     sync_point_.arrive_and_wait();
 }
 
-}
+}  // namespace verlet

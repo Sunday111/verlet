@@ -71,10 +71,7 @@ public:
     {
         [[nodiscard]] static auto IdToObject(VerletSolver& solver)
         {
-            return std::views::transform([&](const ObjectId& id) -> VerletObject&
-            {
-                return solver.objects.Get(id);
-            });
+            return std::views::transform([&](const ObjectId& id) -> VerletObject& { return solver.objects.Get(id); });
         }
     };
 

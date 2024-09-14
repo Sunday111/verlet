@@ -1,8 +1,8 @@
 #pragma once
 
 #include <barrier>
-#include <vector>
 #include <thread>
+#include <vector>
 
 namespace verlet
 {
@@ -13,24 +13,25 @@ public:
     BatchThreadPool(const BatchThreadPool&) = delete;
     BatchThreadPool(BatchThreadPool&&) = delete;
     ~BatchThreadPool();
-    using Callback = void(*)(void* context, size_t thread_index, size_t num_threads);
+    using Callback = void (*)(void* context, size_t thread_index, size_t num_threads);
 
     [[nodiscard]] size_t GetThreadsCount() const { return threads_.size(); }
 
-    template<std::invocable<size_t, size_t> T>
+    template <std::invocable<size_t, size_t> T>
     void RunBatch(T&& callback)
     {
         RunBatch(
-            [](void* context, size_t thread_index, size_t num_threads) {
-            auto& callback = *reinterpret_cast<T*>(context);
+            [](void* context, size_t thread_index, size_t num_threads)
+            {
+                auto& callback = *reinterpret_cast<T*>(context);
                 callback(thread_index, num_threads);
-        }, &callback);
+            },
+            &callback);
     }
 
     void RunBatch(Callback callback, void* context);
 
 private:
-
     void ThreadEntry(const std::stop_token& stop_token, const size_t thread_index);
 
     std::barrier<> sync_point_;
@@ -38,4 +39,4 @@ private:
     Callback callback_ = nullptr;
     void* context_ = nullptr;
 };
-}
+}  // namespace verlet

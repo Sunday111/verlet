@@ -102,8 +102,8 @@ VerletSolver::UpdateStats VerletSolver::Update()
             {
                 stats.rebuild_grid += edt::MeasureTime(std::bind_front(&VerletSolver::RebuildGrid, this));
                 stats.apply_links += edt::MeasureTime(std::bind_front(&VerletSolver::ApplyLinks, this));
-                stats.solve_collisions += edt::MeasureTime([&] {
-                        batch_thread_pool_->RunBatch(std::bind_front(&VerletSolver::SolveCollisions, this)); });
+                stats.solve_collisions += edt::MeasureTime(
+                    [&] { batch_thread_pool_->RunBatch(std::bind_front(&VerletSolver::SolveCollisions, this)); });
                 stats.update_positions += edt::MeasureTime(
                     [&] { batch_thread_pool_->RunBatch(std::bind_front(&VerletSolver::UpdatePositions, this)); });
             }
@@ -132,7 +132,8 @@ void VerletSolver::UpdatePositions(const size_t thread_index, const size_t threa
         for (const size_t cell_y : std::views::iota(size_t{1}, grid_size_.y() - 1))
         {
             const size_t cell_index = cell_y * grid_width + cell_x;
-            for (auto& object : ForEachObjectInCell(cell_index) | ObjectTransforms::IdToObject(*this) | ObjectFilters::IsMovable())
+            for (auto& object :
+                 ForEachObjectInCell(cell_index) | ObjectTransforms::IdToObject(*this) | ObjectFilters::IsMovable())
             {
                 const auto last_update_move = object.position - object.old_position;
 
