@@ -1,11 +1,10 @@
 #include "verlet_solver.hpp"
 
 #include "EverydayTools/Math/Math.hpp"
-#include "collision_solvers/collision_solver_mt.hpp"
-#include "collision_solvers/collision_solver_st.hpp"
 #include "fmt/ranges.h"  // IWYU pragma: keep
 #include "klgl/error_handling.hpp"
 #include "klgl/template/on_scope_leave.hpp"
+#include "threading/batch_thread_pool.hpp"
 
 namespace verlet
 {
@@ -103,38 +102,50 @@ VerletSolver::UpdateStats VerletSolver::Update()
             {
                 stats.rebuild_grid += edt::MeasureTime(std::bind_front(&VerletSolver::RebuildGrid, this));
                 stats.apply_links += edt::MeasureTime(std::bind_front(&VerletSolver::ApplyLinks, this));
-                stats.solve_collisions +=
-                    edt::MeasureTime(std::bind_front(&CollisionSolver::SolveCollisions, collision_solver_.get()));
-
-                // TODO: parralelize this!
-                stats.update_positions += edt::MeasureTime(std::bind_front(&VerletSolver::UpdatePositions, this));
+                stats.solve_collisions += edt::MeasureTime([&] {
+                        batch_thread_pool_->RunBatch(std::bind_front(&VerletSolver::SolveCollisions, this)); });
+                stats.update_positions += edt::MeasureTime(
+                    [&] { batch_thread_pool_->RunBatch(std::bind_front(&VerletSolver::UpdatePositions, this)); });
             }
         });
 
     return stats;
 }
 
-void VerletSolver::UpdatePositions()
+void VerletSolver::UpdatePositions(const size_t thread_index, const size_t threads_count)
 {
     constexpr float margin = 2.0f;
     const auto constraint_with_margin = sim_area_.Enlarged(-margin);
     constexpr float dt_2 = edt::Math::Sqr(kTimeSubStepDurationSeconds);
 
-    for (auto& object : objects.Objects() | ObjectFilters::IsMovable())
+    const size_t columns_pre_thread = (grid_size_.x() / threads_count);
+    size_t begin_x = 1 + columns_pre_thread * thread_index;
+    size_t end_x = begin_x + columns_pre_thread;
+    if (thread_index == threads_count - 1)
     {
-        const auto last_update_move = object.position - object.old_position;
+        end_x = grid_size_.x();
+    }
 
-        // Save current position
-        object.old_position = object.position;
+    const size_t grid_width = grid_size_.x();
+    for (const size_t cell_x : std::views::iota(begin_x, end_x))
+    {
+        for (const size_t cell_y : std::views::iota(size_t{1}, grid_size_.y() - 1))
+        {
+            const size_t cell_index = cell_y * grid_width + cell_x;
+            for (auto& object : ForEachObjectInCell(cell_index) | ObjectTransforms::IdToObject(*this) | ObjectFilters::IsMovable())
+            {
+                const auto last_update_move = object.position - object.old_position;
 
-        // Perform Verlet integration
-        object.position += last_update_move + (gravity - last_update_move * kVelocityDampling) * dt_2;
+                // Save current position
+                object.old_position = object.position;
 
-        // Constraint
-        object.position = constraint_with_margin.Clamp(object.position);
+                // Perform Verlet integration
+                object.position += last_update_move + (gravity - last_update_move * kVelocityDampling) * dt_2;
 
-        // Helps with 'explosions' but doesn't solve it generally
-        // object.old_position = constraint_with_margin.Clamp(object.old_position);
+                // Constraint
+                object.position = constraint_with_margin.Clamp(object.position);
+            }
+        }
     }
 }
 
@@ -274,21 +285,14 @@ void VerletSolver::ApplyLinks()
 
 size_t VerletSolver::GetThreadsCount() const
 {
-    return collision_solver_->GetThreadsCount();
+    return batch_thread_pool_->GetThreadsCount();
 }
 
 void VerletSolver::SetThreadsCount(size_t count)
 {
-    if (!collision_solver_ || count != GetThreadsCount())
+    if (!batch_thread_pool_ || count != GetThreadsCount())
     {
-        if (count == 0)
-        {
-            collision_solver_ = std::make_unique<CollisionSolverST>(*this);
-        }
-        else
-        {
-            collision_solver_ = std::make_unique<CollisionSolverMT>(*this, count);
-        }
+        batch_thread_pool_ = std::make_unique<BatchThreadPool>(count);
     }
 }
 
@@ -312,7 +316,7 @@ void VerletSolver::UpdateGridSize()
 
 VerletSolver::~VerletSolver()
 {
-    collision_solver_ = nullptr;
+    batch_thread_pool_ = nullptr;
 }
 
 void VerletSolver::CreateLink(ObjectId from, ObjectId to, float target_distance)

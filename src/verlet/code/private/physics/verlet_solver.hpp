@@ -15,7 +15,7 @@
 namespace verlet
 {
 
-class CollisionSolver;
+class BatchThreadPool;
 
 class VerletSolver
 {
@@ -67,6 +67,17 @@ public:
         return x + y * grid_size_.x();
     }
 
+    struct ObjectTransforms
+    {
+        [[nodiscard]] static auto IdToObject(VerletSolver& solver)
+        {
+            return std::views::transform([&](const ObjectId& id) -> VerletObject&
+            {
+                return solver.objects.Get(id);
+            });
+        }
+    };
+
     struct ObjectFilters
     {
         [[nodiscard]] static auto IsMovable()
@@ -104,7 +115,7 @@ public:
     void ApplyLinks();
     void RebuildGrid();
     void SolveCollisions(const size_t thread_index, const size_t threads_count);
-    void UpdatePositions();
+    void UpdatePositions(const size_t thread_index, const size_t threads_count);
 
     void DeleteObject(ObjectId id);
     void StabilizeChain(ObjectId first);
@@ -131,7 +142,7 @@ private:
 
     std::vector<VerletWorldCell> cells_;
     std::vector<uint8_t> cell_obj_counts_;
-    std::unique_ptr<CollisionSolver> collision_solver_;
+    std::unique_ptr<BatchThreadPool> batch_thread_pool_;
 
     // links
     ankerl::unordered_dense::map<ObjectId, std::vector<VerletLink>, TaggedIdentifierHash<ObjectId>> linked_to;
