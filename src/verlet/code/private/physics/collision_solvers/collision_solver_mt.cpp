@@ -11,7 +11,7 @@ namespace verlet
 CollisionSolverMT::CollisionSolverMT(VerletSolver& solver, size_t threads_count)
     : sync_point_(static_cast<int32_t>(threads_count + 1))
 {
-    for (const size_t thread_index : std::views::iota(0uz, threads_count))
+    for (const size_t thread_index : std::views::iota(size_t{0}, threads_count))
     {
         threads_.push_back(
             std::jthread(std::bind_front(&CollisionSolverMT::ThreadEntry, this), std::ref(solver), thread_index));

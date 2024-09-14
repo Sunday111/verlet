@@ -31,7 +31,7 @@ void VerletSolver::SolveCollisions(const size_t thread_index, size_t threads_cou
                 {
                     const float dist = std::sqrt(dist_sq);
                     const float delta = 0.5f - dist / 2;
-                    const Vec2f col_vec = (axis / dist) * delta;
+                    const Vec2f col_vec = axis * (delta / dist);
                     const auto [ac, bc] = MassCoefficients(object, another_object);
                     object.position += ac * col_vec;
                     another_object.position -= bc * col_vec;
@@ -51,7 +51,7 @@ void VerletSolver::SolveCollisions(const size_t thread_index, size_t threads_cou
     const size_t grid_width = grid_size_.x();
     for (const size_t cell_x : std::views::iota(begin_x, end_x))
     {
-        for (const size_t cell_y : std::views::iota(1uz, grid_size_.y() - 1))
+        for (const size_t cell_y : std::views::iota(size_t{1}, grid_size_.y() - 1))
         {
             const size_t cell_index = cell_y * grid_width + cell_x;
             for (const ObjectId& object_id : ForEachObjectInCell(cell_index))
@@ -99,20 +99,22 @@ VerletSolver::UpdateStats VerletSolver::Update()
     stats.total = edt::MeasureTime(
         [&]
         {
-            for ([[maybe_unused]] const size_t index : std::views::iota(0uz, kNumSubSteps))
+            for ([[maybe_unused]] const size_t index : std::views::iota(size_t{0}, kNumSubSteps))
             {
                 stats.rebuild_grid += edt::MeasureTime(std::bind_front(&VerletSolver::RebuildGrid, this));
                 stats.apply_links += edt::MeasureTime(std::bind_front(&VerletSolver::ApplyLinks, this));
                 stats.solve_collisions +=
                     edt::MeasureTime(std::bind_front(&CollisionSolver::SolveCollisions, collision_solver_.get()));
-                stats.update_positions += edt::MeasureTime(std::bind_front(&VerletSolver::UpdatePosition, this));
+
+                // TODO: parralelize this!
+                stats.update_positions += edt::MeasureTime(std::bind_front(&VerletSolver::UpdatePositions, this));
             }
         });
 
     return stats;
 }
 
-void VerletSolver::UpdatePosition()
+void VerletSolver::UpdatePositions()
 {
     constexpr float margin = 2.0f;
     const auto constraint_with_margin = sim_area_.Enlarged(-margin);

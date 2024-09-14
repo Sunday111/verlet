@@ -104,7 +104,7 @@ public:
     void ApplyLinks();
     void RebuildGrid();
     void SolveCollisions(const size_t thread_index, const size_t threads_count);
-    void UpdatePosition();
+    void UpdatePositions();
 
     void DeleteObject(ObjectId id);
     void StabilizeChain(ObjectId first);

@@ -89,7 +89,7 @@ void AppGUI::Emitter()
     if (!ImGui::CollapsingHeader("Emitter")) return;
 
     ImGui::Checkbox("Enabled", &app_->GetEmitter().enabled);
-    klgl::ImGuiHelper::SliderUInt("Max objects", &app_->GetEmitter().max_objects_count, 0uz, 150'000uz);
+    klgl::ImGuiHelper::SliderUInt("Max objects", &app_->GetEmitter().max_objects_count, size_t{0}, size_t{150'000});
 }
 
 void AppGUI::Tools()
@@ -224,7 +224,7 @@ void AppGUI::CollisionsSolver()
     GuiText("0 threads means collisions will be solved in the main thread");
     klgl::ImGuiHelper::SliderGetterSetter(
         "Threads Count",
-        0uz,
+        size_t{0},
         size_t{std::thread::hardware_concurrency()},
         std::bind_front(&VerletSolver::GetThreadsCount, &app_->solver),
         std::bind_front(&VerletSolver::SetThreadsCount, &app_->solver));

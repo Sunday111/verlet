@@ -33,7 +33,7 @@ public:
         Batch(const Batch&) = delete;
         Batch(Batch&&) noexcept = default;
 
-        static constexpr size_t kBatchSize = 512;
+        static constexpr size_t kBatchSize = 1 << 15;
 
         template <typename ValueType>
         static void UpdateVBO(
