@@ -117,7 +117,7 @@ public:
         RenderPerfStats render;
     };
 
-    static constexpr edt::FloatRange<float> kMinSideRange{-100, 100};
+    static constexpr edt::FloatRange<float> kMinSideRange{-150, 150};
 
     VerletApp();
     ~VerletApp() override;
