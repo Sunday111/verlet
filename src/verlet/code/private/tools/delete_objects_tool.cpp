@@ -11,29 +11,32 @@ void DeleteObjectsTool::Tick()
 {
     if (ImGui::IsMouseClicked(ImGuiMouseButton_Left) && !ImGui::GetIO().WantCaptureMouse)
     {
-        std::vector<ObjectId> to_delete;
         const Vec2f mouse_pos = app_.GetMousePositionInWorldCoordinates();
+        auto min_cell = app_.solver.LocationToCell(mouse_pos - delete_radius_);
+        auto max_cell = app_.solver.LocationToCell(mouse_pos + delete_radius_);
+        const auto cell_y_range = std::views::iota(min_cell.y(), max_cell.y() + 1);
 
-        auto get_id = [](const std::tuple<ObjectId, VerletObject&>& kv)
+        auto rsq = edt::Math::Sqr(delete_radius_);
+        for (const size_t cell_x : std::views::iota(min_cell.x(), max_cell.x() + 1))
         {
-            return std::get<0>(kv);
-        };
-
-        auto filter_by_distance = VerletSolver::ObjectFilters::InArea(mouse_pos, delete_radius_);
-        auto delete_object = std::bind_front(&VerletSolver::DeleteObject, &app_.solver);
-
-        std::ranges::for_each(
-            app_.solver.objects.IdentifiersAndObjects() | filter_by_distance | std::views::transform(get_id),
-            delete_object);
+            for (const size_t cell_y : cell_y_range)
+            {
+                for (auto object_id : app_.solver.ForEachObjectInCell(app_.solver.CellToCellIndex({cell_x, cell_y})))
+                {
+                    auto& object = app_.solver.objects.Get(object_id);
+                    if ((object.position - mouse_pos).SquaredLength() < rsq)
+                    {
+                        app_.solver.DeleteObject(object_id);
+                    }
+                }
+            }
+        }
     }
 }
 
 void DeleteObjectsTool::DrawInWorld()
 {
     auto& painter = app_.GetPainter();
-    // const auto mouse_pos = app_.GetMousePositionInWorldCoordinates();
-    // const auto screen_pos = edt::Math::TransformPos(app_.GetWorldToViewTransform(), mouse_pos);
-    // const auto screen_size = edt::Math::TransformVector(app_.GetWorldToViewTransform(), delete_radius_ + Vec2f{});
     painter.DrawObject(app_.GetMousePositionInWorldCoordinates(), {255, 0, 0, 127}, delete_radius_ + Vec2f{});
 }
 

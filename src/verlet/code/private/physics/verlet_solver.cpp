@@ -102,8 +102,8 @@ VerletSolver::UpdateStats VerletSolver::Update()
             {
                 stats.rebuild_grid += edt::MeasureTime(std::bind_front(&VerletSolver::RebuildGrid, this));
                 stats.apply_links += edt::MeasureTime(std::bind_front(&VerletSolver::ApplyLinks, this));
-                stats.solve_collisions += edt::MeasureTime([&] {
-                        batch_thread_pool_->RunBatch(std::bind_front(&VerletSolver::SolveCollisions, this)); });
+                stats.solve_collisions += edt::MeasureTime(
+                    [&] { batch_thread_pool_->RunBatch(std::bind_front(&VerletSolver::SolveCollisions, this)); });
                 stats.update_positions += edt::MeasureTime(
                     [&] { batch_thread_pool_->RunBatch(std::bind_front(&VerletSolver::UpdatePositions, this)); });
             }
@@ -132,7 +132,8 @@ void VerletSolver::UpdatePositions(const size_t thread_index, const size_t threa
         for (const size_t cell_y : std::views::iota(size_t{1}, grid_size_.y() - 1))
         {
             const size_t cell_index = cell_y * grid_width + cell_x;
-            for (auto& object : ForEachObjectInCell(cell_index) | ObjectTransforms::IdToObject(*this) | ObjectFilters::IsMovable())
+            for (auto& object :
+                 ForEachObjectInCell(cell_index) | ObjectTransforms::IdToObject(*this) | ObjectFilters::IsMovable())
             {
                 const auto last_update_move = object.position - object.old_position;
 
@@ -151,33 +152,6 @@ void VerletSolver::UpdatePositions(const size_t thread_index, const size_t threa
 
 void VerletSolver::DeleteObject(ObjectId to_delete)
 {
-    auto id_to_index = std::mem_fn(&ObjectId::GetValue);
-
-    auto print_links = [&](std::string_view title)
-    {
-        fmt::println("    {}:", title);
-        fmt::println("        Linked to:");
-        for (auto [id, links] : linked_to)
-        {
-            if (links.empty()) continue;
-            fmt::println(
-                "            {} -> {}",
-                id.GetValue(),
-                links | std::views::transform(std::mem_fn(&VerletSolver::VerletLink::other)) |
-                    std::views::transform(id_to_index));
-        }
-
-        fmt::println("        Linked by:");
-        for (auto [id, others] : linked_by)
-        {
-            if (others.empty()) continue;
-            fmt::println("            {} <- {}", id.GetValue(), others | std::views::transform(id_to_index));
-        }
-    };
-
-    fmt::println("Deleting object: {}", to_delete.GetValue());
-    print_links("    State before");
-
     if (auto linked_by_it = linked_by.find(to_delete); linked_by_it != linked_by.end())
     {
         for (auto& other : linked_by_it->second)
@@ -202,8 +176,6 @@ void VerletSolver::DeleteObject(ObjectId to_delete)
 
     linked_to.erase(to_delete);
     objects.Free(to_delete);
-
-    print_links("    State after");
 }
 
 void VerletSolver::StabilizeChain(ObjectId first)
