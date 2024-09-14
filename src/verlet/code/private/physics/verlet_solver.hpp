@@ -61,10 +61,19 @@ public:
                std::views::transform([&](const uint8_t i) -> const ObjectId& { return cell.objects[i]; });
     }
 
+    [[nodiscard]] Vec2<size_t> LocationToCell(const Vec2f& location) const
+    {
+        return ((sim_area_.Clamp(location) - sim_area_.Min()).Cast<size_t>() / cell_size);
+    }
+
     [[nodiscard]] size_t LocationToCellIndex(const Vec2f& location) const
     {
-        auto [x, y] = ((sim_area_.Clamp(location) - sim_area_.Min()).Cast<size_t>() / cell_size).Tuple();
-        return x + y * grid_size_.x();
+        return CellToCellIndex(LocationToCell(location));
+    }
+
+    [[nodiscard]] size_t CellToCellIndex(const Vec2<size_t>& cell) const
+    {
+        return cell.x() + cell.y() * grid_size_.x();
     }
 
     struct ObjectTransforms
