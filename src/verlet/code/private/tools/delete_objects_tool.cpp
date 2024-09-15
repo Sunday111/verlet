@@ -44,5 +44,9 @@ void DeleteObjectsTool::DrawGUI()
 {
     ImGui::Text("Left click to delete objects");  // NOLINT
     ImGui::SliderFloat("Delete radius", &delete_radius_, 0.1f, 100.f);
+    if (ImGui::Button("Delete all"))
+    {
+        app_.solver.DeleteAll();
+    }
 }
 }  // namespace verlet

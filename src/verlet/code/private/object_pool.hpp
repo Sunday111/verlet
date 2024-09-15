@@ -76,6 +76,8 @@ public:
     void Free(ObjectId id);
     size_t ObjectsCount() const { return count_; }
 
+    void Clear();
+
 private:
     template <typename Self>
     [[nodiscard]] auto& GetSlot(this Self& self, const ObjectId& object_id)

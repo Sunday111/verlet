@@ -36,6 +36,10 @@ public:
     float last_emit_time = 0.0;
     bool enabled = false;
     size_t max_objects_count = 10000;
+    Vec2f position = {0, 0};
+    float radius = 10.f;
+    float phase_degrees = 0.f;
+    float sector_degrees = 90.f;
 };
 
 template <typename T>

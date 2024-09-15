@@ -150,6 +150,13 @@ void VerletSolver::UpdatePositions(const size_t thread_index, const size_t threa
     }
 }
 
+
+void VerletSolver::DeleteAll() {
+    linked_to.clear();
+    linked_by.clear();
+    objects.Clear();
+}
+
 void VerletSolver::DeleteObject(ObjectId to_delete)
 {
     if (auto linked_by_it = linked_by.find(to_delete); linked_by_it != linked_by.end())

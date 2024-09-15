@@ -13,6 +13,7 @@
 #include "tools/spawn_objects_tool.hpp"
 #include "tools/tool.hpp"
 #include "verlet_app.hpp"
+#include "klgl/ui/simple_type_widget.hpp"
 
 namespace verlet
 {
@@ -88,8 +89,13 @@ void AppGUI::Emitter()
 {
     if (!ImGui::CollapsingHeader("Emitter")) return;
 
-    ImGui::Checkbox("Enabled", &app_->GetEmitter().enabled);
-    klgl::ImGuiHelper::SliderUInt("Max objects", &app_->GetEmitter().max_objects_count, size_t{0}, size_t{150'000});
+    auto& e = app_->GetEmitter();
+    ImGui::Checkbox("Enabled", &e.enabled);
+    klgl::ImGuiHelper::SliderUInt("Max objects", &e.max_objects_count, size_t{0}, size_t{150'000});
+    klgl::SimpleTypeWidget("location", e.position);
+    klgl::SimpleTypeWidget("phase degrees", e.phase_degrees);
+    klgl::SimpleTypeWidget("sector degrees", e.sector_degrees);
+    klgl::SimpleTypeWidget("radius", e.radius);
 }
 
 void AppGUI::Tools()
