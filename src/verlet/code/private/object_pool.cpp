@@ -31,4 +31,16 @@ void ObjectPool::Free(ObjectId id)
     first_free_ = id;
     --count_;
 }
+
+void ObjectPool::Clear()
+{
+    for (size_t i = 0; i != entries_.size(); ++i)
+    {
+        if (entries_[i].data_.back() != 0)
+        {
+            Free(ObjectId::FromValue(i));
+        }
+    }
+}
+
 }  // namespace verlet

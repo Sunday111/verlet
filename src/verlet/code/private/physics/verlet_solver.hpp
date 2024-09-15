@@ -124,6 +124,7 @@ public:
     void UpdatePositions(const size_t thread_index, const size_t threads_count);
 
     void DeleteObject(ObjectId id);
+    void DeleteAll();
     void StabilizeChain(ObjectId first);
     void CreateLink(ObjectId from, ObjectId to, float target_distance);
 

@@ -15,6 +15,7 @@
 #include "klgl/texture/texture.hpp"
 #include "tools/move_objects_tool.hpp"
 #include "tools/spawn_objects_tool.hpp"
+#include <numbers>
 
 namespace verlet
 {
@@ -200,26 +201,26 @@ void VerletApp::UpdateSimulation()
 
     if (emitter_.enabled && solver.objects.ObjectsCount() <= emitter_.max_objects_count)
     {
+        float sector_radians = edt::Math::DegToRad(std::clamp(emitter_.sector_degrees, 0.f, 360.f));
+        const size_t num_directions = static_cast<size_t>(sector_radians *
+                                    (emitter_.radius + VerletObject::GetRadius()) /
+                                    (2 * VerletObject::GetRadius()));
+
         auto color_fn = spawn_color_strategy_->GetColorFunction();
-        for (uint32_t i{40}; i--;)
+        float phase_radians = sector_radians / 2 + edt::Math::DegToRad(emitter_.phase_degrees);
+        for (size_t i = 0; i != num_directions; ++i)
         {
-            const float y = 50.f + 1.02f * static_cast<float>(i);
+            auto matrix = edt::Math::RotationMatrix2d(phase_radians - (sector_radians * i) / num_directions);
+            auto v = edt::Math::TransformVector(matrix, Vec2f::AxisY());
 
-            {
-                auto [id, object] = solver.objects.Alloc();
-                object.position = {0.6f, y};
-                object.old_position = {0.4f, y};
-                object.movable = true;
-                object.color = color_fn(object);
-            }
+            Vec2f old_pos = emitter_.position + emitter_.radius * v;
+            Vec2f new_pos = emitter_.position + (emitter_.radius + 0.5f) * v;
 
-            {
-                auto [id, object] = solver.objects.Alloc();
-                object.position = {-0.6f, y};
-                object.old_position = {-0.4f, y};
-                object.movable = true;
-                object.color = color_fn(object);
-            }
+            auto [id, object] = solver.objects.Alloc();
+            object.position = new_pos;
+            object.old_position = old_pos;
+            object.movable = true;
+            object.color = color_fn(object);
         }
     }
 
