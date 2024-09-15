@@ -23,7 +23,7 @@ public:
         RunBatch(
             [](void* context, size_t thread_index, size_t num_threads)
             {
-                auto& callback = *reinterpret_cast<T*>(context);
+                auto& callback = *reinterpret_cast<T*>(context);  // NOLINT
                 callback(thread_index, num_threads);
             },
             &callback);

@@ -61,9 +61,10 @@ public:
     template <typename Self>
     [[nodiscard]] auto IdentifiersAndObjects(this Self& self)
     {
-        return self.Identifiers() |
-               std::views::transform(
-                   [&](ObjectId id) -> std::tuple<ObjectId, VerletObject&> { return {id, self.Get(id)}; });
+        return self.Identifiers() | std::views::transform(
+                                        [&](ObjectId id) -> std::tuple<ObjectId, VerletObject&> {
+                                            return {id, self.Get(id)};
+                                        });
     }
 
     template <typename Self>

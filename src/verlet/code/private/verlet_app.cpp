@@ -15,7 +15,6 @@
 #include "klgl/texture/texture.hpp"
 #include "tools/move_objects_tool.hpp"
 #include "tools/spawn_objects_tool.hpp"
-#include <numbers>
 
 namespace verlet
 {
@@ -202,15 +201,15 @@ void VerletApp::UpdateSimulation()
     if (emitter_.enabled && solver.objects.ObjectsCount() <= emitter_.max_objects_count)
     {
         float sector_radians = edt::Math::DegToRad(std::clamp(emitter_.sector_degrees, 0.f, 360.f));
-        const size_t num_directions = static_cast<size_t>(sector_radians *
-                                    (emitter_.radius + VerletObject::GetRadius()) /
-                                    (2 * VerletObject::GetRadius()));
+        const size_t num_directions = static_cast<size_t>(
+            sector_radians * (emitter_.radius + VerletObject::GetRadius()) / (2 * VerletObject::GetRadius()));
 
         auto color_fn = spawn_color_strategy_->GetColorFunction();
         float phase_radians = sector_radians / 2 + edt::Math::DegToRad(emitter_.phase_degrees);
         for (size_t i = 0; i != num_directions; ++i)
         {
-            auto matrix = edt::Math::RotationMatrix2d(phase_radians - (sector_radians * i) / num_directions);
+            auto matrix = edt::Math::RotationMatrix2d(
+                phase_radians - (sector_radians * static_cast<float>(i)) / static_cast<float>(num_directions));
             auto v = edt::Math::TransformVector(matrix, Vec2f::AxisY());
 
             Vec2f old_pos = emitter_.position + emitter_.radius * v;

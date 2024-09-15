@@ -150,8 +150,8 @@ void VerletSolver::UpdatePositions(const size_t thread_index, const size_t threa
     }
 }
 
-
-void VerletSolver::DeleteAll() {
+void VerletSolver::DeleteAll()
+{
     linked_to.clear();
     linked_by.clear();
     objects.Clear();
