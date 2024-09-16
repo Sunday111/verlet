@@ -1,8 +1,8 @@
 #include "tick_color_strategy_velocity.hpp"
 
 #include "imgui.h"
-#include "object.hpp"
-#include "physics/verlet_solver.hpp"
+#include "verlet/object.hpp"
+#include "verlet/physics/verlet_solver.hpp"
 
 namespace verlet
 {

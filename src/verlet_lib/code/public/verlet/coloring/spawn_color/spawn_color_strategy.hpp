@@ -1,7 +1,7 @@
 #pragma once
 
 #include "CppReflection/GetTypeInfo.hpp"
-#include "coloring/object_color_function.hpp"
+#include "verlet/coloring/object_color_function.hpp"
 
 namespace verlet
 {

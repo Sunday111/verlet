@@ -266,9 +266,6 @@ void VerletApp::RenderWorld()
     auto paint_instanced_object = [&](const VerletObject& object) mutable
     {
         const auto& color = color_function(object);
-        // const auto screen_pos = edt::Math::TransformPos(world_to_view_, object.position);
-        // const auto screen_size = edt::Math::TransformVector(world_to_view_, object.GetRadius() + Vec2f{});
-        // instance_painter_.DrawObject(screen_pos, color, screen_size);
         instance_painter_.DrawObject(object.position, color, object.GetRadius() + Vec2f{});
     };
 

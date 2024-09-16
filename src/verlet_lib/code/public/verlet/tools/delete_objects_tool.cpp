@@ -3,7 +3,7 @@
 #include <imgui.h>
 
 #include "fmt/ranges.h"  // IWYU pragma: keep
-#include "verlet_app.hpp"
+#include "verlet/verlet_app.hpp"
 
 namespace verlet
 {

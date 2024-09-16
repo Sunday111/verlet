@@ -4,7 +4,7 @@
 #include "fmt/ranges.h"  // IWYU pragma: keep
 #include "klgl/error_handling.hpp"
 #include "klgl/template/on_scope_leave.hpp"
-#include "threading/batch_thread_pool.hpp"
+#include "verlet/threading/batch_thread_pool.hpp"
 
 namespace verlet
 {

@@ -2,18 +2,18 @@
 
 #include <thread>
 
-#include "coloring/spawn_color/spawn_color_strategy.hpp"
-#include "coloring/spawn_color/spawn_color_strategy_rainbow.hpp"
-#include "coloring/tick_color/tick_color_strategy.hpp"
-#include "coloring/tick_color/tick_color_strategy_velocity.hpp"
 #include "klgl/opengl/debug/annotations.hpp"
 #include "klgl/ui/imgui_helpers.hpp"
-#include "tools/delete_objects_tool.hpp"
-#include "tools/move_objects_tool.hpp"
-#include "tools/spawn_objects_tool.hpp"
-#include "tools/tool.hpp"
-#include "verlet_app.hpp"
 #include "klgl/ui/simple_type_widget.hpp"
+#include "verlet/coloring/spawn_color/spawn_color_strategy.hpp"
+#include "verlet/coloring/spawn_color/spawn_color_strategy_rainbow.hpp"
+#include "verlet/coloring/tick_color/tick_color_strategy.hpp"
+#include "verlet/coloring/tick_color/tick_color_strategy_velocity.hpp"
+#include "verlet/tools/delete_objects_tool.hpp"
+#include "verlet/tools/move_objects_tool.hpp"
+#include "verlet/tools/spawn_objects_tool.hpp"
+#include "verlet/tools/tool.hpp"
+#include "verlet/verlet_app.hpp"
 
 namespace verlet
 {

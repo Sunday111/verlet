@@ -1,5 +1,5 @@
-#include "object.hpp"
-#include "tool.hpp"
+#include "verlet/object.hpp"
+#include "verlet/tools/tool.hpp"
 
 namespace verlet
 {

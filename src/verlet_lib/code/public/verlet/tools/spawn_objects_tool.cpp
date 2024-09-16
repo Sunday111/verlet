@@ -2,7 +2,7 @@
 
 #include <imgui.h>
 
-#include "verlet_app.hpp"
+#include "verlet/verlet_app.hpp"
 
 namespace verlet
 {

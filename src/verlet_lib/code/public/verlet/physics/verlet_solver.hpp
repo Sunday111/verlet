@@ -10,7 +10,7 @@
 #include "EverydayTools/Math/Matrix.hpp"
 #include "EverydayTools/Template/Overload.hpp"
 #include "klgl/template/tagged_id_hash.hpp"
-#include "object_pool.hpp"
+#include "verlet/object_pool.hpp"
 
 namespace verlet
 {

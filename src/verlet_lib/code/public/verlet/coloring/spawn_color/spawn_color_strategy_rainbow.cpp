@@ -1,6 +1,6 @@
 #include "spawn_color_strategy_rainbow.hpp"
 
-#include "verlet_app.hpp"
+#include "verlet/verlet_app.hpp"
 
 namespace verlet
 {
