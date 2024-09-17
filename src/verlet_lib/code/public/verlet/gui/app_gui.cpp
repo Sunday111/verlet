@@ -9,6 +9,7 @@
 #include "verlet/coloring/tick_color/tick_color_strategy.hpp"
 #include "verlet/coloring/tick_color/tick_color_strategy_velocity.hpp"
 #include "verlet/emitters/emitter.hpp"
+#include "verlet/emitters/radial_emitter.hpp"
 #include "verlet/tools/delete_objects_tool.hpp"
 #include "verlet/tools/move_objects_tool.hpp"
 #include "verlet/tools/spawn_objects_tool.hpp"
@@ -35,7 +36,7 @@ void AppGUI::Render()
 
         Camera();
         Perf();
-        app_->GetEmitter().GUI();
+        Emitters();
         Tools();
         SpawnColors();
         TickColors();
@@ -85,6 +86,40 @@ void AppGUI::Perf()
     GuiText("  Update positions {}", to_flt_ms(stats.sim_update.update_positions));
     GuiText("Render {}", to_flt_ms(stats.render.total));
     GuiText("  Set Circle Loop {}", to_flt_ms(stats.render.set_circle_loop));
+}
+
+void AppGUI::Emitters()
+{
+    if (ImGui::CollapsingHeader("Emitters"))
+    {
+        for (auto& emitter : app_->GetEmitters())
+        {
+            emitter.GUI();
+        }
+
+        if (ImGui::Button("New Radial"))
+        {
+            app_->AddEmitter(std::make_unique<RadialEmitter>());
+        }
+
+        if (ImGui::Button("Enable All"))
+        {
+            for (auto& emitter : app_->GetEmitters())
+            {
+                emitter.SetEnabled(true);
+            }
+        }
+
+        ImGui::SameLine();
+
+        if (ImGui::Button("Disable All"))
+        {
+            for (auto& emitter : app_->GetEmitters())
+            {
+                emitter.SetEnabled(false);
+            }
+        }
+    }
 }
 
 void AppGUI::Tools()

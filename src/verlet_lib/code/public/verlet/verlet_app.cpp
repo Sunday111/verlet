@@ -16,7 +16,6 @@
 #include "klgl/texture/texture.hpp"
 #include "tools/move_objects_tool.hpp"
 #include "tools/spawn_objects_tool.hpp"
-#include "verlet/emitters/radial_emitter.hpp"
 
 namespace verlet
 {
@@ -25,7 +24,6 @@ VerletApp::VerletApp()
 {
     event_listener_ = klgl::events::EventListenerMethodCallbacks<&VerletApp::OnMouseScroll>::CreatePtr(this);
     GetEventManager().AddEventListener(*event_listener_);
-    emitter_ = std::make_unique<RadialEmitter>();
 }
 
 VerletApp::~VerletApp()
@@ -143,7 +141,16 @@ void VerletApp::UpdateSimulation()
         tool_->Tick();
     }
 
-    emitter_->Tick(*this);
+    // Delete pending emitters
+    {
+        auto r = std::ranges::remove(emitters_, true, &Emitter::ShouldBeDeleted);
+        emitters_.erase(r.begin(), r.end());
+    }
+
+    for (Emitter& emitter : GetEmitters())
+    {
+        emitter.Tick(*this);
+    }
 
     perf_stats_.sim_update = solver.Update();
     time_steps_++;
@@ -236,6 +243,11 @@ void VerletApp::SetBackgroundColor(const Vec3f& background_color)
     background_color_ = background_color;
     const auto& v = background_color_;
     klgl::OpenGl::SetClearColor(Vec4f{v.x(), v.y(), v.z(), 1.f});
+}
+
+void VerletApp::AddEmitter(std::unique_ptr<Emitter> emitter)
+{
+    emitters_.push_back(std::move(emitter));
 }
 
 Vec2f VerletApp::GetMousePositionInWorldCoordinates() const

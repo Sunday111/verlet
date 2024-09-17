@@ -12,7 +12,6 @@ public:
     void GUI() override;
 
 private:
-    bool enabled = false;
     edt::Vec2f position = {0, 0};
     float radius = 10.f;
     float phase_degrees = 0.f;
