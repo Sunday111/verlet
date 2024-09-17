@@ -85,7 +85,9 @@ add_subdirectory(cloned_dependencies/range_v3 SYSTEM)
 
 # --------------------------------- Own Modules ----------------------------------
 add_subdirectory(cloned_dependencies/Sunday111/klgl/klgl)
+add_subdirectory(src/verlet_lib)
 add_subdirectory(src/verlet)
+add_subdirectory(src/verlet_video)
 add_subdirectory(deps/yae/modules/examples/ecs)
 add_subdirectory(deps/yae/modules/examples/ecs_benchmark)
 add_subdirectory(deps/yae/modules/examples/ecs_tests)

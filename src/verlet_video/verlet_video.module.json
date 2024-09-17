@@ -1,5 +1,8 @@
 {
     "ModuleType": "Executable",
+    "ExtraCMakeFiles": [
+        "add_opencv"
+    ],
     "Dependencies": {
         "Public": [],
         "Private": [

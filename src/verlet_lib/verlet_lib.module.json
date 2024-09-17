@@ -1,0 +1,15 @@
+{
+    "ModuleType": "Library",
+    "CopyDirectoriesAfterBuild": [
+        "content"
+    ],
+    "Dependencies": {
+        "GitPackages": [
+            "https://github.com/Sunday111/klgl main"
+        ],
+        "Public": [
+            "klgl"
+        ],
+        "Private": []
+    }
+}

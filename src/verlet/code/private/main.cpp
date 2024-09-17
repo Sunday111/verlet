@@ -1,5 +1,5 @@
 #include "klgl/error_handling.hpp"
-#include "verlet_app.hpp"
+#include "verlet/verlet_app.hpp"
 
 void Main()
 {
