@@ -4,11 +4,11 @@
 
 #include "klgl/opengl/debug/annotations.hpp"
 #include "klgl/ui/imgui_helpers.hpp"
-#include "klgl/ui/simple_type_widget.hpp"
 #include "verlet/coloring/spawn_color/spawn_color_strategy.hpp"
 #include "verlet/coloring/spawn_color/spawn_color_strategy_rainbow.hpp"
 #include "verlet/coloring/tick_color/tick_color_strategy.hpp"
 #include "verlet/coloring/tick_color/tick_color_strategy_velocity.hpp"
+#include "verlet/emitters/emitter.hpp"
 #include "verlet/tools/delete_objects_tool.hpp"
 #include "verlet/tools/move_objects_tool.hpp"
 #include "verlet/tools/spawn_objects_tool.hpp"
@@ -31,9 +31,11 @@ void AppGUI::Render()
             }
         }
 
+        klgl::ImGuiHelper::SliderUInt("Max objects", &app_->max_objects_count_, size_t{0}, size_t{150'000});
+
         Camera();
         Perf();
-        Emitter();
+        app_->GetEmitter().GUI();
         Tools();
         SpawnColors();
         TickColors();
@@ -83,19 +85,6 @@ void AppGUI::Perf()
     GuiText("  Update positions {}", to_flt_ms(stats.sim_update.update_positions));
     GuiText("Render {}", to_flt_ms(stats.render.total));
     GuiText("  Set Circle Loop {}", to_flt_ms(stats.render.set_circle_loop));
-}
-
-void AppGUI::Emitter()
-{
-    if (!ImGui::CollapsingHeader("Emitter")) return;
-
-    auto& e = app_->GetEmitter();
-    ImGui::Checkbox("Enabled", &e.enabled);
-    klgl::ImGuiHelper::SliderUInt("Max objects", &e.max_objects_count, size_t{0}, size_t{150'000});
-    klgl::SimpleTypeWidget("location", e.position);
-    klgl::SimpleTypeWidget("phase degrees", e.phase_degrees);
-    klgl::SimpleTypeWidget("sector degrees", e.sector_degrees);
-    klgl::SimpleTypeWidget("radius", e.radius);
 }
 
 void AppGUI::Tools()

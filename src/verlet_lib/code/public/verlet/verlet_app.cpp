@@ -3,6 +3,7 @@
 #include "EverydayTools/Time/MeasureTime.hpp"
 #include "coloring/spawn_color/spawn_color_strategy_rainbow.hpp"
 #include "coloring/tick_color/tick_color_strategy.hpp"
+#include "emitters/emitter.hpp"
 #include "gui/app_gui.hpp"
 #include "klgl/events/event_listener_method.hpp"
 #include "klgl/events/event_manager.hpp"
@@ -15,72 +16,16 @@
 #include "klgl/texture/texture.hpp"
 #include "tools/move_objects_tool.hpp"
 #include "tools/spawn_objects_tool.hpp"
+#include "verlet/emitters/radial_emitter.hpp"
 
 namespace verlet
 {
-
-edt::FloatRange2Df Camera::ComputeRange(const edt::FloatRange2Df& world_range) const
-{
-    const auto half_world_extent = world_range.Extent() / 2;
-    const auto half_camera_extent = half_world_extent / GetZoom();
-    return edt::FloatRange2Df::FromMinMax(GetEye() - half_camera_extent, GetEye() + half_camera_extent);
-}
-
-void Camera::Update(const edt::FloatRange2Df& world_range)
-{
-    range_ = ComputeRange(world_range);
-    if (zoom_animation_ && zoom_animation_->Update(zoom_)) zoom_animation_ = std::nullopt;
-    if (eye_animation_ && eye_animation_->Update(eye_)) eye_animation_ = std::nullopt;
-}
-
-void Camera::Zoom(const float delta)
-{
-    if (animate)
-    {
-        float final_value = zoom_ + delta;
-        if (zoom_animation_)
-        {
-            final_value = zoom_animation_->final_value + delta;
-        }
-
-        zoom_animation_ = ValueAnimation{
-            .start_value = zoom_,
-            .final_value = final_value,
-            .duration_seconds = zoom_animation_diration_seconds,
-        };
-    }
-    else
-    {
-        zoom_ += delta;
-    }
-}
-
-void Camera::Pan(const Vec2f& delta)
-{
-    if (animate)
-    {
-        edt::Vec2f final_value = eye_ + delta;
-        if (eye_animation_)
-        {
-            final_value = eye_animation_->final_value + delta;
-        }
-
-        eye_animation_ = ValueAnimation{
-            .start_value = eye_,
-            .final_value = final_value,
-            .duration_seconds = zoom_animation_diration_seconds,
-        };
-    }
-    else
-    {
-        eye_ += delta;
-    }
-}
 
 VerletApp::VerletApp()
 {
     event_listener_ = klgl::events::EventListenerMethodCallbacks<&VerletApp::OnMouseScroll>::CreatePtr(this);
     GetEventManager().AddEventListener(*event_listener_);
+    emitter_ = std::make_unique<RadialEmitter>();
 }
 
 VerletApp::~VerletApp()
@@ -198,32 +143,10 @@ void VerletApp::UpdateSimulation()
         tool_->Tick();
     }
 
-    if (emitter_.enabled && solver.objects.ObjectsCount() <= emitter_.max_objects_count)
-    {
-        float sector_radians = edt::Math::DegToRad(std::clamp(emitter_.sector_degrees, 0.f, 360.f));
-        const size_t num_directions = static_cast<size_t>(
-            sector_radians * (emitter_.radius + VerletObject::GetRadius()) / (2 * VerletObject::GetRadius()));
-
-        auto color_fn = spawn_color_strategy_->GetColorFunction();
-        float phase_radians = sector_radians / 2 + edt::Math::DegToRad(emitter_.phase_degrees);
-        for (size_t i = 0; i != num_directions; ++i)
-        {
-            auto matrix = edt::Math::RotationMatrix2d(
-                phase_radians - (sector_radians * static_cast<float>(i)) / static_cast<float>(num_directions));
-            auto v = edt::Math::TransformVector(matrix, Vec2f::AxisY());
-
-            Vec2f old_pos = emitter_.position + emitter_.radius * v;
-            Vec2f new_pos = emitter_.position + (emitter_.radius + 0.5f) * v;
-
-            auto [id, object] = solver.objects.Alloc();
-            object.position = new_pos;
-            object.old_position = old_pos;
-            object.movable = true;
-            object.color = color_fn(object);
-        }
-    }
+    emitter_->Tick(*this);
 
     perf_stats_.sim_update = solver.Update();
+    time_steps_++;
 }
 
 void VerletApp::Render()

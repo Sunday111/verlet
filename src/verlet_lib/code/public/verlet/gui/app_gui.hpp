@@ -18,7 +18,6 @@ public:
     void Render();
     void Camera();
     void Perf();
-    void Emitter();
     void Tools();
     void SpawnColors();
     void TickColors();

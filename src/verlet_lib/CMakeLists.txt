@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.20)
 include(set_compiler_options)
 set(module_source_files
+    ${CMAKE_CURRENT_SOURCE_DIR}/code/public/verlet/camera.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/code/public/verlet/camera.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/verlet/coloring/object_color_function.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/verlet/coloring/spawn_color/spawn_color_strategy.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/verlet/coloring/spawn_color/spawn_color_strategy_rainbow.cpp
@@ -8,6 +10,9 @@ set(module_source_files
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/verlet/coloring/tick_color/tick_color_strategy.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/verlet/coloring/tick_color/tick_color_strategy_velocity.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/verlet/coloring/tick_color/tick_color_strategy_velocity.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/code/public/verlet/emitters/emitter.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/code/public/verlet/emitters/radial_emitter.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/code/public/verlet/emitters/radial_emitter.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/verlet/gui/app_gui.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/verlet/gui/app_gui.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/verlet/instance_painter.cpp
