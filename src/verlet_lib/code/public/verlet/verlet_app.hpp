@@ -70,14 +70,18 @@ public:
 
     [[nodiscard]] const PerfStats& GetPerfStats() const { return perf_stats_; }
 
-    [[nodiscard]] Emitter& GetEmitter() { return *emitter_; }
-    [[nodiscard]] const Emitter& GetEmitter() const { return *emitter_; }
+    template <typename Self>
+    [[nodiscard]] auto GetEmitters(this Self& self)
+    {
+        return self.emitters_ | std::views::transform([](const auto& ptr) -> auto& { return *ptr; });
+    }
     [[nodiscard]] Camera& GetCamera() { return camera_; }
     [[nodiscard]] const Camera& GetCamera() const { return camera_; }
     [[nodiscard]] const edt::FloatRange2Df& GetWorldRange() const { return world_range_; }
     [[nodiscard]] const edt::Vec3f& GetBackgroundColor() const { return background_color_; }
     [[nodiscard]] const Mat3f& GetWorldToViewTransform() const { return world_to_view_; }
     void SetBackgroundColor(const Vec3f& background_color);
+    void AddEmitter(std::unique_ptr<Emitter> emitter);
 
     Vec2f GetMousePositionInWorldCoordinates() const;
     InstancedPainter& GetPainter() { return instance_painter_; }
@@ -101,7 +105,7 @@ private:
 
     Camera camera_{};
     InstancedPainter instance_painter_{};
-    std::unique_ptr<Emitter> emitter_{};
+    std::vector<std::unique_ptr<Emitter>> emitters_{};
     PerfStats perf_stats_{};
     Vec3f background_color_{};
 
