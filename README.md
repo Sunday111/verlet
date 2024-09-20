@@ -8,8 +8,10 @@ You can see the demo here: https://www.youtube.com/watch?v=vgMczxau7VM
 
 # for windows
 
+## Generate project files
+
 ```bash
 git submodule update --init
 python./deps/yae/scripts/make_project_files.py --project_dir=.
-cmake -S . -B ./build
+cmake -S . -B ./build 
 ```
