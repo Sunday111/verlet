@@ -6,6 +6,7 @@
 
 #include "EverydayTools/Math/FloatRange.hpp"
 #include "camera.hpp"
+#include "emitters/emitter.hpp"
 #include "instance_painter.hpp"
 #include "klgl/application.hpp"
 #include "klgl/shader/uniform_handle.hpp"
