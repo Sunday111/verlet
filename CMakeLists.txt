@@ -57,6 +57,9 @@ add_subdirectory(cloned_dependencies/nlohmann/json SYSTEM)
 add_subdirectory(cloned_dependencies/Sunday111/glad SYSTEM)
 
 # https://github.com/glfw/glfw master
+option(GLFW_BUILD_EXAMPLES "" OFF)
+option(GLFW_BUILD_TESTS "" OFF)
+option(GLFW_BUILD_DOCS "" OFF)
 add_subdirectory(cloned_dependencies/glfw/glfw SYSTEM)
 
 # https://github.com/Sunday111/imgui_glfw_cmake main
@@ -75,10 +78,10 @@ add_subdirectory(cloned_dependencies/Neargye/magic_enum SYSTEM)
 option(BENCHMARK_ENABLE_TESTING "" OFF)
 add_subdirectory(cloned_dependencies/google/benchmark/1_8_3 SYSTEM)
 
-# https://github.com/google/googletest v1.15.0
+# https://github.com/google/googletest v1.15.2
 option(INSTALL_GTEST "" OFF)
 option(BUILD_GMOCK "" OFF)
-add_subdirectory(cloned_dependencies/google/googletest/1_15_0 SYSTEM)
+add_subdirectory(cloned_dependencies/google/googletest/1_15_2 SYSTEM)
 
 # https://github.com/ericniebler/range-v3 0.12.0
 add_subdirectory(cloned_dependencies/range_v3 SYSTEM)
