@@ -59,13 +59,17 @@ public:
     void InitializeRendering();
     void Tick() override;
 
-    void UpdateWorldRange();
+    void UpdateWorldRange(float max_extent_change = 0.5f);
     void UpdateCamera();
     void UpdateSimulation();
     void Render();
 
     void UpdateRenderTransforms();
     void RenderWorld();
+
+    void SaveAppState(const std::filesystem::path& path) const;
+    void LoadAppState(const std::filesystem::path& path);
+    void SavePositions(const std::filesystem::path& path) const;
 
     void OnMouseScroll(const klgl::events::OnMouseScroll&);
 

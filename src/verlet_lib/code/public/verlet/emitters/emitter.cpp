@@ -8,12 +8,22 @@ void Emitter::DeleteButton()
 {
     if (ImGui::Button("Delete"))
     {
-        should_be_deleted_ = true;
+        SetFlag(EmitterFlag::PendingKill, true);
+    }
+}
+void Emitter::CloneButton()
+{
+    if (ImGui::Button("Clone"))
+    {
+        SetFlag(EmitterFlag::CloneRequested, true);
     }
 }
 
 void Emitter::EnabledCheckbox()
 {
-    ImGui::Checkbox("Enabled", &enabled_);
+    bool enabled = HasFlag(EmitterFlag::Enabled);
+    ImGui::Checkbox("Enabled", &enabled);
+    SetFlag(EmitterFlag::Enabled, enabled);
 }
+
 }  // namespace verlet

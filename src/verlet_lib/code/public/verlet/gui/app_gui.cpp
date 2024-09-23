@@ -4,6 +4,7 @@
 
 #include "klgl/opengl/debug/annotations.hpp"
 #include "klgl/ui/imgui_helpers.hpp"
+#include "klgl/ui/simple_type_widget.hpp"
 #include "verlet/coloring/spawn_color/spawn_color_strategy.hpp"
 #include "verlet/coloring/spawn_color/spawn_color_strategy_rainbow.hpp"
 #include "verlet/coloring/tick_color/tick_color_strategy.hpp"
@@ -34,6 +35,29 @@ void AppGUI::Render()
 
         klgl::ImGuiHelper::SliderUInt("Max objects", &app_->max_objects_count_, size_t{0}, size_t{150'000});
 
+        if (auto window_size_f = app_->GetWindow().GetSize2f(); klgl::SimpleTypeWidget("Window size:", window_size_f))
+        {
+            auto window_size = edt::Math::Clamp(window_size_f, Vec2f{100, 100}, Vec2f{5000, 5000}).Cast<size_t>();
+            app_->GetWindow().SetSize(window_size.x(), window_size.y());
+        }
+
+        if (ImGui::Button("Save Preset"))
+        {
+            app_->SaveAppState(app_->GetExecutableDir() / kDefaultPresetFileName);
+        }
+
+        ImGui::SameLine();
+
+        if (ImGui::Button("Load Preset"))
+        {
+            app_->LoadAppState(app_->GetExecutableDir() / kDefaultPresetFileName);
+        }
+
+        if (ImGui::Button("Save positions"))
+        {
+            app_->SavePositions(app_->GetExecutableDir() / kDefaultPositionsDumpFileName);
+        }
+
         Camera();
         Perf();
         Emitters();
@@ -41,6 +65,7 @@ void AppGUI::Render()
         SpawnColors();
         TickColors();
         CollisionsSolver();
+        Stats();
     }
     ImGui::End();
 }
@@ -106,7 +131,7 @@ void AppGUI::Emitters()
         {
             for (auto& emitter : app_->GetEmitters())
             {
-                emitter.SetEnabled(true);
+                emitter.SetFlag(EmitterFlag::Enabled, true);
             }
         }
 
@@ -116,7 +141,7 @@ void AppGUI::Emitters()
         {
             for (auto& emitter : app_->GetEmitters())
             {
-                emitter.SetEnabled(false);
+                emitter.SetFlag(EmitterFlag::Enabled, false);
             }
         }
     }
@@ -251,12 +276,32 @@ void AppGUI::TickColors()
 void AppGUI::CollisionsSolver()
 {
     if (!ImGui::CollapsingHeader("Collisions Solver")) return;
-    GuiText("0 threads means collisions will be solved in the main thread");
     klgl::ImGuiHelper::SliderGetterSetter(
         "Threads Count",
-        size_t{0},
+        size_t{1},
         size_t{std::thread::hardware_concurrency()},
         std::bind_front(&VerletSolver::GetThreadsCount, &app_->solver),
         std::bind_front(&VerletSolver::SetThreadsCount, &app_->solver));
+}
+
+void AppGUI::Stats()
+{
+    if (!ImGui::CollapsingHeader("Stats")) return;
+
+    edt::Vec2f max;
+    float max_lsq = -1.f;
+    for (const auto& object : app_->solver.objects.Objects())
+    {
+        auto delta = object.position - object.old_position;
+        auto lsq = delta.SquaredLength();
+
+        if (max_lsq < lsq)
+        {
+            max_lsq = lsq;
+            max = delta;
+        }
+    }
+
+    klgl::SimpleTypeWidget("Max Delta", max);
 }
 }  // namespace verlet

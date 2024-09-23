@@ -1,63 +1,157 @@
+#include <fstream>
 #include <opencv2/highgui.hpp>
 #include <opencv2/imgproc.hpp>
 #include <opencv2/videoio.hpp>
 
+#include "fmt/core.h"
+#include "fmt/std.h"  // IWYU pragma: keep
+#include "klgl/error_handling.hpp"
+#include "verlet/coloring/spawn_color/spawn_color_strategy_array.hpp"
+#include "verlet/gui/app_gui.hpp"
 #include "verlet/verlet_app.hpp"
 
-int main([[maybe_unused]] int argc, const char** argv)
+namespace verlet
 {
-    // Video properties
-    int frameWidth = 640;
-    int frameHeight = 480;
-    int fps = 30;
-    int totalFrames = 100;  // Generate 100 frames
-
-    std::string file_path = argv[0];  // NOLINT
-    file_path.append("/output.mp4");
-
-    cv::VideoWriter videoWriter(
-        file_path,
-        cv::VideoWriter::fourcc('H', '2', '6', '4'),
-        fps,
-        cv::Size(frameWidth, frameHeight));
-
-    // Check if the VideoWriter object was initialized correctly
-    if (!videoWriter.isOpened())
+static constexpr int FourCC(std::optional<std::string_view> maybe_name)
+{
+    if (maybe_name.has_value())
     {
-        return -1;
+        auto name = *maybe_name;
+        return cv::VideoWriter::fourcc(name[0], name[1], name[2], name[3]);
     }
 
-    cv::namedWindow("Video", cv::WINDOW_AUTOSIZE);
+    return 0;
+}
 
-    // Generate frames and write to the video
-    for (int i = 0; i < totalFrames; i++)
+static constexpr int kOutputVideoFPS = 60;
+static constexpr std::string_view kOutputVideoFormat = ".mp4";
+static constexpr std::optional<std::string_view> kVideoEncoding = "avc1";
+
+class VerletVideoApp : public VerletApp
+{
+public:
+    using Super = VerletApp;
+
+    std::vector<edt::Vec3u8> frame_pixels_;
+    std::unique_ptr<cv::VideoWriter> video_writer_;
+    size_t frames_written_ = 0;
+    cv::Mat frame_;
+
+    void Initialize() override
     {
-        // Create a blank image (black background)
-        cv::Mat frame = cv::Mat::zeros(frameHeight, frameWidth, CV_8UC3);
+        Super::Initialize();
+        LoadAppState(GetExecutableDir() / AppGUI::kDefaultPresetFileName);
+        const auto window_size = GetWindow().GetSize();
+        const auto window_size_i = window_size.Cast<int>();
 
-        // Define a moving circle's position and color
-        int x = (frameWidth / totalFrames) * i;    // Horizontal movement
-        int y = frameHeight / 2;                   // Fixed vertical position
-        cv::Scalar color = cv::Scalar(0, 255, 0);  // Green color (BGR format)
+        UpdateWorldRange(std::numeric_limits<float>::max());
+        const auto sim_area = solver.GetSimArea();
+        const auto image_path = (GetExecutableDir() / "van.jpg");
 
-        // Draw the circle on the frame
-        cv::circle(frame, cv::Point(x, y), 50, color, -1);  // Circle radius = 50, filled (-1 thickness)
+        spawn_color_strategy_ = [&]
+        {
+            cv::Mat image = cv::imread(image_path, cv::IMREAD_COLOR);
+            klgl::ErrorHandling::Ensure(!image.empty(), "Failed to read image at {}", image_path);
+            Vec2i image_size_i = Vec2i{image.cols, image.rows};
+            Vec2f image_size_f = image_size_i.Cast<float>();
+            Vec2i max_pixel_coord = image_size_i - 1;
 
-        // Write the frame to the video
-        videoWriter.write(frame);
+            auto positions_path = GetExecutableDir() / AppGUI::kDefaultPositionsDumpFileName;
+            std::ifstream positions_file(positions_path);
+            klgl::ErrorHandling::Ensure(
+                positions_file.is_open(),
+                "Failed to open positions file at {}",
+                positions_path);
+            size_t count = 0;
+            positions_file >> count;
 
-        // Display the frame (optional, just for visual feedback)
-        cv::imshow("Video", frame);
+            std::vector<edt::Vec3<uint8_t>> colors;
+            colors.reserve(count);
 
-        // Wait for a short moment (33ms) to simulate real-time video playback
-        if (cv::waitKey(33) >= 0) break;  // Break on any key press
+            Vec2f min_coord = sim_area.Min();
+            Vec2f coord_extent = sim_area.Extent();
+            for (size_t i = 0; i != count; ++i)
+            {
+                edt::Vec2f position;
+                positions_file >> position.x();
+                positions_file >> position.y();
+
+                // for give position find the closest image pixel
+                auto rel = (position - min_coord) / coord_extent;
+                auto pixel_coord = (rel * image_size_f).Cast<int>();
+                pixel_coord = edt::Math::Clamp(pixel_coord, Vec2i{}, max_pixel_coord);
+                pixel_coord.y() = max_pixel_coord.y() - pixel_coord.y();
+                auto cv_color = image.at<cv::Vec3b>(pixel_coord.y(), pixel_coord.x());
+                colors.push_back({cv_color[2], cv_color[1], cv_color[0]});
+            }
+
+            auto color_strategy = std::make_unique<SpawnColorStrategyArray>(*this);
+            color_strategy->colors = std::move(colors);
+            return color_strategy;
+        }();
+
+        solver.SetThreadsCount(1);
+        for (auto& emitter : GetEmitters())
+        {
+            emitter.SetFlag(EmitterFlag::Enabled, true);
+        }
+
+        frame_ = cv::Mat(window_size_i.y(), window_size_i.x(), CV_8UC3);
+
+        frame_pixels_.resize(window_size.x() * window_size.y());
+        const auto output_video_path =
+            (GetExecutableDir() / fmt::format("{}{}", image_path.stem(), kOutputVideoFormat));
+        fmt::println("Output file: {}", output_video_path);
+        video_writer_ = std::make_unique<cv::VideoWriter>(
+            output_video_path,
+            FourCC(kVideoEncoding),
+            kOutputVideoFPS,
+            cv::Size(window_size_i.x(), window_size_i.y()));
     }
 
-    // Release the video writer
-    videoWriter.release();
+    void Tick() override
+    {
+        Super::Tick();
 
-    // Close the window
-    cv::destroyWindow("Video");
+        if (video_writer_)
+        {
+            const auto window_size = GetWindow().GetSize();
 
+            klgl::OpenGl::ReadPixels(
+                0,
+                0,
+                window_size.x(),
+                window_size.y(),
+                GL_BGR,
+                GL_UNSIGNED_BYTE,
+                frame_pixels_.data());
+
+            // Copy the pixel data to a cv::Mat object (OpenCV)
+            std::memcpy(frame_.data, frame_pixels_.data(), std::span{frame_pixels_}.size_bytes());
+
+            // OpenGL's origin is at the bottom-left corner, so we need to flip the image vertically
+            cv::flip(frame_, frame_, 0);
+
+            video_writer_->write(frame_);
+
+            if (++frames_written_ == 2000)
+            {
+                video_writer_.release();
+                video_writer_ = nullptr;
+            }
+        }
+    }
+};
+}  // namespace verlet
+
+void Main()
+{
+    verlet::VerletVideoApp app;
+    app.Run();
+}
+
+int main()
+{
+    klgl::ErrorHandling::InvokeAndCatchAll(Main);
     return 0;
 }

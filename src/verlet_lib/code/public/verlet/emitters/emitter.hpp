@@ -1,5 +1,11 @@
 #pragma once
 
+#include <memory>
+
+#include "ass/enum_set.hpp"
+#include "emitter_flag.hpp"
+#include "emitter_type.hpp"
+
 namespace verlet
 {
 
@@ -10,19 +16,30 @@ class Emitter
 public:
     virtual void Tick(VerletApp& app) = 0;
     virtual void GUI() = 0;
-    bool ShouldBeDeleted() const { return should_be_deleted_; }
+    virtual constexpr EmitterType GetType() const = 0;
+    virtual std::unique_ptr<Emitter> Clone() const = 0;
     virtual ~Emitter() = default;
 
-    [[nodiscard]] bool IsEnabled() const noexcept { return enabled_; }
-    void SetEnabled(bool enabled) noexcept { enabled_ = enabled; }
+    [[nodiscard]] bool HasFlag(const EmitterFlag flag) const { return flags_.Contains(flag); }
+    void SetFlag(const EmitterFlag flag, bool value)
+    {
+        if (value)
+        {
+            flags_.Add(flag);
+        }
+        else
+        {
+            flags_.Remove(flag);
+        }
+    }
 
 protected:
     void DeleteButton();
+    void CloneButton();
     void EnabledCheckbox();
 
 private:
-    bool should_be_deleted_ = false;
-    bool enabled_ = false;
+    ass::EnumSet<EmitterFlag> flags_;
 };
 
 }  // namespace verlet

@@ -17,7 +17,7 @@ namespace verlet
 
 void RadialEmitter::Tick(VerletApp& app)
 {
-    if (!IsEnabled()) return;
+    if (!HasFlag(EmitterFlag::Enabled)) return;
     if (app.solver.objects.ObjectsCount() >= app.max_objects_count_) return;
 
     const float sector_radians = edt::Math::DegToRad(std::clamp(sector_degrees, 0.f, 360.f));
@@ -50,6 +50,8 @@ void RadialEmitter::GUI()
     if (ImGui::CollapsingHeader("Radial"))
     {
         DeleteButton();
+        ImGui::SameLine();
+        CloneButton();
         EnabledCheckbox();
         klgl::SimpleTypeWidget("location", position);
         klgl::SimpleTypeWidget("phase degrees", phase_degrees);
@@ -59,4 +61,10 @@ void RadialEmitter::GUI()
     }
     ImGui::PopID();
 }
+
+std::unique_ptr<Emitter> RadialEmitter::Clone() const
+{
+    return std::make_unique<RadialEmitter>(*this);
+}
+
 }  // namespace verlet

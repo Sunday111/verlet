@@ -25,10 +25,14 @@ struct ObjectPoolEntry
     static constexpr size_t kSlotSize = std::max(sizeof(FreePoolEntry), sizeof(VerletObject));
     static constexpr size_t kSlotAlignment = std::max(alignof(FreePoolEntry), alignof(VerletObject));
 
-    template <typename Self>
-    VerletObject& AsObject(this Self& self)
+    VerletObject& AsObject()
     {
-        return *reinterpret_cast<VerletObject*>(self.data_.data());  // NOLINT
+        return *reinterpret_cast<VerletObject*>(data_.data());  // NOLINT
+    }
+
+    const VerletObject& AsObject() const
+    {
+        return *reinterpret_cast<const VerletObject*>(data_.data());  // NOLINT
     }
 
     template <typename Self>
@@ -61,8 +65,9 @@ public:
     template <typename Self>
     [[nodiscard]] auto IdentifiersAndObjects(this Self& self)
     {
+        using ObjectType = std::conditional_t<std::is_const_v<Self>, const VerletObject, VerletObject>;
         return self.Identifiers() | std::views::transform(
-                                        [&](ObjectId id) -> std::tuple<ObjectId, VerletObject&> {
+                                        [&](ObjectId id) -> std::tuple<ObjectId, ObjectType&> {
                                             return {id, self.Get(id)};
                                         });
     }
