@@ -46,7 +46,7 @@ public:
 
         UpdateWorldRange(std::numeric_limits<float>::max());
         const auto sim_area = solver.GetSimArea();
-        const auto image_path = (GetExecutableDir() / "van.jpg");
+        const auto image_path = (GetExecutableDir() / "hi.png");
 
         spawn_color_strategy_ = [&]
         {
@@ -91,10 +91,7 @@ public:
         }();
 
         solver.SetThreadsCount(1);
-        for (auto& emitter : GetEmitters())
-        {
-            emitter.SetFlag(EmitterFlag::Enabled, true);
-        }
+        EnableAllEmitters();
 
         frame_ = cv::Mat(window_size_i.y(), window_size_i.x(), CV_8UC3);
 

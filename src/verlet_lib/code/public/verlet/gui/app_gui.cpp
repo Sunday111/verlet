@@ -129,20 +129,14 @@ void AppGUI::Emitters()
 
         if (ImGui::Button("Enable All"))
         {
-            for (auto& emitter : app_->GetEmitters())
-            {
-                emitter.SetFlag(EmitterFlag::Enabled, true);
-            }
+            app_->EnableAllEmitters();
         }
 
         ImGui::SameLine();
 
         if (ImGui::Button("Disable All"))
         {
-            for (auto& emitter : app_->GetEmitters())
-            {
-                emitter.SetFlag(EmitterFlag::Enabled, false);
-            }
+            app_->DisableAllEmitters();
         }
     }
 }

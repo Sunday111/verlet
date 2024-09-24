@@ -6,24 +6,29 @@ namespace verlet
 {
 void Emitter::DeleteButton()
 {
-    if (ImGui::Button("Delete"))
+    if (!pending_kill && ImGui::Button("Delete"))
     {
-        SetFlag(EmitterFlag::PendingKill, true);
+        pending_kill = true;
     }
 }
 void Emitter::CloneButton()
 {
-    if (ImGui::Button("Clone"))
+    if (!clone_requested && ImGui::Button("Clone"))
     {
-        SetFlag(EmitterFlag::CloneRequested, true);
+        clone_requested = true;
     }
 }
 
 void Emitter::EnabledCheckbox()
 {
-    bool enabled = HasFlag(EmitterFlag::Enabled);
     ImGui::Checkbox("Enabled", &enabled);
-    SetFlag(EmitterFlag::Enabled, enabled);
+}
+
+void Emitter::ResetRuntimeState()
+{
+    pending_kill = false;
+    clone_requested = false;
+    enabled = false;
 }
 
 }  // namespace verlet

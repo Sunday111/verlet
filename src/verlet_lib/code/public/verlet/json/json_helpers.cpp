@@ -144,7 +144,7 @@ edt::Vec2i JSONHelpers::Vec2iFromJSON(const nlohmann::json& json)
     };
 }
 
-nlohmann::json JSONHelpers::RadialEmitterToJSON(const RadialEmitter& emitter)
+nlohmann::json JSONHelpers::RadialEmitterToJSON(const RadialEmitterConfig& emitter)
 {
     nlohmann::json json;
 
@@ -153,19 +153,21 @@ nlohmann::json JSONHelpers::RadialEmitterToJSON(const RadialEmitter& emitter)
     json[JSONKeys::kPhaseDegrees] = emitter.phase_degrees;
     json[JSONKeys::kSectorDegrees] = emitter.sector_degrees;
     json[JSONKeys::kSpeedFactor] = emitter.speed_factor;
+    json[JSONKeys::kRotationSpeed] = emitter.rotation_speed;
 
     return json;
 }
 
-std::unique_ptr<RadialEmitter> JSONHelpers::RadialEmitterFromJSON(const nlohmann::json& json)
+RadialEmitterConfig JSONHelpers::RadialEmitterFromJSON(const nlohmann::json& json)
 {
-    auto e = std::make_unique<RadialEmitter>();
+    RadialEmitterConfig e{};
 
-    e->position = Vec2fFromJSON(GetKey(json, JSONKeys::kPosition));
-    e->radius = Internal::GetKey<float>(json, JSONKeys::kRadius);
-    e->phase_degrees = Internal::GetKey<float>(json, JSONKeys::kPhaseDegrees);
-    e->sector_degrees = Internal::GetKey<float>(json, JSONKeys::kSectorDegrees);
-    e->speed_factor = Internal::GetKey<float>(json, JSONKeys::kSpeedFactor);
+    e.position = Vec2fFromJSON(GetKey(json, JSONKeys::kPosition));
+    e.radius = Internal::GetKey<float>(json, JSONKeys::kRadius);
+    e.phase_degrees = Internal::GetKey<float>(json, JSONKeys::kPhaseDegrees);
+    e.sector_degrees = Internal::GetKey<float>(json, JSONKeys::kSectorDegrees);
+    e.speed_factor = Internal::GetKey<float>(json, JSONKeys::kSpeedFactor);
+    e.rotation_speed = Internal::GetKey<float>(json, JSONKeys::kRotationSpeed);
 
     return e;
 }
@@ -181,7 +183,7 @@ nlohmann::json JSONHelpers::EmitterToJSON(const Emitter& emitter)
     switch (type)
     {
     case EmitterType::Radial:
-        json[type_str] = RadialEmitterToJSON(static_cast<const RadialEmitter&>(emitter));
+        json[type_str] = RadialEmitterToJSON(static_cast<const RadialEmitter&>(emitter).config);
         break;
     }
 
@@ -198,8 +200,9 @@ std::unique_ptr<Emitter> JSONHelpers::EmitterFromJSON(const nlohmann::json& json
     switch (type)
     {
     case EmitterType::Radial:
-        return RadialEmitterFromJSON(inner);
+        return std::make_unique<RadialEmitter>(RadialEmitterFromJSON(inner));
         break;
+
     default:
         throw klgl::ErrorHandling::RuntimeErrorWithMessage("Unhandled type of emitter: {}", type_str);
     }

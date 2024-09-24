@@ -99,6 +99,10 @@ public:
     std::unique_ptr<SpawnColorStrategy> spawn_color_strategy_;
     std::unique_ptr<TickColorStrategy> tick_color_strategy_;
 
+    void DeleteAllEmitters();
+    void EnableAllEmitters();
+    void DisableAllEmitters();
+
 private:
     std::unique_ptr<klgl::events::IEventListener> event_listener_;
 

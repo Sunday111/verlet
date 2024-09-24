@@ -146,26 +146,28 @@ void VerletApp::UpdateSimulation()
         tool_->Tick();
     }
 
-    // Delete pending emitters
+    // Update emitters
     {
-        auto r = std::ranges::remove(emitters_, true, [](auto& e) { return e->HasFlag(EmitterFlag::PendingKill); });
-        emitters_.erase(r.begin(), r.end());
-    }
-
-    size_t n_prev = emitters_.size();
-    for (size_t i = 0; i != n_prev; ++i)
-    {
-        auto& emitter = *emitters_[i];
-        if (emitter.HasFlag(EmitterFlag::CloneRequested))
+        // Delete pending kill emitters
         {
-            emitter.SetFlag(EmitterFlag::CloneRequested, false);
-            emitters_.push_back(emitter.Clone());
+            auto r = std::ranges::remove(emitters_, true, &Emitter::pending_kill);
+            emitters_.erase(r.begin(), r.end());
         }
-    }
 
-    for (Emitter& emitter : GetEmitters())
-    {
-        emitter.Tick(*this);
+        // Iterate only through emitters that existed before
+        for (const size_t emitter_index : std::views::iota(size_t{0}, emitters_.size()))
+        {
+            auto& emitter = *emitters_[emitter_index];
+            emitter.Tick(*this);
+
+            if (emitter.clone_requested)
+            {
+                emitter.clone_requested = false;
+                auto cloned = emitter.Clone();
+                cloned->ResetRuntimeState();
+                emitters_.push_back(std::move(cloned));
+            }
+        }
     }
 
     perf_stats_.sim_update = solver.Update();
@@ -223,10 +225,7 @@ void VerletApp::LoadAppState(const std::filesystem::path& path)
             max_objects_count_ = json[JSONKeys::kMaxObjectsCount];
             GetWindow().SetSize(window_size.x(), window_size.y());
 
-            for (auto& emitter : GetEmitters())
-            {
-                emitter.SetFlag(EmitterFlag::PendingKill, true);
-            }
+            DeleteAllEmitters();
 
             for (const auto& emitter_json : json[JSONKeys::kEmitters])
             {
@@ -328,5 +327,20 @@ Vec2f VerletApp::GetMousePositionInWorldCoordinates() const
     auto [x, y] = ImGui::GetMousePos();
     y = screen_range.y.Extent() - y;
     return edt::Math::TransformPos(screen_to_world_, Vec2f{x, y});
+}
+
+void VerletApp::DeleteAllEmitters()
+{
+    std::ranges::fill(GetEmitters() | std::views::transform(&Emitter::pending_kill), true);
+}
+
+void VerletApp::EnableAllEmitters()
+{
+    std::ranges::fill(GetEmitters() | std::views::transform(&Emitter::enabled), true);
+}
+
+void VerletApp::DisableAllEmitters()
+{
+    std::ranges::fill(GetEmitters() | std::views::transform(&Emitter::enabled), false);
 }
 }  // namespace verlet

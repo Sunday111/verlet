@@ -8,7 +8,7 @@ namespace verlet
 {
 class VerletApp;
 class Emitter;
-class RadialEmitter;
+class RadialEmitterConfig;
 
 class JSONHelpers
 {
@@ -22,8 +22,8 @@ public:
     static edt::Vec2f Vec2fFromJSON(const nlohmann::json& json);
     static edt::Vec2i Vec2iFromJSON(const nlohmann::json& json);
 
-    static nlohmann::json RadialEmitterToJSON(const RadialEmitter& emitter);
-    static std::unique_ptr<RadialEmitter> RadialEmitterFromJSON(const nlohmann::json& json);
+    static nlohmann::json RadialEmitterToJSON(const RadialEmitterConfig& emitter);
+    static RadialEmitterConfig RadialEmitterFromJSON(const nlohmann::json& json);
 
     static nlohmann::json EmitterToJSON(const Emitter& emitter);
     static std::unique_ptr<Emitter> EmitterFromJSON(const nlohmann::json& json);

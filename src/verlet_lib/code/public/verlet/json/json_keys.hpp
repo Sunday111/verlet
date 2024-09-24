@@ -19,6 +19,7 @@ public:
     static constexpr std::string_view kSpeedFactor = "SpeedFactor";
     static constexpr std::string_view kWindowSize = "WindowSize";
     static constexpr std::string_view kMaxObjectsCount = "MaxObjectsCount";
+    static constexpr std::string_view kRotationSpeed = "RotationSpeed";
 };
 
 }  // namespace verlet
