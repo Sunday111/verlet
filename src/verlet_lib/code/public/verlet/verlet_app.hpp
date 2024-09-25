@@ -59,13 +59,17 @@ public:
     void InitializeRendering();
     void Tick() override;
 
-    void UpdateWorldRange();
+    void UpdateWorldRange(float max_extent_change = 0.5f);
     void UpdateCamera();
     void UpdateSimulation();
     void Render();
 
     void UpdateRenderTransforms();
     void RenderWorld();
+
+    void SaveAppState(const std::filesystem::path& path) const;
+    void LoadAppState(const std::filesystem::path& path);
+    void SavePositions(const std::filesystem::path& path) const;
 
     void OnMouseScroll(const klgl::events::OnMouseScroll&);
 
@@ -94,6 +98,10 @@ public:
     std::unique_ptr<Tool> tool_;
     std::unique_ptr<SpawnColorStrategy> spawn_color_strategy_;
     std::unique_ptr<TickColorStrategy> tick_color_strategy_;
+
+    void DeleteAllEmitters();
+    void EnableAllEmitters();
+    void DisableAllEmitters();
 
 private:
     std::unique_ptr<klgl::events::IEventListener> event_listener_;

@@ -1,12 +1,16 @@
 #include "verlet_app.hpp"
 
+#include <nlohmann/json.hpp>
+
 #include "EverydayTools/Time/MeasureTime.hpp"
 #include "coloring/spawn_color/spawn_color_strategy_rainbow.hpp"
 #include "coloring/tick_color/tick_color_strategy.hpp"
 #include "gui/app_gui.hpp"
+#include "klgl/error_handling.hpp"
 #include "klgl/events/event_listener_method.hpp"
 #include "klgl/events/event_manager.hpp"
 #include "klgl/events/mouse_events.hpp"
+#include "klgl/filesystem/filesystem.hpp"
 #include "klgl/opengl/debug/annotations.hpp"
 #include "klgl/opengl/gl_api.hpp"
 #include "klgl/reflection/matrix_reflect.hpp"  // IWYU pragma: keep
@@ -15,6 +19,8 @@
 #include "klgl/texture/texture.hpp"
 #include "tools/move_objects_tool.hpp"
 #include "tools/spawn_objects_tool.hpp"
+#include "verlet/json/json_helpers.hpp"
+#include "verlet/json/json_keys.hpp"
 
 namespace verlet
 {
@@ -51,7 +57,8 @@ void VerletApp::InitializeRendering()
     SetTargetFramerate({60.f});
 
     klgl::OpenGl::SetClearColor({});
-    GetWindow().SetSize(2000, 1000);
+    GetWindow().SetSize(1920, 1080);
+    UpdateWorldRange(std::numeric_limits<float>::max());
     GetWindow().SetTitle("Verlet");
 
     shader_ = std::make_unique<klgl::Shader>("verlet");
@@ -70,7 +77,7 @@ void VerletApp::InitializeRendering()
     instance_painter_.Initialize();
 }
 
-void VerletApp::UpdateWorldRange()
+void VerletApp::UpdateWorldRange(float max_extent_change)
 {
     // Handle aspect ratio here: if some side of viewport becomes bigger than other -
     // we react by increasing the world coordinate range on that axis
@@ -89,8 +96,7 @@ void VerletApp::UpdateWorldRange()
     *smaller = kMinSideRange;
     *bigger = smaller->Enlarged(smaller->Extent() * (ratio - 1.f) * 0.5f);
 
-    static constexpr float kMaxExtentChangePerTick = 0.5f;
-    auto adjust_range = [](const edt::FloatRange<float>& world, edt::FloatRange<float>& sim)
+    auto adjust_range = [&max_extent_change](const edt::FloatRange<float>& world, edt::FloatRange<float>& sim)
     {
         if (world.begin < sim.begin)
         {
@@ -98,7 +104,7 @@ void VerletApp::UpdateWorldRange()
         }
         else
         {
-            sim.begin += std::min(kMaxExtentChangePerTick, world.begin - sim.begin);
+            sim.begin += std::min(max_extent_change, world.begin - sim.begin);
         }
 
         if (world.end > sim.end)
@@ -107,7 +113,7 @@ void VerletApp::UpdateWorldRange()
         }
         else
         {
-            sim.end -= std::min(kMaxExtentChangePerTick, sim.end - world.end);
+            sim.end -= std::min(max_extent_change, sim.end - world.end);
         }
     };
 
@@ -140,15 +146,28 @@ void VerletApp::UpdateSimulation()
         tool_->Tick();
     }
 
-    // Delete pending emitters
+    // Update emitters
     {
-        auto r = std::ranges::remove(emitters_, true, &Emitter::ShouldBeDeleted);
-        emitters_.erase(r.begin(), r.end());
-    }
+        // Delete pending kill emitters
+        {
+            auto r = std::ranges::remove(emitters_, true, &Emitter::pending_kill);
+            emitters_.erase(r.begin(), r.end());
+        }
 
-    for (Emitter& emitter : GetEmitters())
-    {
-        emitter.Tick(*this);
+        // Iterate only through emitters that existed before
+        for (const size_t emitter_index : std::views::iota(size_t{0}, emitters_.size()))
+        {
+            auto& emitter = *emitters_[emitter_index];
+            emitter.Tick(*this);
+
+            if (emitter.clone_requested)
+            {
+                emitter.clone_requested = false;
+                auto cloned = emitter.Clone();
+                cloned->ResetRuntimeState();
+                emitters_.push_back(std::move(cloned));
+            }
+        }
     }
 
     perf_stats_.sim_update = solver.Update();
@@ -178,6 +197,59 @@ void VerletApp::UpdateRenderTransforms()
     const auto view_to_camera = edt::Math::ScaleMatrix(camera_extent / view_range.Extent());
     const auto camera_to_world = edt::Math::TranslationMatrix(-camera_to_world_vector);
     screen_to_world_ = camera_to_world.MatMul(view_to_camera).MatMul(screen_to_view);
+}
+
+void VerletApp::SaveAppState(const std::filesystem::path& path) const
+{
+    klgl::ErrorHandling::InvokeAndCatchAll(
+        [&]
+        {
+            static constexpr int indent_size = 4;
+            static constexpr char indent_char = ' ';
+            nlohmann::json json = JSONHelpers::AppStateToJSON(*this);
+            klgl::Filesystem::WriteFile(path, json.dump(indent_size, indent_char));
+        });
+}
+
+void VerletApp::LoadAppState(const std::filesystem::path& path)
+{
+    klgl::ErrorHandling::InvokeAndCatchAll(
+        [&]
+        {
+            std::string content;
+            klgl::Filesystem::ReadFile(path, content);
+
+            const auto json = nlohmann::json::parse(content);
+
+            auto window_size = JSONHelpers::Vec2iFromJSON(json[JSONKeys::kWindowSize]).Cast<uint32_t>();
+            max_objects_count_ = json[JSONKeys::kMaxObjectsCount];
+            GetWindow().SetSize(window_size.x(), window_size.y());
+
+            DeleteAllEmitters();
+
+            for (const auto& emitter_json : json[JSONKeys::kEmitters])
+            {
+                AddEmitter(JSONHelpers::EmitterFromJSON(emitter_json));
+            }
+        });
+}
+
+void VerletApp::SavePositions(const std::filesystem::path& path) const
+{
+    klgl::ErrorHandling::InvokeAndCatchAll(
+        [&]
+        {
+            std::string buffer;
+            auto inserter = std::back_inserter(buffer);
+
+            fmt::format_to(inserter, "{}\n", solver.objects.ObjectsCount());
+            for (const auto& object : solver.objects.Objects())
+            {
+                fmt::format_to(inserter, "{} {}\n", object.position.x(), object.position.y());
+            }
+
+            klgl::Filesystem::WriteFile(path, buffer);
+        });
 }
 
 void VerletApp::RenderWorld()
@@ -255,5 +327,20 @@ Vec2f VerletApp::GetMousePositionInWorldCoordinates() const
     auto [x, y] = ImGui::GetMousePos();
     y = screen_range.y.Extent() - y;
     return edt::Math::TransformPos(screen_to_world_, Vec2f{x, y});
+}
+
+void VerletApp::DeleteAllEmitters()
+{
+    std::ranges::fill(GetEmitters() | std::views::transform(&Emitter::pending_kill), true);
+}
+
+void VerletApp::EnableAllEmitters()
+{
+    std::ranges::fill(GetEmitters() | std::views::transform(&Emitter::enabled), true);
+}
+
+void VerletApp::DisableAllEmitters()
+{
+    std::ranges::fill(GetEmitters() | std::views::transform(&Emitter::enabled), false);
 }
 }  // namespace verlet

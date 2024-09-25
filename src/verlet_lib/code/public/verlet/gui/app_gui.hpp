@@ -15,6 +15,9 @@ class AppGUI
 public:
     explicit AppGUI(VerletApp& app) : app_{&app} {}
 
+    static constexpr std::string_view kDefaultPresetFileName = "VerletAppPreset.json";
+    static constexpr std::string_view kDefaultPositionsDumpFileName = "VerletPositionsDump.txt";
+
     void Render();
     void Camera();
     void Perf();
@@ -23,6 +26,7 @@ public:
     void SpawnColors();
     void TickColors();
     void CollisionsSolver();
+    void Stats();
 
     template <typename... Args>
     void GuiText(std::string_view text)

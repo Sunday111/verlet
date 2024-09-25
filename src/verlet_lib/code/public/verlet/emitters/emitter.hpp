@@ -1,5 +1,9 @@
 #pragma once
 
+#include <memory>
+
+#include "emitter_type.hpp"
+
 namespace verlet
 {
 
@@ -10,19 +14,18 @@ class Emitter
 public:
     virtual void Tick(VerletApp& app) = 0;
     virtual void GUI() = 0;
-    bool ShouldBeDeleted() const { return should_be_deleted_; }
+    virtual constexpr EmitterType GetType() const = 0;
+    virtual std::unique_ptr<Emitter> Clone() const = 0;
+    virtual void ResetRuntimeState();
     virtual ~Emitter() = default;
 
-    [[nodiscard]] bool IsEnabled() const noexcept { return enabled_; }
-    void SetEnabled(bool enabled) noexcept { enabled_ = enabled; }
-
-protected:
     void DeleteButton();
+    void CloneButton();
     void EnabledCheckbox();
 
-private:
-    bool should_be_deleted_ = false;
-    bool enabled_ = false;
+    bool pending_kill = false;
+    bool clone_requested = false;
+    bool enabled = false;
 };
 
 }  // namespace verlet

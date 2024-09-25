@@ -12,6 +12,6 @@ You can see the demo here: https://www.youtube.com/watch?v=vgMczxau7VM
 
 ```bash
 git submodule update --init
-python./deps/yae/scripts/make_project_files.py --project_dir=.
-cmake -S . -B ./build 
+python ./deps/yae/scripts/make_project_files.py --project_dir=.
+cmake -S . -B ./build -DOpenCV_DIR="C:/data/soft/portable/opencv/install"
 ```

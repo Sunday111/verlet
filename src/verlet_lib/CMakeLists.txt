@@ -5,6 +5,8 @@ set(module_source_files
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/verlet/camera.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/verlet/coloring/object_color_function.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/verlet/coloring/spawn_color/spawn_color_strategy.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/code/public/verlet/coloring/spawn_color/spawn_color_strategy_array.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/code/public/verlet/coloring/spawn_color/spawn_color_strategy_array.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/verlet/coloring/spawn_color/spawn_color_strategy_rainbow.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/verlet/coloring/spawn_color/spawn_color_strategy_rainbow.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/verlet/coloring/tick_color/tick_color_strategy.hpp
@@ -12,12 +14,16 @@ set(module_source_files
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/verlet/coloring/tick_color/tick_color_strategy_velocity.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/verlet/emitters/emitter.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/verlet/emitters/emitter.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/code/public/verlet/emitters/emitter_type.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/verlet/emitters/radial_emitter.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/verlet/emitters/radial_emitter.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/verlet/gui/app_gui.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/verlet/gui/app_gui.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/verlet/instance_painter.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/verlet/instance_painter.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/code/public/verlet/json/json_helpers.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/code/public/verlet/json/json_helpers.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/code/public/verlet/json/json_keys.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/verlet/object.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/verlet/object_pool.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/verlet/object_pool.hpp
