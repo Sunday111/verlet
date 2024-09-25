@@ -14,7 +14,6 @@ set(module_source_files
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/verlet/coloring/tick_color/tick_color_strategy_velocity.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/verlet/emitters/emitter.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/verlet/emitters/emitter.hpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/code/public/verlet/emitters/emitter_flag.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/verlet/emitters/emitter_type.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/verlet/emitters/radial_emitter.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/verlet/emitters/radial_emitter.hpp
