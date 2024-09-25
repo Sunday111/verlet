@@ -46,11 +46,11 @@ public:
 
         UpdateWorldRange(std::numeric_limits<float>::max());
         const auto sim_area = solver.GetSimArea();
-        const auto image_path = (GetExecutableDir() / "hi.png");
+        const auto image_path = (GetExecutableDir() / "van.jpg");
 
         spawn_color_strategy_ = [&]
         {
-            cv::Mat image = cv::imread(image_path, cv::IMREAD_COLOR);
+            cv::Mat image = cv::imread(image_path.string(), cv::IMREAD_COLOR);
             klgl::ErrorHandling::Ensure(!image.empty(), "Failed to read image at {}", image_path);
             Vec2i image_size_i = Vec2i{image.cols, image.rows};
             Vec2f image_size_f = image_size_i.Cast<float>();
@@ -100,7 +100,7 @@ public:
             (GetExecutableDir() / fmt::format("{}{}", image_path.stem(), kOutputVideoFormat));
         fmt::println("Output file: {}", output_video_path);
         video_writer_ = std::make_unique<cv::VideoWriter>(
-            output_video_path,
+            output_video_path.string(),
             FourCC(kVideoEncoding),
             kOutputVideoFPS,
             cv::Size(window_size_i.x(), window_size_i.y()));
