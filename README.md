@@ -4,7 +4,9 @@ Simple physics approximation using [Verlet Integration](https://en.wikipedia.org
 
 Inspired by [this video](https://www.youtube.com/watch?v=lS_qeBy3aQI). Almost exactly the same but I wanted to play with it myself :).
 
-You can see the demo here: https://www.youtube.com/watch?v=vgMczxau7VM
+You can see the demo here: https://www.youtube.com/watch?v=vgMczxau7VM and here https://www.youtube.com/watch?v=vgMczxau7VM.
+
+It is also possible to generate video that results into some predefined image (verlet_video project): https://youtu.be/NFWb60gZgKY
 
 # Building
 
