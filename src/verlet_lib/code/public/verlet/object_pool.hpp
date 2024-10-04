@@ -66,10 +66,9 @@ public:
     [[nodiscard]] auto IdentifiersAndObjects(this Self& self)
     {
         using ObjectType = std::conditional_t<std::is_const_v<Self>, const VerletObject, VerletObject>;
-        return self.Identifiers() | std::views::transform(
-                                        [&](ObjectId id) -> std::tuple<ObjectId, ObjectType&> {
-                                            return {id, self.Get(id)};
-                                        });
+        return self.Identifiers() |
+               std::views::transform(
+                   [&](ObjectId id) -> std::tuple<ObjectId, ObjectType&> { return {id, self.Get(id)}; });
     }
 
     template <typename Self>
