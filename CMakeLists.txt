@@ -83,11 +83,6 @@ add_subdirectory(cloned_dependencies/martinus/unordered_dense SYSTEM)
 set(YAE_CLONED_magic_enum ${CMAKE_CURRENT_SOURCE_DIR}/cloned_dependencies/Neargye/magic_enum)
 add_subdirectory(cloned_dependencies/Neargye/magic_enum SYSTEM)
 
-# https://github.com/TartanLlama/expected v1.1.0
-set(YAE_CLONED_expected ${CMAKE_CURRENT_SOURCE_DIR}/cloned_dependencies/TartanLlama/expected)
-option(EXPECTED_BUILD_TESTS "" OFF)
-add_subdirectory(cloned_dependencies/TartanLlama/expected SYSTEM)
-
 # https://github.com/google/benchmark v1.8.3
 set(YAE_CLONED_gbench_main ${CMAKE_CURRENT_SOURCE_DIR}/cloned_dependencies/google/benchmark/1_8_3)
 option(BENCHMARK_ENABLE_TESTING "" OFF)
@@ -98,6 +93,10 @@ set(YAE_CLONED_gtest_main ${CMAKE_CURRENT_SOURCE_DIR}/cloned_dependencies/google
 option(INSTALL_GTEST "" OFF)
 option(BUILD_GMOCK "" OFF)
 add_subdirectory(cloned_dependencies/google/googletest/1_15_2 SYSTEM)
+
+# https://github.com/ericniebler/range-v3 0.12.0
+set(YAE_CLONED_range_v3 ${CMAKE_CURRENT_SOURCE_DIR}/cloned_dependencies/range_v3)
+add_subdirectory(cloned_dependencies/range_v3 SYSTEM)
 
 # --------------------------------- Own Modules ----------------------------------
 add_subdirectory(cloned_dependencies/Sunday111/imgui_glfw_cmake)
