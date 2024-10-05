@@ -35,10 +35,9 @@ struct ObjectPoolEntry
         return *reinterpret_cast<const VerletObject*>(data_.data());  // NOLINT
     }
 
-    template <typename Self>
-    FreePoolEntry& AsFreeSlot(this Self& self)
+    FreePoolEntry& AsFreeSlot()
     {
-        return *reinterpret_cast<FreePoolEntry*>(self.data_.data());  // NOLINT
+        return *reinterpret_cast<FreePoolEntry*>(data_.data());  // NOLINT
     }
 
     alignas(kSlotAlignment) std::array<uint8_t, kSlotSize> data_;
@@ -47,34 +46,49 @@ struct ObjectPoolEntry
 class ObjectPool
 {
 public:
-    template <typename Self>
-    [[nodiscard]] auto& Get(this Self& self, const ObjectId& id)
+    [[nodiscard]] VerletObject& Get(const ObjectId& id)
     {
-        assert(self.valid_ones_.contains(id));
-        return self.GetSlot(id).AsObject();
+        assert(valid_ones_.contains(id));
+        return GetSlot(id).AsObject();
     }
 
-    template <typename Self>
-    [[nodiscard]] auto Identifiers(this Self& self)
+    [[nodiscard]] const VerletObject& Get(const ObjectId& id) const
     {
-        return RangeIndices(self.entries_) |
-               std::views::filter([&](const size_t index) -> bool { return self.entries_[index].data_.back(); }) |
+        assert(valid_ones_.contains(id));
+        return GetSlot(id).AsObject();
+    }
+
+    [[nodiscard]] auto Identifiers() const
+    {
+        return RangeIndices(entries_) |
+               std::views::filter([&](const size_t index) -> bool { return entries_[index].data_.back(); }) |
                std::views::transform([&](const size_t index) { return ObjectId::FromValue(index); });
     }
 
-    template <typename Self>
-    [[nodiscard]] auto IdentifiersAndObjects(this Self& self)
+    [[nodiscard]] auto IdentifiersAndObjects()
     {
-        using ObjectType = std::conditional_t<std::is_const_v<Self>, const VerletObject, VerletObject>;
-        return self.Identifiers() |
-               std::views::transform(
-                   [&](ObjectId id) -> std::tuple<ObjectId, ObjectType&> { return {id, self.Get(id)}; });
+        return Identifiers() | std::views::transform(
+                                   [&](ObjectId id) -> std::tuple<ObjectId, VerletObject&> {
+                                       return {id, Get(id)};
+                                   });
     }
 
-    template <typename Self>
-    [[nodiscard]] auto Objects(this Self& self)
+    [[nodiscard]] auto IdentifiersAndObjects() const
     {
-        return self.Identifiers() | std::views::transform([&](ObjectId id) -> decltype(auto) { return self.Get(id); });
+        return Identifiers() | std::views::transform(
+                                   [&](ObjectId id) -> std::tuple<ObjectId, const VerletObject&> {
+                                       return {id, Get(id)};
+                                   });
+    }
+
+    [[nodiscard]] auto Objects()
+    {
+        return Identifiers() | std::views::transform([&](ObjectId id) -> decltype(auto) { return Get(id); });
+    }
+
+    [[nodiscard]] auto Objects() const
+    {
+        return Identifiers() | std::views::transform([&](ObjectId id) -> decltype(auto) { return Get(id); });
     }
 
     std::tuple<ObjectId, VerletObject&> Alloc();
@@ -84,11 +98,16 @@ public:
     void Clear();
 
 private:
-    template <typename Self>
-    [[nodiscard]] auto& GetSlot(this Self& self, const ObjectId& object_id)
+    [[nodiscard]] ObjectPoolEntry& GetSlot(const ObjectId& object_id)
     {
-        assert(object_id.GetValue() < self.entries_.size());
-        return self.entries_[object_id.GetValue()];
+        assert(object_id.GetValue() < entries_.size());
+        return entries_[object_id.GetValue()];
+    }
+
+    [[nodiscard]] const ObjectPoolEntry& GetSlot(const ObjectId& object_id) const
+    {
+        assert(object_id.GetValue() < entries_.size());
+        return entries_[object_id.GetValue()];
     }
 
     VerletObject& ConstructObjectSlot(ObjectPoolEntry& entry)
