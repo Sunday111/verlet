@@ -75,10 +75,9 @@ public:
 
     [[nodiscard]] const PerfStats& GetPerfStats() const { return perf_stats_; }
 
-    template <typename Self>
-    [[nodiscard]] auto GetEmitters(this Self& self)
+    [[nodiscard]] auto GetEmitters() const
     {
-        return self.emitters_ | std::views::transform([](const auto& ptr) -> auto& { return *ptr; });
+        return emitters_ | std::views::transform([](const auto& ptr) -> auto& { return *ptr; });
     }
     [[nodiscard]] Camera& GetCamera() { return camera_; }
     [[nodiscard]] const Camera& GetCamera() const { return camera_; }

@@ -4,6 +4,6 @@
     "cloned_dependencies_dir": "cloned_dependencies",
     "enable_lto_globally": true,
     "cpp": {
-        "standard": "23"
+        "standard": "20"
     }
 }
