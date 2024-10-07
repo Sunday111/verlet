@@ -5,25 +5,8 @@
 
     // CMake
     "cmake.generator": "Ninja",
-    "cmake.environment": {
-        "CC": "/home/sunday/built_from_sources/llvm-project/build/bin/clang-19",
-        "CXX": "/home/sunday/built_from_sources/llvm-project/build/bin/clang++-19",
-    },
-    "cmake.debugConfig": {
-        "stopAtEntry": false,
-        "MIMode": "lldb",
-        "miDebuggerPath": "lldb-mi",
-        "logging": {
-                // "trace": true,
-                // "engineLogging": true,
-                // "traceResponse": true
-        },
-        "args": []
-    },
     "cmake.configureArgs": [
-        "-DCMAKE_EXE_LINKER_FLAGS=\"-fuse-ld=mold\"",
-        "-DCMAKE_SHARED_LINKER_FLAGS=\"-fuse-ld=mold\"",
-        //"-DWARNINGS_AS_ERRORS=OFF"
+        "-DOpenCV_DIR:PATH=C:/data/soft/portable/opencv/install"
     ],
     
     // Python
