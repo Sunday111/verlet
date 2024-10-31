@@ -5,14 +5,12 @@
 
     // CMake
     "cmake.generator": "Ninja",
-    "cmake.environment": {
-        "CC": "/home/sunday/built_from_sources/llvm-project/build/bin/clang-19",
-        "CXX": "/home/sunday/built_from_sources/llvm-project/build/bin/clang++-19",
-    },
+    "clangd.path": "/usr/bin/clangd-18",
+
     "cmake.debugConfig": {
         "stopAtEntry": false,
         "MIMode": "lldb",
-        "miDebuggerPath": "lldb-mi",
+        "miDebuggerPath": "/usr/bin/lldb-18",
         "logging": {
                 // "trace": true,
                 // "engineLogging": true,
