@@ -67,18 +67,15 @@ public:
 
     [[nodiscard]] auto IdentifiersAndObjects()
     {
-        return Identifiers() | std::views::transform(
-                                   [&](ObjectId id) -> std::tuple<ObjectId, VerletObject&> {
-                                       return {id, Get(id)};
-                                   });
+        return Identifiers() |
+               std::views::transform([&](ObjectId id) -> std::tuple<ObjectId, VerletObject&> { return {id, Get(id)}; });
     }
 
     [[nodiscard]] auto IdentifiersAndObjects() const
     {
-        return Identifiers() | std::views::transform(
-                                   [&](ObjectId id) -> std::tuple<ObjectId, const VerletObject&> {
-                                       return {id, Get(id)};
-                                   });
+        return Identifiers() |
+               std::views::transform(
+                   [&](ObjectId id) -> std::tuple<ObjectId, const VerletObject&> { return {id, Get(id)}; });
     }
 
     [[nodiscard]] auto Objects()
