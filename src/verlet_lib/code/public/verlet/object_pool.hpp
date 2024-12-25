@@ -67,18 +67,15 @@ public:
 
     [[nodiscard]] auto IdentifiersAndObjects()
     {
-        return Identifiers() | std::views::transform(
-                                   [&](ObjectId id) -> std::tuple<ObjectId, VerletObject&> {
-                                       return {id, Get(id)};
-                                   });
+        return Identifiers() |
+               std::views::transform([&](ObjectId id) -> std::tuple<ObjectId, VerletObject&> { return {id, Get(id)}; });
     }
 
     [[nodiscard]] auto IdentifiersAndObjects() const
     {
-        return Identifiers() | std::views::transform(
-                                   [&](ObjectId id) -> std::tuple<ObjectId, const VerletObject&> {
-                                       return {id, Get(id)};
-                                   });
+        return Identifiers() |
+               std::views::transform(
+                   [&](ObjectId id) -> std::tuple<ObjectId, const VerletObject&> { return {id, Get(id)}; });
     }
 
     [[nodiscard]] auto Objects()
@@ -144,7 +141,7 @@ private:
     ObjectId first_free_ = kInvalidObjectId;
 
 #ifndef NDEBUG
-    ankerl::unordered_dense::set<ObjectId, TaggedIdentifierHash<ObjectId>> valid_ones_;
+    ankerl::unordered_dense::set<ObjectId, klgl::TaggedIdentifierHash<ObjectId>> valid_ones_;
 #endif
 };
 }  // namespace verlet
