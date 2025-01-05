@@ -152,8 +152,8 @@ private:
     std::unique_ptr<BatchThreadPool> batch_thread_pool_;
 
     // links
-    ankerl::unordered_dense::map<ObjectId, std::vector<VerletLink>, TaggedIdentifierHash<ObjectId>> linked_to;
-    ankerl::unordered_dense::map<ObjectId, std::vector<ObjectId>, TaggedIdentifierHash<ObjectId>> linked_by;
+    ankerl::unordered_dense::map<ObjectId, std::vector<VerletLink>, klgl::TaggedIdentifierHash<ObjectId>> linked_to;
+    ankerl::unordered_dense::map<ObjectId, std::vector<ObjectId>, klgl::TaggedIdentifierHash<ObjectId>> linked_by;
 };
 
 }  // namespace verlet

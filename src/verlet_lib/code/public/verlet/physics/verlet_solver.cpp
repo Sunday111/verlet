@@ -188,7 +188,7 @@ void VerletSolver::DeleteObject(ObjectId to_delete)
 void VerletSolver::StabilizeChain(ObjectId first)
 {
     std::vector queue{first};
-    ankerl::unordered_dense::set<ObjectId, TaggedIdentifierHash<ObjectId>> visited;
+    ankerl::unordered_dense::set<ObjectId, klgl::TaggedIdentifierHash<ObjectId>> visited;
 
     while (!queue.empty())
     {

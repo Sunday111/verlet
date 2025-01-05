@@ -25,7 +25,7 @@ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY_MINSIZEREL ${CMAKE_LIBRARY_OUTPUT_DIRECTORY})
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY_DEBUG ${CMAKE_LIBRARY_OUTPUT_DIRECTORY})
 
 # Set path to external modules sources
-set(YAE_EXTERNAL_MODULES_DIR ${CMAKE_CURRENT_SOURCE_DIR}/cloned_dependencies)
+set(YAE_EXTERNAL_MODULES_DIR ${CMAKE_CURRENT_SOURCE_DIR}/cloned_repositories)
 
 set(YAE_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/deps/yae")
 set(YAE_PROJECT_ROOT "${CMAKE_CURRENT_SOURCE_DIR}")
@@ -36,9 +36,17 @@ include(yae_lto)
 enable_lto_globally()
 
 
+# https://github.com/google/googletest v1.15.2
+set(YAE_gtest_SOURCES ${YAE_EXTERNAL_MODULES_DIR}/google/googletest/1_15_2)
+option(INSTALL_GTEST "" OFF)
+option(BUILD_GMOCK "" OFF)
+add_subdirectory(${YAE_gtest_SOURCES} yae_modules/google/googletest/1_15_2 SYSTEM)
+
 # https://github.com/Sunday111/EverydayTools master
 set(YAE_edt_SOURCES ${YAE_EXTERNAL_MODULES_DIR}/Sunday111/EverydayTools)
 option(EDT_WITH_TESTS "" ON)
+option(EDT_FETCH_GOOGLE_TESTS "" OFF)
+option(EDT_FIND_GTEST_PACKAGE "" OFF)
 add_subdirectory(${YAE_edt_SOURCES} yae_modules/Sunday111/EverydayTools SYSTEM)
 
 # https://github.com/Sunday111/CppReflection for_yae
@@ -63,12 +71,6 @@ add_subdirectory(${YAE_gbench_main_SOURCES} yae_modules/google/benchmark/1_8_3 S
 
 set(YAE_ecs_benchmark_SOURCES deps/yae/modules/examples/ecs_benchmark)
 add_subdirectory(${YAE_ecs_benchmark_SOURCES} yae_modules/deps/yae/modules/examples/ecs_benchmark SYSTEM)
-
-# https://github.com/google/googletest v1.15.2
-set(YAE_gtest_main_SOURCES ${YAE_EXTERNAL_MODULES_DIR}/google/googletest/1_15_2)
-option(INSTALL_GTEST "" OFF)
-option(BUILD_GMOCK "" OFF)
-add_subdirectory(${YAE_gtest_main_SOURCES} yae_modules/google/googletest/1_15_2 SYSTEM)
 
 set(YAE_ecs_tests_SOURCES deps/yae/modules/examples/ecs_tests)
 add_subdirectory(${YAE_ecs_tests_SOURCES} yae_modules/deps/yae/modules/examples/ecs_tests SYSTEM)
@@ -117,8 +119,8 @@ add_subdirectory(${YAE_glfw_SOURCES} yae_modules/glfw/glfw SYSTEM)
 
 # https://github.com/ocornut/imgui v1.90.9
 set(YAE_imgui_sources_SOURCES ${YAE_EXTERNAL_MODULES_DIR}/ocornut/imgui)
-set(YAE_imgui_glfw_cmake_SOURCES cloned_dependencies/Sunday111/imgui_glfw_cmake)
-add_subdirectory(${YAE_imgui_glfw_cmake_SOURCES} yae_modules/cloned_dependencies/Sunday111/imgui_glfw_cmake SYSTEM)
+set(YAE_imgui_glfw_cmake_SOURCES cloned_repositories/Sunday111/imgui_glfw_cmake)
+add_subdirectory(${YAE_imgui_glfw_cmake_SOURCES} yae_modules/cloned_repositories/Sunday111/imgui_glfw_cmake SYSTEM)
 
 # https://github.com/jeremy-rifkin/cpptrace main
 set(YAE_cpptrace_SOURCES ${YAE_EXTERNAL_MODULES_DIR}/jeremy-rifkin/cpptrace)
@@ -133,8 +135,8 @@ set(YAE_expected_SOURCES ${YAE_EXTERNAL_MODULES_DIR}/TartanLlama/expected)
 option(EXPECTED_BUILD_TESTS "" OFF)
 add_subdirectory(${YAE_expected_SOURCES} yae_modules/TartanLlama/expected SYSTEM)
 
-set(YAE_klgl_SOURCES cloned_dependencies/Sunday111/klgl/klgl)
-add_subdirectory(${YAE_klgl_SOURCES} yae_modules/cloned_dependencies/Sunday111/klgl/klgl SYSTEM)
+set(YAE_klgl_SOURCES cloned_repositories/Sunday111/klgl/klgl)
+add_subdirectory(${YAE_klgl_SOURCES} yae_modules/cloned_repositories/Sunday111/klgl/klgl SYSTEM)
 
 set(YAE_verlet_lib_SOURCES src/verlet_lib)
 add_subdirectory(${YAE_verlet_lib_SOURCES} yae_modules/src/verlet_lib SYSTEM)
@@ -145,35 +147,38 @@ add_subdirectory(${YAE_verlet_SOURCES} yae_modules/src/verlet SYSTEM)
 set(YAE_verlet_video_SOURCES src/verlet_video)
 add_subdirectory(${YAE_verlet_video_SOURCES} yae_modules/src/verlet_video SYSTEM)
 
-set(YAE_klgl_geometry_shader_SOURCES cloned_dependencies/Sunday111/klgl/examples/geometry_shader)
-add_subdirectory(${YAE_klgl_geometry_shader_SOURCES} yae_modules/cloned_dependencies/Sunday111/klgl/examples/geometry_shader SYSTEM)
+set(YAE_klgl_geometry_shader_SOURCES cloned_repositories/Sunday111/klgl/examples/geometry_shader)
+add_subdirectory(${YAE_klgl_geometry_shader_SOURCES} yae_modules/cloned_repositories/Sunday111/klgl/examples/geometry_shader SYSTEM)
 
-set(YAE_klgl_matmul_sse_benchmark_SOURCES cloned_dependencies/Sunday111/klgl/benchmarks/mat_mul_sse)
-add_subdirectory(${YAE_klgl_matmul_sse_benchmark_SOURCES} yae_modules/cloned_dependencies/Sunday111/klgl/benchmarks/mat_mul_sse SYSTEM)
+set(YAE_klgl_matmul_sse_benchmark_SOURCES cloned_repositories/Sunday111/klgl/benchmarks/mat_mul_sse)
+add_subdirectory(${YAE_klgl_matmul_sse_benchmark_SOURCES} yae_modules/cloned_repositories/Sunday111/klgl/benchmarks/mat_mul_sse SYSTEM)
 
-set(YAE_klgl_minimal_cube_example_SOURCES cloned_dependencies/Sunday111/klgl/examples/minimal_cube)
-add_subdirectory(${YAE_klgl_minimal_cube_example_SOURCES} yae_modules/cloned_dependencies/Sunday111/klgl/examples/minimal_cube SYSTEM)
+set(YAE_klgl_minimal_cube_example_SOURCES cloned_repositories/Sunday111/klgl/examples/minimal_cube)
+add_subdirectory(${YAE_klgl_minimal_cube_example_SOURCES} yae_modules/cloned_repositories/Sunday111/klgl/examples/minimal_cube SYSTEM)
 
-set(YAE_klgl_minimal_quad_example_SOURCES cloned_dependencies/Sunday111/klgl/examples/minimal_quad)
-add_subdirectory(${YAE_klgl_minimal_quad_example_SOURCES} yae_modules/cloned_dependencies/Sunday111/klgl/examples/minimal_quad SYSTEM)
+set(YAE_klgl_minimal_quad_example_SOURCES cloned_repositories/Sunday111/klgl/examples/minimal_quad)
+add_subdirectory(${YAE_klgl_minimal_quad_example_SOURCES} yae_modules/cloned_repositories/Sunday111/klgl/examples/minimal_quad SYSTEM)
 
-set(YAE_klgl_painter2d_example_SOURCES cloned_dependencies/Sunday111/klgl/examples/painter2d)
-add_subdirectory(${YAE_klgl_painter2d_example_SOURCES} yae_modules/cloned_dependencies/Sunday111/klgl/examples/painter2d SYSTEM)
+set(YAE_klgl_painter2d_example_SOURCES cloned_repositories/Sunday111/klgl/examples/painter2d)
+add_subdirectory(${YAE_klgl_painter2d_example_SOURCES} yae_modules/cloned_repositories/Sunday111/klgl/examples/painter2d SYSTEM)
 
-set(YAE_klgl_rotator_benchmark_SOURCES cloned_dependencies/Sunday111/klgl/benchmarks/rotators)
-add_subdirectory(${YAE_klgl_rotator_benchmark_SOURCES} yae_modules/cloned_dependencies/Sunday111/klgl/benchmarks/rotators SYSTEM)
+set(YAE_klgl_rotator_benchmark_SOURCES cloned_repositories/Sunday111/klgl/benchmarks/rotators)
+add_subdirectory(${YAE_klgl_rotator_benchmark_SOURCES} yae_modules/cloned_repositories/Sunday111/klgl/benchmarks/rotators SYSTEM)
 
-set(YAE_klgl_simple_lit_cube_example_SOURCES cloned_dependencies/Sunday111/klgl/examples/simple_lit_cube)
-add_subdirectory(${YAE_klgl_simple_lit_cube_example_SOURCES} yae_modules/cloned_dependencies/Sunday111/klgl/examples/simple_lit_cube SYSTEM)
+set(YAE_klgl_simple_lit_cube_example_SOURCES cloned_repositories/Sunday111/klgl/examples/simple_lit_cube)
+add_subdirectory(${YAE_klgl_simple_lit_cube_example_SOURCES} yae_modules/cloned_repositories/Sunday111/klgl/examples/simple_lit_cube SYSTEM)
 
-set(YAE_klgl_tests_SOURCES cloned_dependencies/Sunday111/klgl/tests)
-add_subdirectory(${YAE_klgl_tests_SOURCES} yae_modules/cloned_dependencies/Sunday111/klgl/tests SYSTEM)
+set(YAE_klgl_tests_SOURCES cloned_repositories/Sunday111/klgl/tests)
+add_subdirectory(${YAE_klgl_tests_SOURCES} yae_modules/cloned_repositories/Sunday111/klgl/tests SYSTEM)
 
-set(YAE_klgl_textured_quad_example_SOURCES cloned_dependencies/Sunday111/klgl/examples/textured_quad)
-add_subdirectory(${YAE_klgl_textured_quad_example_SOURCES} yae_modules/cloned_dependencies/Sunday111/klgl/examples/textured_quad SYSTEM)
+set(YAE_klgl_tetris_example_SOURCES cloned_repositories/Sunday111/klgl/examples/tetris)
+add_subdirectory(${YAE_klgl_tetris_example_SOURCES} yae_modules/cloned_repositories/Sunday111/klgl/examples/tetris SYSTEM)
 
-set(YAE_klgl_two_textures_example_SOURCES cloned_dependencies/Sunday111/klgl/examples/two_textures)
-add_subdirectory(${YAE_klgl_two_textures_example_SOURCES} yae_modules/cloned_dependencies/Sunday111/klgl/examples/two_textures SYSTEM)
+set(YAE_klgl_textured_quad_example_SOURCES cloned_repositories/Sunday111/klgl/examples/textured_quad)
+add_subdirectory(${YAE_klgl_textured_quad_example_SOURCES} yae_modules/cloned_repositories/Sunday111/klgl/examples/textured_quad SYSTEM)
+
+set(YAE_klgl_two_textures_example_SOURCES cloned_repositories/Sunday111/klgl/examples/two_textures)
+add_subdirectory(${YAE_klgl_two_textures_example_SOURCES} yae_modules/cloned_repositories/Sunday111/klgl/examples/two_textures SYSTEM)
 
 
 enable_testing()
