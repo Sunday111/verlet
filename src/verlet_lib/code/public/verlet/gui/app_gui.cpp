@@ -296,6 +296,6 @@ void AppGUI::Stats()
         }
     }
 
-    klgl::SimpleTypeWidget("Max Delta", max);
+    klgl::SimpleTypeWidget("Max Delta", const_cast<const edt::Vec2f&>(max));
 }
 }  // namespace verlet
