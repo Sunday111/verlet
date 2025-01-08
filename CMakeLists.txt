@@ -57,9 +57,9 @@ add_subdirectory(${YAE_CppReflection_SOURCES} yae_modules/Sunday111/CppReflectio
 set(YAE_unordered_dense_SOURCES ${YAE_EXTERNAL_MODULES_DIR}/martinus/unordered_dense)
 add_subdirectory(${YAE_unordered_dense_SOURCES} yae_modules/martinus/unordered_dense SYSTEM)
 
-# https://github.com/fmtlib/fmt 10.1.1
-set(YAE_fmtlib_SOURCES ${YAE_EXTERNAL_MODULES_DIR}/fmt/10_1_1)
-add_subdirectory(${YAE_fmtlib_SOURCES} yae_modules/fmt/10_1_1 SYSTEM)
+# https://github.com/fmtlib/fmt 11.1.1
+set(YAE_fmtlib_SOURCES ${YAE_EXTERNAL_MODULES_DIR}/fmt/11_1_1)
+add_subdirectory(${YAE_fmtlib_SOURCES} yae_modules/fmt/11_1_1 SYSTEM)
 
 set(YAE_ecs_SOURCES deps/yae/modules/examples/ecs)
 add_subdirectory(${YAE_ecs_SOURCES} yae_modules/deps/yae/modules/examples/ecs SYSTEM)

@@ -5,8 +5,23 @@
 
     // CMake
     "cmake.generator": "Ninja",
+    "clangd.path": "/usr/bin/clangd-18",
+
+    "cmake.debugConfig": {
+        "stopAtEntry": false,
+        "MIMode": "lldb",
+        "miDebuggerPath": "/usr/bin/lldb-18",
+        "logging": {
+                // "trace": true,
+                // "engineLogging": true,
+                // "traceResponse": true
+        },
+        "args": []
+    },
     "cmake.configureArgs": [
-        "-DOpenCV_DIR:PATH=C:/data/soft/portable/opencv/install"
+        "-DCMAKE_EXE_LINKER_FLAGS=\"-fuse-ld=mold\"",
+        "-DCMAKE_SHARED_LINKER_FLAGS=\"-fuse-ld=mold\"",
+        //"-DWARNINGS_AS_ERRORS=OFF"
     ],
     
     // Python
