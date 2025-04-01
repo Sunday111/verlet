@@ -126,7 +126,7 @@ add_subdirectory(${YAE_imgui_glfw_cmake_SOURCES} yae_modules/cloned_repositories
 set(YAE_cpptrace_SOURCES ${YAE_EXTERNAL_MODULES_DIR}/jeremy-rifkin/cpptrace)
 add_subdirectory(${YAE_cpptrace_SOURCES} yae_modules/jeremy-rifkin/cpptrace SYSTEM)
 
-# https://github.com/Neargye/magic_enum v0.9.6
+# https://github.com/Neargye/magic_enum v0.9.7
 set(YAE_magic_enum_SOURCES ${YAE_EXTERNAL_MODULES_DIR}/Neargye/magic_enum)
 add_subdirectory(${YAE_magic_enum_SOURCES} yae_modules/Neargye/magic_enum SYSTEM)
 
@@ -147,6 +147,9 @@ add_subdirectory(${YAE_verlet_SOURCES} yae_modules/src/verlet SYSTEM)
 set(YAE_verlet_video_SOURCES src/verlet_video)
 add_subdirectory(${YAE_verlet_video_SOURCES} yae_modules/src/verlet_video SYSTEM)
 
+set(YAE_klgl_compute_shader_example_SOURCES cloned_repositories/Sunday111/klgl/examples/compute_shader)
+add_subdirectory(${YAE_klgl_compute_shader_example_SOURCES} yae_modules/cloned_repositories/Sunday111/klgl/examples/compute_shader SYSTEM)
+
 set(YAE_klgl_geometry_shader_SOURCES cloned_repositories/Sunday111/klgl/examples/geometry_shader)
 add_subdirectory(${YAE_klgl_geometry_shader_SOURCES} yae_modules/cloned_repositories/Sunday111/klgl/examples/geometry_shader SYSTEM)
 
@@ -161,6 +164,12 @@ add_subdirectory(${YAE_klgl_minimal_quad_example_SOURCES} yae_modules/cloned_rep
 
 set(YAE_klgl_painter2d_example_SOURCES cloned_repositories/Sunday111/klgl/examples/painter2d)
 add_subdirectory(${YAE_klgl_painter2d_example_SOURCES} yae_modules/cloned_repositories/Sunday111/klgl/examples/painter2d SYSTEM)
+
+set(YAE_klgl_post_processing_example_SOURCES cloned_repositories/Sunday111/klgl/examples/post_processing)
+add_subdirectory(${YAE_klgl_post_processing_example_SOURCES} yae_modules/cloned_repositories/Sunday111/klgl/examples/post_processing SYSTEM)
+
+set(YAE_klgl_render_to_texture_example_SOURCES cloned_repositories/Sunday111/klgl/examples/render_to_texture)
+add_subdirectory(${YAE_klgl_render_to_texture_example_SOURCES} yae_modules/cloned_repositories/Sunday111/klgl/examples/render_to_texture SYSTEM)
 
 set(YAE_klgl_rotator_benchmark_SOURCES cloned_repositories/Sunday111/klgl/benchmarks/rotators)
 add_subdirectory(${YAE_klgl_rotator_benchmark_SOURCES} yae_modules/cloned_repositories/Sunday111/klgl/benchmarks/rotators SYSTEM)

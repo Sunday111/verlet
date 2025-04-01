@@ -1,11 +1,10 @@
 #include "verlet/json/json_helpers.hpp"
 
-#include <magic_enum.hpp>
-
 #include "ass/fixed_unordered_map.hpp"
 #include "klgl/error_handling.hpp"
 #include "klgl/macro/ensure_enum_size.hpp"
 #include "klgl/template/constexpr_string_hash.hpp"
+#include "magic_enum/magic_enum.hpp"
 #include "verlet/emitters/radial_emitter.hpp"
 #include "verlet/json/json_keys.hpp"
 #include "verlet/verlet_app.hpp"
