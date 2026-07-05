@@ -1,7 +1,29 @@
 {
     "name": "Verlet",
-    "cloned_dependencies_dir": "cloned_dependencies",
     "enable_lto_globally": true,
+    "default_configuration": {
+        "build_dir": "build",
+        "generator": "Ninja",
+        "environment": {
+            "CCACHE_DIR": ".cache/ccache"
+        },
+        "build_targets": [
+            "verlet",
+            "verlet_lib_copy_files"
+        ],
+        "run_target": "verlet",
+        "run_copy_target": "verlet_lib_copy_files",
+        "cmake_definitions": {
+            "CMAKE_BUILD_TYPE": "Release",
+            "CMAKE_C_COMPILER": "clang",
+            "CMAKE_CXX_COMPILER": "clang++",
+            "CMAKE_C_COMPILER_LAUNCHER": "ccache",
+            "CMAKE_CXX_COMPILER_LAUNCHER": "ccache",
+            "CMAKE_CXX_FLAGS": "-stdlib=libc++ -include cstdlib",
+            "CMAKE_EXE_LINKER_FLAGS": "-stdlib=libc++",
+            "CPPTRACE_DISABLE_CXX_20_MODULES": "ON"
+        }
+    },
     "cpp": {
         "standard": "20"
     }

@@ -92,13 +92,22 @@ if __name__ == "__main__":
 ## Clone/Generate/Build
 
 ```bash
+git clone https://github.com/Sunday111/yae
 git clone https://github.com/Sunday111/verlet
 cd verlet
-git submodule update --init
-python ./deps/yae/scripts/make_project_files.py --project_dir=. # Get dependencies and generate CMake files
-# You can skip `-DOpenCV_DIR` if OpenCV is discoverable on system level.
-cmake -S . -B ./build -DOpenCV_DIR="C:/data/soft/portable/opencv/install" -DCMAKE_BUILD_TYPE=Release
-cmake --build ./build
+../yae/yae build
+```
+
+If `yae` is installed on `PATH`, run `yae build` from the project root instead. You can skip `OpenCV_DIR` if OpenCV is
+discoverable on system level. Otherwise, put machine-specific CMake overrides in ignored `local-config.json` next to
+`yae_project.json`:
+
+```json
+{
+    "cmake_definitions": {
+        "OpenCV_DIR": "C:/data/soft/portable/opencv/install"
+    }
+}
 ```
 
 # Compress the resulting video

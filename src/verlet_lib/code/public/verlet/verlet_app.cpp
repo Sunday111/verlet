@@ -48,6 +48,7 @@ void VerletApp::Tick()
     Super::Tick();
     UpdateWorldRange();
     UpdateCamera();
+    UpdateRenderTransforms();
     UpdateSimulation();
     Render();
 }
@@ -323,10 +324,17 @@ void VerletApp::AddEmitter(std::unique_ptr<Emitter> emitter)
 
 Vec2f VerletApp::GetMousePositionInWorldCoordinates() const
 {
-    const auto screen_range = edt::FloatRange2Df::FromMinMax({}, GetWindow().GetSize2f());  // 0 -> resolution
-    auto [x, y] = ImGui::GetMousePos();
-    y = screen_range.y.Extent() - y;
-    return edt::Math::TransformPos(screen_to_world_, Vec2f{x, y});
+    const auto screen_size = GetWindow().GetSize2f();
+    const ImGuiIO& io = ImGui::GetIO();
+    const ImGuiViewport* viewport = ImGui::GetMainViewport();
+    const auto mouse_pos = ImGui::GetMousePos();
+
+    Vec2f screen_position{
+        (mouse_pos.x - viewport->Pos.x) * io.DisplayFramebufferScale.x,
+        (mouse_pos.y - viewport->Pos.y) * io.DisplayFramebufferScale.y};
+
+    screen_position.y() = screen_size.y() - screen_position.y();
+    return edt::Math::TransformPos(screen_to_world_, screen_position);
 }
 
 void VerletApp::DeleteAllEmitters()
