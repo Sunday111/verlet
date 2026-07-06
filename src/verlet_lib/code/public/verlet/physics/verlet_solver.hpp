@@ -93,12 +93,11 @@ public:
                 return object.IsMovable();
             };
 
-            return std::views::filter(edt::Overload{
-                is_movable,
-                [](const std::tuple<ObjectId, const VerletObject&> id_and_obj)
-                {
-                    return std::get<1>(id_and_obj).movable;
-                }});
+            return std::views::filter(
+                edt::Overload{
+                    is_movable,
+                    [](const std::tuple<ObjectId, const VerletObject&> id_and_obj)
+                    { return std::get<1>(id_and_obj).movable; }});
         }
 
         [[nodiscard]] static auto InArea(Vec2f position, float radius)
@@ -108,12 +107,11 @@ public:
                 return (position - object.position).SquaredLength() < rsq;
             };
 
-            return std::views::filter(edt::Overload{
-                is_close_enough,
-                [=](const std::tuple<ObjectId, const VerletObject&> id_and_obj)
-                {
-                    return is_close_enough(std::get<1>(id_and_obj));
-                }});
+            return std::views::filter(
+                edt::Overload{
+                    is_close_enough,
+                    [=](const std::tuple<ObjectId, const VerletObject&> id_and_obj)
+                    { return is_close_enough(std::get<1>(id_and_obj)); }});
         }
     };
 

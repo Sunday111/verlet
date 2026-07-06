@@ -8,11 +8,9 @@
             "CCACHE_DIR": ".cache/ccache"
         },
         "build_targets": [
-            "verlet",
-            "verlet_lib_copy_files"
+            "verlet"
         ],
         "run_target": "verlet",
-        "run_copy_target": "verlet_lib_copy_files",
         "cmake_definitions": {
             "CMAKE_BUILD_TYPE": "Release",
             "CMAKE_C_COMPILER": "clang",

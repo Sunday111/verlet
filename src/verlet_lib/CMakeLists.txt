@@ -49,4 +49,4 @@ target_include_directories(verlet_lib PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/code/p
 add_custom_target(verlet_lib_copy_files ALL
     ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/content" ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/content
 )
-add_dependencies(verlet_lib_copy_files verlet_lib)
+add_dependencies(verlet_lib verlet_lib_copy_files)
