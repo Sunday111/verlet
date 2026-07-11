@@ -6,17 +6,14 @@
 #include "coloring/spawn_color/spawn_color_strategy_rainbow.hpp"
 #include "coloring/tick_color/tick_color_strategy.hpp"
 #include "gui/app_gui.hpp"
-#include "klgl/error_handling.hpp"
-#include "klgl/events/event_listener_method.hpp"
-#include "klgl/events/event_manager.hpp"
-#include "klgl/events/mouse_events.hpp"
-#include "klgl/filesystem/filesystem.hpp"
-#include "klgl/opengl/debug/annotations.hpp"
-#include "klgl/opengl/gl_api.hpp"
-#include "klgl/reflection/matrix_reflect.hpp"  // IWYU pragma: keep
-#include "klgl/shader/shader.hpp"
-#include "klgl/texture/procedural_texture_generator.hpp"
-#include "klgl/texture/texture.hpp"
+#include "klvk/error_handling.hpp"
+#include "klvk/events/event_listener_method.hpp"
+#include "klvk/events/event_manager.hpp"
+#include "klvk/events/mouse_events.hpp"
+#include "klvk/filesystem/filesystem.hpp"
+#include "klvk/reflection/matrix_reflect.hpp"  // IWYU pragma: keep
+#include "klvk/texture/procedural_texture_generator.hpp"
+#include "klvk/vulkan/texture.hpp"
 #include "tools/move_objects_tool.hpp"
 #include "tools/spawn_objects_tool.hpp"
 #include "verlet/json/json_helpers.hpp"
@@ -27,7 +24,7 @@ namespace verlet
 
 VerletApp::VerletApp()
 {
-    event_listener_ = klgl::events::EventListenerMethodCallbacks<&VerletApp::OnMouseScroll>::CreatePtr(this);
+    event_listener_ = klvk::events::EventListenerMethodCallbacks<&VerletApp::OnMouseScroll>::CreatePtr(this);
     GetEventManager().AddEventListener(*event_listener_);
 }
 
@@ -57,25 +54,19 @@ void VerletApp::InitializeRendering()
 {
     SetTargetFramerate({60.f});
 
-    klgl::OpenGl::SetClearColor({});
+    SetClearColor({});
     GetWindow().SetSize(1920, 1080);
     UpdateWorldRange(std::numeric_limits<float>::max());
     GetWindow().SetTitle("Verlet");
 
-    shader_ = std::make_unique<klgl::Shader>("verlet");
-    shader_->Use();
-
     {
         // Generate circle mask texture
         constexpr auto size = Vec2<size_t>{} + 128;
-        texture_ = klgl::Texture::CreateEmpty(size, klgl::GlTextureInternalFormat::R8);
-        const auto pixels = klgl::ProceduralTextureGenerator::CircleMask(size, 2);
-        texture_->SetPixels<klgl::GlPixelBufferLayout::R>(std::span{pixels});
-        klgl::OpenGl::SetTextureMinFilter(klgl::GlTargetTextureType::Texture2d, klgl::GlTextureFilter::Nearest);
-        klgl::OpenGl::SetTextureMagFilter(klgl::GlTargetTextureType::Texture2d, klgl::GlTextureFilter::Linear);
+        const auto pixels = klvk::ProceduralTextureGenerator::CircleMask(size, 2);
+        texture_ = klvk::Texture::CreateR8(GetDeviceContext(), size.Cast<uint32_t>(), std::span{pixels});
     }
 
-    instance_painter_.Initialize();
+    instance_painter_.Initialize(*this, *texture_);
 }
 
 void VerletApp::UpdateWorldRange(float max_extent_change)
@@ -202,23 +193,23 @@ void VerletApp::UpdateRenderTransforms()
 
 void VerletApp::SaveAppState(const std::filesystem::path& path) const
 {
-    klgl::ErrorHandling::InvokeAndCatchAll(
+    klvk::ErrorHandling::InvokeAndCatchAll(
         [&]
         {
             static constexpr int indent_size = 4;
             static constexpr char indent_char = ' ';
             nlohmann::json json = JSONHelpers::AppStateToJSON(*this);
-            klgl::Filesystem::WriteFile(path, json.dump(indent_size, indent_char));
+            klvk::Filesystem::WriteFile(path, json.dump(indent_size, indent_char));
         });
 }
 
 void VerletApp::LoadAppState(const std::filesystem::path& path)
 {
-    klgl::ErrorHandling::InvokeAndCatchAll(
+    klvk::ErrorHandling::InvokeAndCatchAll(
         [&]
         {
             std::string content;
-            klgl::Filesystem::ReadFile(path, content);
+            klvk::Filesystem::ReadFile(path, content);
 
             const auto json = nlohmann::json::parse(content);
 
@@ -237,7 +228,7 @@ void VerletApp::LoadAppState(const std::filesystem::path& path)
 
 void VerletApp::SavePositions(const std::filesystem::path& path) const
 {
-    klgl::ErrorHandling::InvokeAndCatchAll(
+    klvk::ErrorHandling::InvokeAndCatchAll(
         [&]
         {
             std::string buffer;
@@ -249,7 +240,7 @@ void VerletApp::SavePositions(const std::filesystem::path& path) const
                 fmt::format_to(inserter, "{} {}\n", object.position.x(), object.position.y());
             }
 
-            klgl::Filesystem::WriteFile(path, buffer);
+            klvk::Filesystem::WriteFile(path, buffer);
         });
 }
 
@@ -261,9 +252,7 @@ void VerletApp::RenderWorld()
     };
     if (tick_color_strategy_) color_function = tick_color_strategy_->GetColorFunction();
 
-    const klgl::ScopeAnnotation annotation("Render World");
-
-    instance_painter_.num_objects_ = 0;
+    instance_painter_.Clear();
 
     auto paint_instanced_object = [&](const VerletObject& object) mutable
     {
@@ -274,10 +263,6 @@ void VerletApp::RenderWorld()
     perf_stats_.render.total = edt::MeasureTime(
         [&]
         {
-            klgl::OpenGl::Clear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
-            klgl::OpenGl::EnableBlending();
-            glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
             perf_stats_.render.set_circle_loop = edt::MeasureTime(
                 [&]
                 {
@@ -292,16 +277,11 @@ void VerletApp::RenderWorld()
                 tool_->DrawInWorld();
             }
 
-            shader_->Use();
-            shader_->SetUniform(u_world_to_view_, world_to_view_.Transposed());
-            shader_->SendUniforms();
-
-            texture_->Bind();
-            instance_painter_.Render();
+            instance_painter_.Render(world_to_view_);
         });
 }
 
-void VerletApp::OnMouseScroll(const klgl::events::OnMouseScroll& event)
+void VerletApp::OnMouseScroll(const klvk::events::OnMouseScroll& event)
 {
     if (!ImGui::GetIO().WantCaptureMouse)
     {
@@ -314,7 +294,7 @@ void VerletApp::SetBackgroundColor(const Vec3f& background_color)
     if (background_color_ == background_color) return;
     background_color_ = background_color;
     const auto& v = background_color_;
-    klgl::OpenGl::SetClearColor(Vec4f{v.x(), v.y(), v.z(), 1.f});
+    SetClearColor(Vec4f{v.x(), v.y(), v.z(), 1.f});
 }
 
 void VerletApp::AddEmitter(std::unique_ptr<Emitter> emitter)

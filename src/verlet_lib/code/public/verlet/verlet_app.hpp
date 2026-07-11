@@ -8,22 +8,20 @@
 #include "camera.hpp"
 #include "emitters/emitter.hpp"
 #include "instance_painter.hpp"
-#include "klgl/application.hpp"
-#include "klgl/shader/uniform_handle.hpp"
-#include "klgl/window.hpp"
+#include "klvk/application.hpp"
+#include "klvk/window.hpp"
 #include "physics/verlet_solver.hpp"
 
-namespace klgl
+namespace klvk
 {
-class Shader;
 class Texture;
-}  // namespace klgl
+}  // namespace klvk
 
-namespace klgl::events
+namespace klvk::events
 {
 class IEventListener;
 class OnMouseScroll;
-};  // namespace klgl::events
+};  // namespace klvk::events
 
 namespace verlet
 {
@@ -33,10 +31,10 @@ class SpawnColorStrategy;
 class TickColorStrategy;
 class Emitter;
 
-class VerletApp : public klgl::Application
+class VerletApp : public klvk::Application
 {
 public:
-    using Super = klgl::Application;
+    using Super = klvk::Application;
 
     struct RenderPerfStats
     {
@@ -71,7 +69,7 @@ public:
     void LoadAppState(const std::filesystem::path& path);
     void SavePositions(const std::filesystem::path& path) const;
 
-    void OnMouseScroll(const klgl::events::OnMouseScroll&);
+    void OnMouseScroll(const klvk::events::OnMouseScroll&);
 
     [[nodiscard]] const PerfStats& GetPerfStats() const { return perf_stats_; }
 
@@ -103,13 +101,11 @@ public:
     void DisableAllEmitters();
 
 private:
-    std::unique_ptr<klgl::events::IEventListener> event_listener_;
+    std::unique_ptr<klvk::events::IEventListener> event_listener_;
 
     edt::FloatRange2D<float> world_range_{.x = kMinSideRange, .y = kMinSideRange};
 
-    klgl::UniformHandle u_world_to_view_ = klgl::UniformHandle("u_world_to_view");
-    std::unique_ptr<klgl::Shader> shader_;
-    std::unique_ptr<klgl::Texture> texture_;
+    std::unique_ptr<klvk::Texture> texture_;
 
     Camera camera_{};
     InstancedPainter instance_painter_{};

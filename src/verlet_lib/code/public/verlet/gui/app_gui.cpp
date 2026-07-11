@@ -2,9 +2,8 @@
 
 #include <thread>
 
-#include "klgl/opengl/debug/annotations.hpp"
-#include "klgl/ui/imgui_helpers.hpp"
-#include "klgl/ui/simple_type_widget.hpp"
+#include "klvk/ui/imgui_helpers.hpp"
+#include "klvk/ui/simple_type_widget.hpp"
 #include "verlet/coloring/spawn_color/spawn_color_strategy.hpp"
 #include "verlet/coloring/spawn_color/spawn_color_strategy_rainbow.hpp"
 #include "verlet/coloring/tick_color/tick_color_strategy.hpp"
@@ -22,7 +21,6 @@ namespace verlet
 
 void AppGUI::Render()
 {
-    const klgl::ScopeAnnotation annotation("Render GUI");
     if (ImGui::Begin("Verlet"))
     {
         {
@@ -33,9 +31,9 @@ void AppGUI::Render()
             }
         }
 
-        klgl::ImGuiHelper::SliderUInt("Max objects", &app_->max_objects_count_, size_t{0}, size_t{150'000});
+        klvk::ImGuiHelper::SliderUInt("Max objects", &app_->max_objects_count_, size_t{0}, size_t{150'000});
 
-        if (auto window_size_f = app_->GetWindow().GetSize2f(); klgl::SimpleTypeWidget("Window size:", window_size_f))
+        if (auto window_size_f = app_->GetWindow().GetSize2f(); klvk::SimpleTypeWidget("Window size:", window_size_f))
         {
             auto window_size = edt::Math::Clamp(window_size_f, Vec2f{100, 100}, Vec2f{5000, 5000}).Cast<size_t>();
             app_->GetWindow().SetSize(window_size.x(), window_size.y());
@@ -270,7 +268,7 @@ void AppGUI::TickColors()
 void AppGUI::CollisionsSolver()
 {
     if (!ImGui::CollapsingHeader("Collisions Solver")) return;
-    klgl::ImGuiHelper::SliderGetterSetter(
+    klvk::ImGuiHelper::SliderGetterSetter(
         "Threads Count",
         size_t{1},
         size_t{std::thread::hardware_concurrency()},
@@ -296,6 +294,6 @@ void AppGUI::Stats()
         }
     }
 
-    klgl::SimpleTypeWidget("Max Delta", const_cast<const edt::Vec2f&>(max));
+    klvk::SimpleTypeWidget("Max Delta", const_cast<const edt::Vec2f&>(max));
 }
 }  // namespace verlet

@@ -1,9 +1,9 @@
 #include "verlet/json/json_helpers.hpp"
 
 #include "ass/fixed_unordered_map.hpp"
-#include "klgl/error_handling.hpp"
-#include "klgl/macro/ensure_enum_size.hpp"
-#include "klgl/template/constexpr_string_hash.hpp"
+#include "klvk/error_handling.hpp"
+#include "klvk/macro/ensure_enum_size.hpp"
+#include "klvk/template/constexpr_string_hash.hpp"
 #include "magic_enum/magic_enum.hpp"
 #include "verlet/emitters/radial_emitter.hpp"
 #include "verlet/json/json_keys.hpp"
@@ -17,7 +17,7 @@ template <typename T>
 static constexpr auto MakeEnumParseMap()
 {
     constexpr size_t num_entries = magic_enum::enum_count<T>();
-    ass::FixedUnorderedMap<num_entries, std::string_view, T, klgl::ConstexprStringHasher> m;
+    ass::FixedUnorderedMap<num_entries, std::string_view, T, klvk::ConstexprStringHasher> m;
     for (auto kv : magic_enum::enum_entries<T>())
     {
         assert(!m.Contains(std::get<1>(kv)));
@@ -38,7 +38,7 @@ public:
         using Value = typename Map::Value;
         [[unlikely]] if (!map.Contains(text))
         {
-            klgl::ErrorHandling::ThrowWithMessage(
+            klvk::ErrorHandling::ThrowWithMessage(
                 "Could not parse {} as {}",
                 text,
                 magic_enum::enum_type_name<Value>());
@@ -55,7 +55,7 @@ public:
             return value.get_ref<const std::string&>();
         }
 
-        throw klgl::ErrorHandling::RuntimeErrorWithMessage(
+        throw klvk::ErrorHandling::RuntimeErrorWithMessage(
             "json[{}] is not a string! json: \n {}",
             key,
             json.dump(4, ' '));
@@ -70,7 +70,7 @@ public:
             return value;
         }
 
-        throw klgl::ErrorHandling::RuntimeErrorWithMessage(
+        throw klvk::ErrorHandling::RuntimeErrorWithMessage(
             "json[{}] is not a float! json: \n {}",
             key,
             json.dump(4, ' '));
@@ -85,7 +85,7 @@ public:
             return value;
         }
 
-        throw klgl::ErrorHandling::RuntimeErrorWithMessage(
+        throw klvk::ErrorHandling::RuntimeErrorWithMessage(
             "json[{}] is not an int! json: \n {}",
             key,
             json.dump(4, ' '));
@@ -96,12 +96,12 @@ const nlohmann::json& JSONHelpers::GetKey(const nlohmann::json& json, const std:
 {
     [[unlikely]] if (!json.is_object())
     {
-        klgl::ErrorHandling::ThrowWithMessage("JSON is not an object: \n ", json.dump(4, ' '));
+        klvk::ErrorHandling::ThrowWithMessage("JSON is not an object: \n ", json.dump(4, ' '));
     }
 
     [[unlikely]] if (!json.contains(key))
     {
-        klgl::ErrorHandling::ThrowWithMessage("Missing required property {} in object: \n {}", key, json.dump(4, ' '));
+        klvk::ErrorHandling::ThrowWithMessage("Missing required property {} in object: \n {}", key, json.dump(4, ' '));
     }
 
     return json[key];
@@ -178,7 +178,7 @@ nlohmann::json JSONHelpers::EmitterToJSON(const Emitter& emitter)
     const auto type = emitter.GetType();
     const std::string_view type_str = magic_enum::enum_name(type);
     json[JSONKeys::kType] = type_str;
-    KLGL_ENSURE_ENUM_SIZE(EmitterType, 1);
+    KLVK_ENSURE_ENUM_SIZE(EmitterType, 1);
     switch (type)
     {
     case EmitterType::Radial:
@@ -195,7 +195,7 @@ std::unique_ptr<Emitter> JSONHelpers::EmitterFromJSON(const nlohmann::json& json
     const EmitterType type = Internal::ParseEnum(Internal::kEmitterTypeParseMap, type_str);
     const nlohmann::json& inner = GetKey(json, type_str);
 
-    KLGL_ENSURE_ENUM_SIZE(EmitterType, 1);
+    KLVK_ENSURE_ENUM_SIZE(EmitterType, 1);
     switch (type)
     {
     case EmitterType::Radial:
@@ -203,7 +203,7 @@ std::unique_ptr<Emitter> JSONHelpers::EmitterFromJSON(const nlohmann::json& json
         break;
 
     default:
-        throw klgl::ErrorHandling::RuntimeErrorWithMessage("Unhandled type of emitter: {}", type_str);
+        throw klvk::ErrorHandling::RuntimeErrorWithMessage("Unhandled type of emitter: {}", type_str);
     }
 }
 

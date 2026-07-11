@@ -5,7 +5,7 @@
 
 #include "fmt/core.h"
 #include "fmt/std.h"  // IWYU pragma: keep
-#include "klgl/error_handling.hpp"
+#include "klvk/error_handling.hpp"
 #include "verlet/coloring/spawn_color/spawn_color_strategy_array.hpp"
 #include "verlet/gui/app_gui.hpp"
 #include "verlet/verlet_app.hpp"
@@ -51,14 +51,14 @@ public:
         spawn_color_strategy_ = [&]
         {
             cv::Mat image = cv::imread(image_path.string(), cv::IMREAD_COLOR);
-            klgl::ErrorHandling::Ensure(!image.empty(), "Failed to read image at {}", image_path);
+            klvk::ErrorHandling::Ensure(!image.empty(), "Failed to read image at {}", image_path);
             Vec2i image_size_i = Vec2i{image.cols, image.rows};
             Vec2f image_size_f = image_size_i.Cast<float>();
             Vec2i max_pixel_coord = image_size_i - 1;
 
             auto positions_path = GetExecutableDir() / AppGUI::kDefaultPositionsDumpFileName;
             std::ifstream positions_file(positions_path);
-            klgl::ErrorHandling::Ensure(
+            klvk::ErrorHandling::Ensure(
                 positions_file.is_open(),
                 "Failed to open positions file at {}",
                 positions_path);
@@ -114,7 +114,7 @@ public:
         {
             const auto window_size = GetWindow().GetSize();
 
-            klgl::OpenGl::ReadPixels(
+            klvk::OpenGl::ReadPixels(
                 0,
                 0,
                 window_size.x(),
@@ -149,6 +149,6 @@ void Main()
 
 int main()
 {
-    klgl::ErrorHandling::InvokeAndCatchAll(Main);
+    klvk::ErrorHandling::InvokeAndCatchAll(Main);
     return 0;
 }

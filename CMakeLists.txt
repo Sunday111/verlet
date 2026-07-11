@@ -36,6 +36,16 @@ include(yae_lto)
 enable_lto_globally()
 
 
+# https://github.com/nlohmann/json develop
+set(YAE_nlohmann_json_SOURCES ${YAE_CLONED_REPOSITORIES_DIR}/nlohmann/json/develop)
+add_subdirectory(${YAE_nlohmann_json_SOURCES} yae_modules/nlohmann/json/develop SYSTEM)
+
+# https://github.com/Sunday111/ass main
+set(YAE_ass_SOURCES ${YAE_CLONED_REPOSITORIES_DIR}/Sunday111/ass/main)
+option(ASS_ENABLE_TESTING "" ON)
+option(ASS_FETCH_GOOGLE_TESTS "" OFF)
+add_subdirectory(${YAE_ass_SOURCES} yae_modules/Sunday111/ass/main SYSTEM)
+
 # https://github.com/google/googletest v1.15.2
 set(YAE_gtest_SOURCES ${YAE_CLONED_REPOSITORIES_DIR}/google/googletest/v1.15.2)
 option(INSTALL_GTEST "" OFF)
@@ -52,6 +62,10 @@ add_subdirectory(${YAE_edt_SOURCES} yae_modules/Sunday111/EverydayTools/master S
 # https://github.com/fmtlib/fmt 11.1.1
 set(YAE_fmtlib_SOURCES ${YAE_CLONED_REPOSITORIES_DIR}/fmtlib/fmt/11.1.1)
 add_subdirectory(${YAE_fmtlib_SOURCES} yae_modules/fmtlib/fmt/11.1.1 SYSTEM)
+
+# https://github.com/Sunday111/CppReflection for_yae
+set(YAE_CppReflection_SOURCES ${YAE_CLONED_REPOSITORIES_DIR}/Sunday111/CppReflection/for_yae)
+add_subdirectory(${YAE_CppReflection_SOURCES} yae_modules/Sunday111/CppReflection/for_yae SYSTEM)
 
 # https://github.com/jeremy-rifkin/cpptrace main
 set(YAE_cpptrace_SOURCES ${YAE_CLONED_REPOSITORIES_DIR}/jeremy-rifkin/cpptrace/main)
@@ -103,10 +117,6 @@ set(YAE_verlet_video_SOURCES src/verlet_video)
 add_subdirectory(${YAE_verlet_video_SOURCES} yae_modules/src/verlet_video SYSTEM)
 
 include(${CMAKE_CURRENT_SOURCE_DIR}/src/verlet_video/add_opencv.cmake)
-# https://github.com/Sunday111/CppReflection for_yae
-set(YAE_CppReflection_SOURCES ${YAE_CLONED_REPOSITORIES_DIR}/Sunday111/CppReflection/for_yae)
-add_subdirectory(${YAE_CppReflection_SOURCES} yae_modules/Sunday111/CppReflection/for_yae SYSTEM)
-
 set(YAE_ecs_SOURCES ${YAE_CLONED_REPOSITORIES_DIR}/Sunday111/yae-support/main/modules/examples/ecs)
 add_subdirectory(${YAE_ecs_SOURCES} yae_modules/Sunday111/yae-support/main/modules/examples/ecs SYSTEM)
 

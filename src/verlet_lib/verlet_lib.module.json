@@ -8,7 +8,8 @@
             "https://github.com/Sunday111/klvk main"
         ],
         "Public": [
-            "klvk"
+            "klvk",
+            "nlohmann_json"
         ],
         "Private": []
     }

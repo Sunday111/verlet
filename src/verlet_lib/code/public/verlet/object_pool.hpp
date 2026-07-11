@@ -5,7 +5,7 @@
 #include <vector>
 
 #ifndef NDEBUG
-#include "klgl/template/tagged_id_hash.hpp"
+#include "klvk/template/tagged_id_hash.hpp"
 #endif
 
 #include "object.hpp"
@@ -141,7 +141,7 @@ private:
     ObjectId first_free_ = kInvalidObjectId;
 
 #ifndef NDEBUG
-    ankerl::unordered_dense::set<ObjectId, klgl::TaggedIdentifierHash<ObjectId>> valid_ones_;
+    ankerl::unordered_dense::set<ObjectId, klvk::TaggedIdentifierHash<ObjectId>> valid_ones_;
 #endif
 };
 }  // namespace verlet

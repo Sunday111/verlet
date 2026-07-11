@@ -2,8 +2,8 @@
 
 #include "EverydayTools/Math/Math.hpp"
 #include "fmt/ranges.h"  // IWYU pragma: keep
-#include "klgl/error_handling.hpp"
-#include "klgl/template/on_scope_leave.hpp"
+#include "klvk/error_handling.hpp"
+#include "klvk/template/on_scope_leave.hpp"
 #include "verlet/threading/batch_thread_pool.hpp"
 
 namespace verlet
@@ -93,7 +93,7 @@ void VerletSolver::RebuildGrid()
 VerletSolver::UpdateStats VerletSolver::Update()
 {
     update_in_progress_ = true;
-    const auto scope_leave_ = klgl::OnScopeLeave([this] { update_in_progress_ = false; });
+    const auto scope_leave_ = klvk::OnScopeLeave([this] { update_in_progress_ = false; });
     UpdateStats stats{};
     stats.total = edt::MeasureTime(
         [&]
@@ -188,7 +188,7 @@ void VerletSolver::DeleteObject(ObjectId to_delete)
 void VerletSolver::StabilizeChain(ObjectId first)
 {
     std::vector queue{first};
-    ankerl::unordered_dense::set<ObjectId, klgl::TaggedIdentifierHash<ObjectId>> visited;
+    ankerl::unordered_dense::set<ObjectId, klvk::TaggedIdentifierHash<ObjectId>> visited;
 
     while (!queue.empty())
     {
@@ -277,7 +277,7 @@ void VerletSolver::SetThreadsCount(size_t count)
 
 void VerletSolver::SetSimArea(const edt::FloatRange2Df& sim_area)
 {
-    klgl::ErrorHandling::Ensure(!update_in_progress_, "Attempt to change simulation area while update is in progress");
+    klvk::ErrorHandling::Ensure(!update_in_progress_, "Attempt to change simulation area while update is in progress");
     if (sim_area.Min() != sim_area_.Min() || sim_area.Max() != sim_area_.Max())
     {
         sim_area_ = sim_area;

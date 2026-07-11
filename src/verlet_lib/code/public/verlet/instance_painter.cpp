@@ -1,11 +1,6 @@
 #include "instance_painter.hpp"
 
-#include <cmath>
-
-#include "klgl/mesh/mesh_data.hpp"
-#include "klgl/mesh/procedural_mesh_generator.hpp"
-#include "klgl/template/register_attribute.hpp"
-#include "ranges.hpp"
+#include "klvk/rendering/instanced_sprite_renderer_2d.hpp"
 
 namespace verlet
 {
@@ -13,52 +8,24 @@ namespace verlet
 InstancedPainter::InstancedPainter() = default;
 InstancedPainter::~InstancedPainter() = default;
 
-struct MeshVertex
+void InstancedPainter::Initialize(klvk::Application& app, const klvk::Texture& texture)
 {
-    static MeshVertex FromMeshData(const klgl::GeneratedMeshData2d& data, const size_t index)
-    {
-        return MeshVertex{.position = data.vertices[index], .texture_coordinates = data.texture_coordinates[index]};
-    }
-
-    edt::Vec2f position{};
-    edt::Vec2f texture_coordinates{};
-};
-
-void InstancedPainter::Initialize()
-{
-    const auto data = klgl::ProceduralMeshGenerator::GenerateQuadMesh();
-
-    std::vector<MeshVertex> vertices;
-    vertices.reserve(data.vertices.size());
-    std::ranges::copy(
-        RangeIndices(data.vertices) |
-            std::views::transform(std::bind_front(&MeshVertex::FromMeshData, std::cref(data))),
-        std::back_inserter(vertices));
-
-    mesh_ = klgl::MeshOpenGL::MakeFromData(std::span{vertices}, std::span{data.indices}, data.topology);
-    mesh_->Bind();
-    klgl::RegisterAttribute<&MeshVertex::position>(kVertexAttribLoc);
-    klgl::RegisterAttribute<&MeshVertex::texture_coordinates>(kTexCoordAttribLoc);
+    renderer_ = std::make_unique<klvk::InstancedSpriteRenderer2d>(app, texture);
 }
 
-void InstancedPainter::Render()
+void InstancedPainter::Clear()
 {
-    mesh_->Bind();
-    for (auto [batch_index, batch] : Enumerate(batches_))
-    {
-        if (num_objects_ <= batch_index * batch.kBatchSize) break;
-
-        // number of circles initialized for the current batch
-        const size_t num_locally_used = std::min(num_objects_ - batch_index * batch.kBatchSize, batch.kBatchSize);
-
-        batch.UpdateBuffers();
-        klgl::OpenGl::EnableVertexAttribArray(kColorAttribLoc);
-        klgl::OpenGl::BindBuffer(klgl::GlBufferType::Array, batch.opt_color_vbo);
-        klgl::OpenGl::EnableVertexAttribArray(kScaleAttribLoc);
-        klgl::OpenGl::BindBuffer(klgl::GlBufferType::Array, batch.opt_scale_vbo);
-        klgl::OpenGl::EnableVertexAttribArray(kTranslationAttribLoc);
-        klgl::OpenGl::BindBuffer(klgl::GlBufferType::Array, batch.opt_translation_vbo);
-        mesh_->DrawInstanced(num_locally_used);
-    }
+    renderer_->Clear();
 }
+
+void InstancedPainter::DrawObject(const Vec2f& translation, const Vec4<uint8_t>& color, const Vec2f scale)
+{
+    renderer_->Add(translation, color, scale);
+}
+
+void InstancedPainter::Render(const Mat3f& world_to_view)
+{
+    renderer_->Render(world_to_view);
+}
+
 }  // namespace verlet

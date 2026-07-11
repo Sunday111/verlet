@@ -43,7 +43,8 @@ set(module_source_files
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/verlet/verlet_app.hpp)
 add_library(verlet_lib STATIC ${module_source_files})
 set_generic_compiler_options(verlet_lib PRIVATE)
-target_link_libraries(verlet_lib PUBLIC klvk)
+target_link_libraries(verlet_lib PUBLIC klvk
+                                        nlohmann_json)
 target_include_directories(verlet_lib PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/code/public)
 target_include_directories(verlet_lib PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/code/private)
 add_custom_target(verlet_lib_copy_files ALL
