@@ -3,10 +3,6 @@
     "enable_lto_globally": true,
     "default_configuration": {
         "build_dir": "build",
-        "generator": "Ninja",
-        "environment": {
-            "CCACHE_DIR": ".cache/ccache"
-        },
         "build_targets": [
             "verlet"
         ],
