@@ -1,8 +1,5 @@
 {
     "ModuleType": "Library",
-    "CopyDirectoriesAfterBuild": [
-        "content"
-    ],
     "Dependencies": {
         "GitPackages": [
             "https://github.com/Sunday111/klvk main"

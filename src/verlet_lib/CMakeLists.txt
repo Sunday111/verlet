@@ -47,7 +47,3 @@ target_link_libraries(verlet_lib PUBLIC klvk
                                         nlohmann_json)
 target_include_directories(verlet_lib PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/code/public)
 target_include_directories(verlet_lib PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/code/private)
-add_custom_target(verlet_lib_copy_files ALL
-    ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/content" ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/content
-)
-add_dependencies(verlet_lib verlet_lib_copy_files)
