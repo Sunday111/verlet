@@ -112,6 +112,7 @@ set(YAE_klvk_SOURCES ${YAE_CLONED_REPOSITORIES_DIR}/Sunday111/klvk/main/klvk)
 add_subdirectory(${YAE_klvk_SOURCES} yae_modules/Sunday111/klvk/main/klvk SYSTEM)
 
 include(${YAE_CLONED_REPOSITORIES_DIR}/Sunday111/klvk/main/klvk/compile_shaders.cmake)
+include(${YAE_CLONED_REPOSITORIES_DIR}/Sunday111/klvk/main/klvk/shader_cache.cmake)
 include(${YAE_CLONED_REPOSITORIES_DIR}/Sunday111/klvk/main/klvk/vulkan_api.cmake)
 set(YAE_verlet_lib_SOURCES src/verlet_lib)
 add_subdirectory(${YAE_verlet_lib_SOURCES} yae_modules/src/verlet_lib SYSTEM)
@@ -193,6 +194,9 @@ set(YAE_klvk_render_to_texture_example_SOURCES ${YAE_CLONED_REPOSITORIES_DIR}/Su
 add_subdirectory(${YAE_klvk_render_to_texture_example_SOURCES} yae_modules/Sunday111/klvk/main/examples/render_to_texture SYSTEM)
 
 include(${YAE_CLONED_REPOSITORIES_DIR}/Sunday111/klvk/main/examples/render_to_texture/compile_shaders.cmake)
+set(YAE_klvk_shader_cache_test_SOURCES ${YAE_CLONED_REPOSITORIES_DIR}/Sunday111/klvk/main/tests/shader_cache)
+add_subdirectory(${YAE_klvk_shader_cache_test_SOURCES} yae_modules/Sunday111/klvk/main/tests/shader_cache SYSTEM)
+
 set(YAE_klvk_simple_lit_cube_example_SOURCES ${YAE_CLONED_REPOSITORIES_DIR}/Sunday111/klvk/main/examples/simple_lit_cube)
 add_subdirectory(${YAE_klvk_simple_lit_cube_example_SOURCES} yae_modules/Sunday111/klvk/main/examples/simple_lit_cube SYSTEM)
 
