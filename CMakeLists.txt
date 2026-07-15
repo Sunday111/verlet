@@ -35,6 +35,8 @@ set(CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH};${YAE_SUPPORT_ROOT}/cmake")
 include(yae_lto)
 enable_lto_globally()
 
+find_package(Python3 REQUIRED COMPONENTS Interpreter)
+
 
 # https://github.com/Sunday111/ass main
 set(YAE_ass_SOURCES ${YAE_CLONED_REPOSITORIES_DIR}/Sunday111/ass/main)
@@ -111,7 +113,6 @@ add_subdirectory(${YAE_imgui_vulkan_SOURCES} yae_modules/Sunday111/klvk/main/img
 set(YAE_klvk_SOURCES ${YAE_CLONED_REPOSITORIES_DIR}/Sunday111/klvk/main/klvk)
 add_subdirectory(${YAE_klvk_SOURCES} yae_modules/Sunday111/klvk/main/klvk SYSTEM)
 
-include(${YAE_CLONED_REPOSITORIES_DIR}/Sunday111/klvk/main/klvk/compile_shaders.cmake)
 include(${YAE_CLONED_REPOSITORIES_DIR}/Sunday111/klvk/main/klvk/shader_cache.cmake)
 include(${YAE_CLONED_REPOSITORIES_DIR}/Sunday111/klvk/main/klvk/vulkan_api.cmake)
 set(YAE_verlet_lib_SOURCES src/verlet_lib)
@@ -163,33 +164,27 @@ add_subdirectory(${YAE_yae_example_tests_main_SOURCES} yae_modules/Sunday111/yae
 set(YAE_klvk_compute_shader_example_SOURCES ${YAE_CLONED_REPOSITORIES_DIR}/Sunday111/klvk/main/examples/compute_shader)
 add_subdirectory(${YAE_klvk_compute_shader_example_SOURCES} yae_modules/Sunday111/klvk/main/examples/compute_shader SYSTEM)
 
-include(${YAE_CLONED_REPOSITORIES_DIR}/Sunday111/klvk/main/examples/compute_shader/compile_shaders.cmake)
 set(YAE_klvk_curve_example_SOURCES ${YAE_CLONED_REPOSITORIES_DIR}/Sunday111/klvk/main/examples/curve)
 add_subdirectory(${YAE_klvk_curve_example_SOURCES} yae_modules/Sunday111/klvk/main/examples/curve SYSTEM)
 
 set(YAE_klvk_curve_fractal_example_SOURCES ${YAE_CLONED_REPOSITORIES_DIR}/Sunday111/klvk/main/examples/curve_fractal)
 add_subdirectory(${YAE_klvk_curve_fractal_example_SOURCES} yae_modules/Sunday111/klvk/main/examples/curve_fractal SYSTEM)
 
-include(${YAE_CLONED_REPOSITORIES_DIR}/Sunday111/klvk/main/examples/curve_fractal/compile_shaders.cmake)
 set(YAE_klvk_falling_sand_example_SOURCES ${YAE_CLONED_REPOSITORIES_DIR}/Sunday111/klvk/main/examples/falling_sand)
 add_subdirectory(${YAE_klvk_falling_sand_example_SOURCES} yae_modules/Sunday111/klvk/main/examples/falling_sand SYSTEM)
 
 set(YAE_klvk_fractal_example_SOURCES ${YAE_CLONED_REPOSITORIES_DIR}/Sunday111/klvk/main/examples/fractal)
 add_subdirectory(${YAE_klvk_fractal_example_SOURCES} yae_modules/Sunday111/klvk/main/examples/fractal SYSTEM)
 
-include(${YAE_CLONED_REPOSITORIES_DIR}/Sunday111/klvk/main/examples/fractal/compile_shaders.cmake)
 set(YAE_klvk_geometry_shader_example_SOURCES ${YAE_CLONED_REPOSITORIES_DIR}/Sunday111/klvk/main/examples/geometry_shader)
 add_subdirectory(${YAE_klvk_geometry_shader_example_SOURCES} yae_modules/Sunday111/klvk/main/examples/geometry_shader SYSTEM)
 
-include(${YAE_CLONED_REPOSITORIES_DIR}/Sunday111/klvk/main/examples/geometry_shader/compile_shaders.cmake)
 set(YAE_klvk_minimal_cube_example_SOURCES ${YAE_CLONED_REPOSITORIES_DIR}/Sunday111/klvk/main/examples/minimal_cube)
 add_subdirectory(${YAE_klvk_minimal_cube_example_SOURCES} yae_modules/Sunday111/klvk/main/examples/minimal_cube SYSTEM)
 
-include(${YAE_CLONED_REPOSITORIES_DIR}/Sunday111/klvk/main/examples/minimal_cube/compile_shaders.cmake)
 set(YAE_klvk_minimal_quad_example_SOURCES ${YAE_CLONED_REPOSITORIES_DIR}/Sunday111/klvk/main/examples/minimal_quad)
 add_subdirectory(${YAE_klvk_minimal_quad_example_SOURCES} yae_modules/Sunday111/klvk/main/examples/minimal_quad SYSTEM)
 
-include(${YAE_CLONED_REPOSITORIES_DIR}/Sunday111/klvk/main/examples/minimal_quad/compile_shaders.cmake)
 set(YAE_klvk_painter2d_example_SOURCES ${YAE_CLONED_REPOSITORIES_DIR}/Sunday111/klvk/main/examples/painter2d)
 add_subdirectory(${YAE_klvk_painter2d_example_SOURCES} yae_modules/Sunday111/klvk/main/examples/painter2d SYSTEM)
 
@@ -199,29 +194,24 @@ add_subdirectory(${YAE_klvk_pendulum_example_SOURCES} yae_modules/Sunday111/klvk
 set(YAE_klvk_post_processing_example_SOURCES ${YAE_CLONED_REPOSITORIES_DIR}/Sunday111/klvk/main/examples/post_processing)
 add_subdirectory(${YAE_klvk_post_processing_example_SOURCES} yae_modules/Sunday111/klvk/main/examples/post_processing SYSTEM)
 
-include(${YAE_CLONED_REPOSITORIES_DIR}/Sunday111/klvk/main/examples/post_processing/compile_shaders.cmake)
 set(YAE_klvk_render_to_texture_example_SOURCES ${YAE_CLONED_REPOSITORIES_DIR}/Sunday111/klvk/main/examples/render_to_texture)
 add_subdirectory(${YAE_klvk_render_to_texture_example_SOURCES} yae_modules/Sunday111/klvk/main/examples/render_to_texture SYSTEM)
 
-include(${YAE_CLONED_REPOSITORIES_DIR}/Sunday111/klvk/main/examples/render_to_texture/compile_shaders.cmake)
 set(YAE_klvk_shader_cache_test_SOURCES ${YAE_CLONED_REPOSITORIES_DIR}/Sunday111/klvk/main/tests/shader_cache)
 add_subdirectory(${YAE_klvk_shader_cache_test_SOURCES} yae_modules/Sunday111/klvk/main/tests/shader_cache SYSTEM)
 
 set(YAE_klvk_simple_lit_cube_example_SOURCES ${YAE_CLONED_REPOSITORIES_DIR}/Sunday111/klvk/main/examples/simple_lit_cube)
 add_subdirectory(${YAE_klvk_simple_lit_cube_example_SOURCES} yae_modules/Sunday111/klvk/main/examples/simple_lit_cube SYSTEM)
 
-include(${YAE_CLONED_REPOSITORIES_DIR}/Sunday111/klvk/main/examples/simple_lit_cube/compile_shaders.cmake)
 set(YAE_klvk_tetris_example_SOURCES ${YAE_CLONED_REPOSITORIES_DIR}/Sunday111/klvk/main/examples/tetris)
 add_subdirectory(${YAE_klvk_tetris_example_SOURCES} yae_modules/Sunday111/klvk/main/examples/tetris SYSTEM)
 
 set(YAE_klvk_textured_quad_example_SOURCES ${YAE_CLONED_REPOSITORIES_DIR}/Sunday111/klvk/main/examples/textured_quad)
 add_subdirectory(${YAE_klvk_textured_quad_example_SOURCES} yae_modules/Sunday111/klvk/main/examples/textured_quad SYSTEM)
 
-include(${YAE_CLONED_REPOSITORIES_DIR}/Sunday111/klvk/main/examples/textured_quad/compile_shaders.cmake)
 set(YAE_klvk_two_textures_example_SOURCES ${YAE_CLONED_REPOSITORIES_DIR}/Sunday111/klvk/main/examples/two_textures)
 add_subdirectory(${YAE_klvk_two_textures_example_SOURCES} yae_modules/Sunday111/klvk/main/examples/two_textures SYSTEM)
 
-include(${YAE_CLONED_REPOSITORIES_DIR}/Sunday111/klvk/main/examples/two_textures/compile_shaders.cmake)
 set(YAE_imgui_glfw_cmake_SOURCES ${YAE_CLONED_REPOSITORIES_DIR}/Sunday111/imgui_glfw_cmake/yae)
 add_subdirectory(${YAE_imgui_glfw_cmake_SOURCES} yae_modules/Sunday111/imgui_glfw_cmake/yae SYSTEM)
 
