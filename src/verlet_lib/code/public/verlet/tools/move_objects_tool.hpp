@@ -25,7 +25,7 @@ public:
 
 private:
     void ReleaseObject(const Vec2f& mouse_position);
-    ObjectId FindObject(const Vec2f& mouse_position) const;
+    [[nodiscard]] ObjectId FindObject(const Vec2f& mouse_position) const;
 
 private:
     bool lmb_hold = false;

@@ -57,7 +57,7 @@ public:
     bool animate = true;
 
 private:
-    edt::FloatRange2Df ComputeRange(const edt::FloatRange2Df& world_range) const;
+    [[nodiscard]] edt::FloatRange2Df ComputeRange(const edt::FloatRange2Df& world_range) const;
 
 private:
     edt::FloatRange2Df range_ = {};

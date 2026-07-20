@@ -11,7 +11,7 @@ BatchThreadPool::BatchThreadPool(size_t threads_count) : sync_point_(static_cast
 {
     for (const size_t thread_index : std::views::iota(size_t{0}, threads_count))
     {
-        threads_.push_back(std::jthread(std::bind_front(&BatchThreadPool::ThreadEntry, this), thread_index));
+        threads_.emplace_back(std::bind_front(&BatchThreadPool::ThreadEntry, this), thread_index);
     }
 }
 
