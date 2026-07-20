@@ -30,7 +30,7 @@ struct ObjectPoolEntry
         return *reinterpret_cast<VerletObject*>(data_.data());  // NOLINT
     }
 
-    const VerletObject& AsObject() const
+    [[nodiscard]] const VerletObject& AsObject() const
     {
         return *reinterpret_cast<const VerletObject*>(data_.data());  // NOLINT
     }
@@ -90,7 +90,7 @@ public:
 
     std::tuple<ObjectId, VerletObject&> Alloc();
     void Free(ObjectId id);
-    size_t ObjectsCount() const { return count_; }
+    [[nodiscard]] size_t ObjectsCount() const { return count_; }
 
     void Clear();
 

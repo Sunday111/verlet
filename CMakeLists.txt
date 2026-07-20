@@ -50,12 +50,12 @@ option(INSTALL_GTEST "" OFF)
 option(BUILD_GMOCK "" OFF)
 add_subdirectory(${YAE_gtest_SOURCES} yae_modules/google/googletest/v1.15.2 SYSTEM)
 
-# https://github.com/Sunday111/EverydayTools master
-set(YAE_edt_SOURCES ${YAE_CLONED_REPOSITORIES_DIR}/Sunday111/EverydayTools/master)
+# https://github.com/Sunday111/EverydayTools main
+set(YAE_edt_SOURCES ${YAE_CLONED_REPOSITORIES_DIR}/Sunday111/EverydayTools/main)
 option(EDT_WITH_TESTS "" ON)
 option(EDT_FETCH_GOOGLE_TESTS "" OFF)
 option(EDT_FIND_GTEST_PACKAGE "" OFF)
-add_subdirectory(${YAE_edt_SOURCES} yae_modules/Sunday111/EverydayTools/master SYSTEM)
+add_subdirectory(${YAE_edt_SOURCES} yae_modules/Sunday111/EverydayTools/main SYSTEM)
 
 # https://github.com/fmtlib/fmt 11.1.1
 set(YAE_fmtlib_SOURCES ${YAE_CLONED_REPOSITORIES_DIR}/fmtlib/fmt/11.1.1)
@@ -86,13 +86,6 @@ add_subdirectory(${YAE_unordered_dense_SOURCES} yae_modules/martinus/unordered_d
 set(YAE_nlohmann_json_SOURCES ${YAE_CLONED_REPOSITORIES_DIR}/nlohmann/json/develop)
 add_subdirectory(${YAE_nlohmann_json_SOURCES} yae_modules/nlohmann/json/develop SYSTEM)
 
-# https://github.com/glfw/glfw master
-set(YAE_glfw_SOURCES ${YAE_CLONED_REPOSITORIES_DIR}/glfw/glfw/master)
-option(GLFW_BUILD_EXAMPLES "" OFF)
-option(GLFW_BUILD_TESTS "" OFF)
-option(GLFW_BUILD_DOCS "" OFF)
-add_subdirectory(${YAE_glfw_SOURCES} yae_modules/glfw/glfw/master SYSTEM)
-
 # https://github.com/KhronosGroup/Vulkan-Headers vulkan-sdk-1.4.350.1
 set(YAE_vulkan_headers_SOURCES ${YAE_CLONED_REPOSITORIES_DIR}/KhronosGroup/Vulkan-Headers/vulkan-sdk-1.4.350.1)
 add_subdirectory(${YAE_vulkan_headers_SOURCES} yae_modules/KhronosGroup/Vulkan-Headers/vulkan-sdk-1.4.350.1 SYSTEM)
@@ -107,12 +100,27 @@ add_subdirectory(${YAE_vma_SOURCES} yae_modules/GPUOpen-LibrariesAndSDKs/VulkanM
 
 # https://github.com/ocornut/imgui v1.90.9
 set(YAE_imgui_sources_SOURCES ${YAE_CLONED_REPOSITORIES_DIR}/ocornut/imgui/v1.90.9)
+# https://github.com/glfw/glfw master
+set(YAE_glfw_SOURCES ${YAE_CLONED_REPOSITORIES_DIR}/glfw/glfw/master)
+option(GLFW_BUILD_EXAMPLES "" OFF)
+option(GLFW_BUILD_TESTS "" OFF)
+option(GLFW_BUILD_DOCS "" OFF)
+add_subdirectory(${YAE_glfw_SOURCES} yae_modules/glfw/glfw/master SYSTEM)
+
 set(YAE_imgui_vulkan_SOURCES ${YAE_CLONED_REPOSITORIES_DIR}/Sunday111/klvk/main/imgui_vulkan)
 add_subdirectory(${YAE_imgui_vulkan_SOURCES} yae_modules/Sunday111/klvk/main/imgui_vulkan SYSTEM)
+
+# https://github.com/gabime/spdlog v1.16.0
+set(YAE_spdlog_SOURCES ${YAE_CLONED_REPOSITORIES_DIR}/gabime/spdlog/v1.16.0)
+option(SPDLOG_BUILD_EXAMPLE "" OFF)
+option(SPDLOG_BUILD_TESTS "" OFF)
+option(SPDLOG_FMT_EXTERNAL "" ON)
+add_subdirectory(${YAE_spdlog_SOURCES} yae_modules/gabime/spdlog/v1.16.0 SYSTEM)
 
 set(YAE_klvk_SOURCES ${YAE_CLONED_REPOSITORIES_DIR}/Sunday111/klvk/main/klvk)
 add_subdirectory(${YAE_klvk_SOURCES} yae_modules/Sunday111/klvk/main/klvk SYSTEM)
 
+include(${YAE_CLONED_REPOSITORIES_DIR}/Sunday111/klvk/main/klvk/ffmpeg.cmake)
 include(${YAE_CLONED_REPOSITORIES_DIR}/Sunday111/klvk/main/klvk/shader_cache.cmake)
 include(${YAE_CLONED_REPOSITORIES_DIR}/Sunday111/klvk/main/klvk/vulkan_api.cmake)
 set(YAE_verlet_lib_SOURCES src/verlet_lib)
@@ -170,6 +178,9 @@ add_subdirectory(${YAE_klvk_curve_example_SOURCES} yae_modules/Sunday111/klvk/ma
 set(YAE_klvk_curve_fractal_example_SOURCES ${YAE_CLONED_REPOSITORIES_DIR}/Sunday111/klvk/main/examples/curve_fractal)
 add_subdirectory(${YAE_klvk_curve_fractal_example_SOURCES} yae_modules/Sunday111/klvk/main/examples/curve_fractal SYSTEM)
 
+set(YAE_klvk_diagnostic_config_test_SOURCES ${YAE_CLONED_REPOSITORIES_DIR}/Sunday111/klvk/main/tests/diagnostic_config)
+add_subdirectory(${YAE_klvk_diagnostic_config_test_SOURCES} yae_modules/Sunday111/klvk/main/tests/diagnostic_config SYSTEM)
+
 set(YAE_klvk_falling_sand_example_SOURCES ${YAE_CLONED_REPOSITORIES_DIR}/Sunday111/klvk/main/examples/falling_sand)
 add_subdirectory(${YAE_klvk_falling_sand_example_SOURCES} yae_modules/Sunday111/klvk/main/examples/falling_sand SYSTEM)
 
@@ -208,6 +219,9 @@ add_subdirectory(${YAE_klvk_tetris_example_SOURCES} yae_modules/Sunday111/klvk/m
 
 set(YAE_klvk_textured_quad_example_SOURCES ${YAE_CLONED_REPOSITORIES_DIR}/Sunday111/klvk/main/examples/textured_quad)
 add_subdirectory(${YAE_klvk_textured_quad_example_SOURCES} yae_modules/Sunday111/klvk/main/examples/textured_quad SYSTEM)
+
+set(YAE_klvk_timer_manager_test_SOURCES ${YAE_CLONED_REPOSITORIES_DIR}/Sunday111/klvk/main/tests/timer_manager)
+add_subdirectory(${YAE_klvk_timer_manager_test_SOURCES} yae_modules/Sunday111/klvk/main/tests/timer_manager SYSTEM)
 
 set(YAE_klvk_two_textures_example_SOURCES ${YAE_CLONED_REPOSITORIES_DIR}/Sunday111/klvk/main/examples/two_textures)
 add_subdirectory(${YAE_klvk_two_textures_example_SOURCES} yae_modules/Sunday111/klvk/main/examples/two_textures SYSTEM)

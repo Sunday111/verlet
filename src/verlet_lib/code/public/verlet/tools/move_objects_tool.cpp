@@ -26,7 +26,7 @@ void MoveObjectsTool::Tick()
             if (auto id = FindObject(get_mouse_pos()); id.IsValid())
             {
                 auto& object = app_.solver.objects.Get(id);
-                held_object_ = {id, object.movable};
+                held_object_ = {.index = id, .was_movable = object.movable};
                 object.movable = false;
             }
         }

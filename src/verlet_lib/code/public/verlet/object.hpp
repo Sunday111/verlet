@@ -22,7 +22,7 @@ public:
     Vec4<uint8_t> color{};
     bool movable : 1 {};
 
-    bool IsMovable() const { return movable; }
+    [[nodiscard]] bool IsMovable() const { return movable; }
 
     [[nodiscard]] static constexpr float GetRadius() { return 0.5f; }
 

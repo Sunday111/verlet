@@ -9,7 +9,7 @@ class TickColorStrategyVelocity : public TickColorStrategy
 public:
     using TickColorStrategy::TickColorStrategy;
     ObjectColorFunction GetColorFunction() override;
-    const cppreflection::Type& GetType() const override;
+    [[nodiscard]] const cppreflection::Type& GetType() const override;
     void DrawGUI() override;
 
 private:

@@ -14,11 +14,11 @@ public:
     virtual ~TickColorStrategy() = default;
 
     virtual ObjectColorFunction GetColorFunction() = 0;
-    virtual const cppreflection::Type& GetType() const = 0;
+    [[nodiscard]] virtual const cppreflection::Type& GetType() const = 0;
     virtual void DrawGUI() {}
 
 protected:
-    VerletApp& GetApp() const { return *app_; }
+    [[nodiscard]] VerletApp& GetApp() const { return *app_; }
 
 private:
     VerletApp* app_;

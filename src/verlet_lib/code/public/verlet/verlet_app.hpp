@@ -48,7 +48,7 @@ public:
         RenderPerfStats render;
     };
 
-    static constexpr edt::FloatRange<float> kMinSideRange{-150, 150};
+    static constexpr edt::FloatRange<float> kMinSideRange{.begin = -150, .end = 150};
 
     VerletApp();
     ~VerletApp() override;
@@ -85,7 +85,7 @@ public:
     void SetBackgroundColor(const Vec3f& background_color);
     void AddEmitter(std::unique_ptr<Emitter> emitter);
 
-    Vec2f GetMousePositionInWorldCoordinates() const;
+    [[nodiscard]] Vec2f GetMousePositionInWorldCoordinates() const;
     InstancedPainter& GetPainter() { return instance_painter_; }
 
     size_t max_objects_count_ = 10000;

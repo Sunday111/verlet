@@ -1,10 +1,12 @@
 #pragma once
 
+#include "klvk/integral_aliases.hpp"
+
 namespace verlet
 {
 class VerletApp;
 
-enum class ToolType
+enum class ToolType : u8
 {
     SpawnObjects,
     MoveObjects,
@@ -19,7 +21,7 @@ public:
     virtual void Tick() {}
     virtual void DrawInWorld() {}
     virtual void DrawGUI() {}
-    virtual ToolType GetToolType() const = 0;
+    [[nodiscard]] virtual ToolType GetToolType() const = 0;
 
 protected:
     VerletApp& app_;  // NOLINT

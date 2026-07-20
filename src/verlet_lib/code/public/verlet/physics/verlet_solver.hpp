@@ -126,7 +126,7 @@ public:
     void StabilizeChain(ObjectId first);
     void CreateLink(ObjectId from, ObjectId to, float target_distance);
 
-    size_t GetThreadsCount() const;
+    [[nodiscard]] size_t GetThreadsCount() const;
     void SetThreadsCount(size_t count);
 
     [[nodiscard]] const edt::FloatRange2Df& GetSimArea() const { return sim_area_; }
@@ -139,7 +139,7 @@ private:
     void UpdateGridSize();
 
 private:
-    edt::FloatRange2Df sim_area_ = {{-100, 100}, {-100, 100}};
+    edt::FloatRange2Df sim_area_ = {.x = {.begin = -100, .end = 100}, .y = {.begin = -100, .end = 100}};
     bool sim_area_changed_ = true;
 
     bool update_in_progress_ = false;
