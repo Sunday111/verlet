@@ -117,6 +117,9 @@ option(SPDLOG_BUILD_TESTS "" OFF)
 option(SPDLOG_FMT_EXTERNAL "" ON)
 add_subdirectory(${YAE_spdlog_SOURCES} yae_modules/gabime/spdlog/v1.16.0 SYSTEM)
 
+# binary dependency slang (linux-x86_64)
+find_package(slang CONFIG REQUIRED PATHS ${YAE_CLONED_REPOSITORIES_DIR}/Sunday111/yae-slang/main/.prebuilt/linux-x86_64 NO_DEFAULT_PATH)
+
 set(YAE_klvk_SOURCES ${YAE_CLONED_REPOSITORIES_DIR}/Sunday111/klvk/main/klvk)
 add_subdirectory(${YAE_klvk_SOURCES} yae_modules/Sunday111/klvk/main/klvk SYSTEM)
 
@@ -213,12 +216,6 @@ add_subdirectory(${YAE_klvk_shader_cache_test_SOURCES} yae_modules/Sunday111/klv
 
 set(YAE_klvk_simple_lit_cube_example_SOURCES ${YAE_CLONED_REPOSITORIES_DIR}/Sunday111/klvk/main/examples/simple_lit_cube)
 add_subdirectory(${YAE_klvk_simple_lit_cube_example_SOURCES} yae_modules/Sunday111/klvk/main/examples/simple_lit_cube SYSTEM)
-
-# binary dependency slang (linux-x86_64)
-find_package(slang CONFIG REQUIRED PATHS ${YAE_CLONED_REPOSITORIES_DIR}/Sunday111/yae-slang/main/.prebuilt/linux-x86_64 NO_DEFAULT_PATH)
-
-set(YAE_klvk_slang_probe_SOURCES ${YAE_CLONED_REPOSITORIES_DIR}/Sunday111/klvk/main/tests/slang_probe)
-add_subdirectory(${YAE_klvk_slang_probe_SOURCES} yae_modules/Sunday111/klvk/main/tests/slang_probe SYSTEM)
 
 set(YAE_klvk_tetris_example_SOURCES ${YAE_CLONED_REPOSITORIES_DIR}/Sunday111/klvk/main/examples/tetris)
 add_subdirectory(${YAE_klvk_tetris_example_SOURCES} yae_modules/Sunday111/klvk/main/examples/tetris SYSTEM)
