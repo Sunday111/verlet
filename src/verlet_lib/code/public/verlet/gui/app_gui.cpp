@@ -196,11 +196,11 @@ void AppGUI::Tools()
 
 void AppGUI::SpawnColors()
 {
-    auto use = [&](const cppreflection::Type* type)
+    auto use = [&](const refl::Type* type)
     {
         if (&app_->spawn_color_strategy_->GetType() != type)
         {
-            if (type == cppreflection::GetTypeInfo<SpawnColorStrategyRainbow>())
+            if (type == refl::GetTypeInfo<SpawnColorStrategyRainbow>())
             {
                 app_->spawn_color_strategy_ = std::make_unique<SpawnColorStrategyRainbow>(*app_);
             }
@@ -216,7 +216,7 @@ void AppGUI::SpawnColors()
         {
             if (ImGui::BeginTabItem("Rainbow"))
             {
-                use(cppreflection::GetTypeInfo<SpawnColorStrategyRainbow>());
+                use(refl::GetTypeInfo<SpawnColorStrategyRainbow>());
                 ImGui::EndTabItem();
             }
 
@@ -227,11 +227,11 @@ void AppGUI::SpawnColors()
 
 void AppGUI::TickColors()
 {
-    auto use = [&](const cppreflection::Type* type)
+    auto use = [&](const refl::Type* type)
     {
         if (!app_->tick_color_strategy_ || &app_->tick_color_strategy_->GetType() != type)
         {
-            if (type == cppreflection::GetTypeInfo<TickColorStrategyVelocity>())
+            if (type == refl::GetTypeInfo<TickColorStrategyVelocity>())
             {
                 app_->tick_color_strategy_ = std::make_unique<TickColorStrategyVelocity>(*app_);
             }
@@ -256,7 +256,7 @@ void AppGUI::TickColors()
 
             if (ImGui::BeginTabItem("Velocity"))
             {
-                use(cppreflection::GetTypeInfo<TickColorStrategyVelocity>());
+                use(refl::GetTypeInfo<TickColorStrategyVelocity>());
                 ImGui::EndTabItem();
             }
 

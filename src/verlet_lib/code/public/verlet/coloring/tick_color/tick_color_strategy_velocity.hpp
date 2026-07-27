@@ -9,7 +9,7 @@ class TickColorStrategyVelocity : public TickColorStrategy
 public:
     using TickColorStrategy::TickColorStrategy;
     ObjectColorFunction GetColorFunction() override;
-    [[nodiscard]] const cppreflection::Type& GetType() const override;
+    [[nodiscard]] const refl::Type& GetType() const override;
     void DrawGUI() override;
 
 private:
@@ -20,7 +20,7 @@ private:
 };
 }  // namespace verlet
 
-namespace cppreflection
+namespace refl
 {
 
 template <>
@@ -28,10 +28,10 @@ struct TypeReflectionProvider<verlet::TickColorStrategyVelocity>
 {
     [[nodiscard]] inline constexpr static auto ReflectType()
     {
-        return cppreflection::StaticClassTypeInfo<verlet::TickColorStrategyVelocity>(
+        return refl::StaticClassTypeInfo<verlet::TickColorStrategyVelocity>(
             "verlet::TickColorStrategyVelocity",
             edt::GUID::Create("B5DCDDC3-E1CB-4116-826D-EF169610EA2B"));
     }
 };
 
-}  // namespace cppreflection
+}  // namespace refl

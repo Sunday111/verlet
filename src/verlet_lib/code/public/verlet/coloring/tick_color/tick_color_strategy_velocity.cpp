@@ -42,8 +42,8 @@ edt::Vec4<uint8_t> TickColorStrategyVelocity::Gradient(float fraction)
     return rgba;
 }
 
-const cppreflection::Type& TickColorStrategyVelocity::GetType() const
+const refl::Type& TickColorStrategyVelocity::GetType() const
 {
-    return *cppreflection::GetTypeInfo<TickColorStrategyVelocity>();
+    return *refl::GetTypeInfo<TickColorStrategyVelocity>();
 }
 }  // namespace verlet

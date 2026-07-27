@@ -1,6 +1,6 @@
 #pragma once
 
-#include "cpp_reflection/get_type_info.hpp"
+#include "refl/get_type_info.hpp"
 #include "verlet/coloring/object_color_function.hpp"
 
 namespace verlet
@@ -14,7 +14,7 @@ public:
     virtual ~TickColorStrategy() = default;
 
     virtual ObjectColorFunction GetColorFunction() = 0;
-    [[nodiscard]] virtual const cppreflection::Type& GetType() const = 0;
+    [[nodiscard]] virtual const refl::Type& GetType() const = 0;
     virtual void DrawGUI() {}
 
 protected:
