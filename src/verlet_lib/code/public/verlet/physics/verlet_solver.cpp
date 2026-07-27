@@ -1,6 +1,6 @@
 #include "verlet_solver.hpp"
 
-#include "EverydayTools/Math/Math.hpp"
+#include "edt/math/math.hpp"
 #include "fmt/ranges.h"  // IWYU pragma: keep
 #include "klvk/error_handling.hpp"
 #include "klvk/template/on_scope_leave.hpp"

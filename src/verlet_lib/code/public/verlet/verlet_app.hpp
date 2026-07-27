@@ -4,7 +4,7 @@
 #include <fmt/format.h>
 #include <imgui.h>
 
-#include "EverydayTools/Math/FloatRange.hpp"
+#include "edt/math/float_range.hpp"
 #include "camera.hpp"
 #include "emitters/emitter.hpp"
 #include "instance_painter.hpp"

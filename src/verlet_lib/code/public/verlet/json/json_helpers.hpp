@@ -2,7 +2,7 @@
 
 #include <nlohmann/json.hpp>
 
-#include "EverydayTools/Math/Matrix.hpp"
+#include "edt/math/matrix.hpp"
 
 namespace verlet
 {

@@ -2,7 +2,7 @@
 
 #include <nlohmann/json.hpp>
 
-#include "EverydayTools/Time/MeasureTime.hpp"
+#include "edt/time/measure_time.hpp"
 #include "coloring/spawn_color/spawn_color_strategy_rainbow.hpp"
 #include "coloring/tick_color/tick_color_strategy.hpp"
 #include "gui/app_gui.hpp"

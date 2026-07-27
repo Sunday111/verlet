@@ -5,7 +5,7 @@
 #include <algorithm>
 #include <cmath>
 
-#include "EverydayTools/Math/Math.hpp"
+#include "edt/math/math.hpp"
 #include "klvk/ui/simple_type_widget.hpp"
 #include "verlet/coloring/spawn_color/spawn_color_strategy.hpp"
 #include "verlet/object.hpp"

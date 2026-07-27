@@ -1,6 +1,6 @@
 #pragma once
 
-#include <EverydayTools/Concepts/Callable.hpp>
+#include <edt/concepts/callable.hpp>
 #include <cassert>
 #include <vector>
 

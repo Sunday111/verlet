@@ -1,7 +1,7 @@
 #pragma once
 
-#include "EverydayTools/Math/Matrix.hpp"
-#include "EverydayTools/Template/TaggedIdentifier.hpp"
+#include "edt/math/matrix.hpp"
+#include "edt/template/tagged_identifier.hpp"
 
 namespace verlet
 {

@@ -1,6 +1,6 @@
 #pragma once
 
-#include <EverydayTools/Math/FloatRange.hpp>
+#include <edt/math/float_range.hpp>
 #include <algorithm>
 #include <chrono>
 

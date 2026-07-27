@@ -2,13 +2,13 @@
 
 #include <ankerl/unordered_dense.h>
 
-#include <EverydayTools/Math/FloatRange.hpp>
-#include <EverydayTools/Time/MeasureTime.hpp>
+#include <edt/math/float_range.hpp>
+#include <edt/time/measure_time.hpp>
 #include <cassert>
 
-#include "EverydayTools/Math/Math.hpp"
-#include "EverydayTools/Math/Matrix.hpp"
-#include "EverydayTools/Template/Overload.hpp"
+#include "edt/math/math.hpp"
+#include "edt/math/matrix.hpp"
+#include "edt/template/overload.hpp"
 #include "klvk/template/tagged_id_hash.hpp"
 #include "verlet/object_pool.hpp"
 
