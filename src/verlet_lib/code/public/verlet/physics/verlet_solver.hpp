@@ -2,9 +2,9 @@
 
 #include <ankerl/unordered_dense.h>
 
+#include <cassert>
 #include <edt/math/float_range.hpp>
 #include <edt/time/measure_time.hpp>
-#include <cassert>
 
 #include "edt/math/math.hpp"
 #include "edt/math/matrix.hpp"
@@ -12,10 +12,13 @@
 #include "klvk/template/tagged_id_hash.hpp"
 #include "verlet/object_pool.hpp"
 
+namespace edt
+{
+class BatchThreadPool;
+}
+
 namespace verlet
 {
-
-class BatchThreadPool;
 
 class VerletSolver
 {
@@ -147,7 +150,7 @@ private:
 
     std::vector<VerletWorldCell> cells_;
     std::vector<uint8_t> cell_obj_counts_;
-    std::unique_ptr<BatchThreadPool> batch_thread_pool_;
+    std::unique_ptr<edt::BatchThreadPool> batch_thread_pool_;
 
     // links
     ankerl::unordered_dense::map<ObjectId, std::vector<VerletLink>, klvk::TaggedIdentifierHash<ObjectId>> linked_to;
