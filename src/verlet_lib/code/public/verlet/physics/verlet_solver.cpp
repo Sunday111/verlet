@@ -1,10 +1,10 @@
 #include "verlet_solver.hpp"
 
+#include "edt/functional/on_scope_leave.hpp"
 #include "edt/math/math.hpp"
+#include "edt/threading/batch_thread_pool.hpp"
 #include "fmt/ranges.h"  // IWYU pragma: keep
 #include "klvk/error_handling.hpp"
-#include "klvk/template/on_scope_leave.hpp"
-#include "verlet/threading/batch_thread_pool.hpp"
 
 namespace verlet
 {
@@ -93,7 +93,7 @@ void VerletSolver::RebuildGrid()
 VerletSolver::UpdateStats VerletSolver::Update()
 {
     update_in_progress_ = true;
-    const auto scope_leave_ = klvk::OnScopeLeave([this] { update_in_progress_ = false; });
+    const auto scope_leave_ = edt::OnScopeLeave([this] { update_in_progress_ = false; });
     UpdateStats stats{};
     stats.total = edt::MeasureTime(
         [&]
@@ -271,7 +271,7 @@ void VerletSolver::SetThreadsCount(size_t count)
 {
     if (!batch_thread_pool_ || count != GetThreadsCount())
     {
-        batch_thread_pool_ = std::make_unique<BatchThreadPool>(count);
+        batch_thread_pool_ = std::make_unique<edt::BatchThreadPool>(count);
     }
 }
 

@@ -29,9 +29,6 @@ set(module_source_files
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/verlet/object_pool.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/verlet/physics/verlet_solver.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/verlet/physics/verlet_solver.hpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/code/public/verlet/ranges.hpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/code/public/verlet/threading/batch_thread_pool.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/code/public/verlet/threading/batch_thread_pool.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/verlet/tools/delete_objects_tool.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/verlet/tools/delete_objects_tool.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/verlet/tools/move_objects_tool.cpp

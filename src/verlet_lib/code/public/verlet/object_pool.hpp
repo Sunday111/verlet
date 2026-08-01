@@ -2,6 +2,7 @@
 
 #include <edt/concepts/callable.hpp>
 #include <cassert>
+#include <ranges>
 #include <vector>
 
 #ifndef NDEBUG
@@ -9,7 +10,6 @@
 #endif
 
 #include "object.hpp"
-#include "ranges.hpp"
 
 namespace verlet
 {
@@ -60,7 +60,7 @@ public:
 
     [[nodiscard]] auto Identifiers() const
     {
-        return RangeIndices(entries_) |
+        return std::views::iota(size_t{0}, entries_.size()) |
                std::views::filter([&](const size_t index) -> bool { return entries_[index].data_.back(); }) |
                std::views::transform([&](const size_t index) { return ObjectId::FromValue(index); });
     }
