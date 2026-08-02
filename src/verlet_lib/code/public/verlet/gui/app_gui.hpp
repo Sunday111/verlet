@@ -1,5 +1,6 @@
 #pragma once
 
+#include <iterator>
 #include <string_view>
 
 #include "fmt/core.h"
