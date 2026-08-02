@@ -55,11 +55,6 @@ add_subdirectory(${YAE_refl_SOURCES} yae_modules/Sunday111/refl/main/modules/ref
 set(YAE_cpptrace_SOURCES ${YAE_CLONED_REPOSITORIES_DIR}/jeremy-rifkin/cpptrace/main)
 add_subdirectory(${YAE_cpptrace_SOURCES} yae_modules/jeremy-rifkin/cpptrace/main SYSTEM)
 
-# https://github.com/TartanLlama/expected v1.1.0
-set(YAE_expected_SOURCES ${YAE_CLONED_REPOSITORIES_DIR}/TartanLlama/expected/v1.1.0)
-option(EXPECTED_BUILD_TESTS "" OFF)
-add_subdirectory(${YAE_expected_SOURCES} yae_modules/TartanLlama/expected/v1.1.0 SYSTEM)
-
 # https://github.com/Neargye/magic_enum v0.9.7
 set(YAE_magic_enum_SOURCES ${YAE_CLONED_REPOSITORIES_DIR}/Neargye/magic_enum/v0.9.7)
 add_subdirectory(${YAE_magic_enum_SOURCES} yae_modules/Neargye/magic_enum/v0.9.7 SYSTEM)
@@ -118,6 +113,15 @@ add_subdirectory(${YAE_verlet_lib_SOURCES} yae_modules/src/verlet_lib SYSTEM)
 set(YAE_verlet_SOURCES src/verlet)
 add_subdirectory(${YAE_verlet_SOURCES} yae_modules/src/verlet SYSTEM)
 
+# https://github.com/google/googletest v1.15.2
+set(YAE_gtest_main_SOURCES ${YAE_CLONED_REPOSITORIES_DIR}/google/googletest/v1.15.2)
+option(INSTALL_GTEST "" OFF)
+option(BUILD_GMOCK "" OFF)
+add_subdirectory(${YAE_gtest_main_SOURCES} yae_modules/google/googletest/v1.15.2 SYSTEM)
+
+set(YAE_verlet_tests_SOURCES src/verlet_tests)
+add_subdirectory(${YAE_verlet_tests_SOURCES} yae_modules/src/verlet_tests SYSTEM)
+
 set(YAE_verlet_video_SOURCES src/verlet_video)
 add_subdirectory(${YAE_verlet_video_SOURCES} yae_modules/src/verlet_video SYSTEM)
 
@@ -128,12 +132,6 @@ option(BENCHMARK_ENABLE_TESTING "" OFF)
 add_subdirectory(${YAE_gbench_SOURCES} yae_modules/google/benchmark/v1.9.4 SYSTEM)
 
 include(${YAE_CLONED_REPOSITORIES_DIR}/Sunday111/yae-support/main/modules/third_party/gbench.module.cmake)
-# https://github.com/google/googletest v1.15.2
-set(YAE_gtest_SOURCES ${YAE_CLONED_REPOSITORIES_DIR}/google/googletest/v1.15.2)
-option(INSTALL_GTEST "" OFF)
-option(BUILD_GMOCK "" OFF)
-add_subdirectory(${YAE_gtest_SOURCES} yae_modules/google/googletest/v1.15.2 SYSTEM)
-
 set(YAE_yae_example_benchmark_SOURCES ${YAE_CLONED_REPOSITORIES_DIR}/Sunday111/yae-support/main/modules/examples/yae_example_benchmark)
 add_subdirectory(${YAE_yae_example_benchmark_SOURCES} yae_modules/Sunday111/yae-support/main/modules/examples/yae_example_benchmark SYSTEM)
 
