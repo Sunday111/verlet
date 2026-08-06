@@ -34,13 +34,25 @@ void ObjectPool::Free(ObjectId id)
 
 void ObjectPool::Clear()
 {
-    for (size_t i = 0; i != entries_.size(); ++i)
+    for (auto& entry : entries_)
     {
-        if (entries_[i].data_.back() != 0)
+        if (entry.data_.back() != 0)
         {
-            Free(ObjectId::FromValue(i));
+            entry.AsObject().~VerletObject();
         }
     }
+
+    // Freeing the slots one by one would leave them on the free list in reverse,
+    // so the next objects would be allocated back to front. Emptying the pool
+    // instead hands out the same identifiers a new pool would, in the same order,
+    // which is what a simulation replayed from the start has to see.
+    entries_.clear();
+    first_free_ = kInvalidObjectId;
+    count_ = 0;
+
+#ifndef NDEBUG
+    valid_ones_.clear();
+#endif
 }
 
 }  // namespace verlet

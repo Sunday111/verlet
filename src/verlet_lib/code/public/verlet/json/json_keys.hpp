@@ -14,11 +14,16 @@ public:
     static constexpr std::string_view kEmitters = "Emitters";
     static constexpr std::string_view kPosition = "Position";
     static constexpr std::string_view kRadius = "Radius";
+    static constexpr std::string_view kStart = "Start";
+    static constexpr std::string_view kEnd = "End";
+    static constexpr std::string_view kSpacing = "Spacing";
+    static constexpr std::string_view kDirectionDegrees = "DirectionDegrees";
     static constexpr std::string_view kPhaseDegrees = "PhaseDegrees";
     static constexpr std::string_view kSectorDegrees = "SectorDegrees";
     static constexpr std::string_view kSpeedFactor = "SpeedFactor";
     static constexpr std::string_view kWindowSize = "WindowSize";
     static constexpr std::string_view kMaxObjectsCount = "MaxObjectsCount";
+    static constexpr std::string_view kMaxObjectsSaturation = "MaxObjectsSaturation";
     static constexpr std::string_view kRotationSpeed = "RotationSpeed";
 };
 

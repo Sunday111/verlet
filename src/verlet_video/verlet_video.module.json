@@ -1,12 +1,12 @@
 {
     "ModuleType": "Executable",
-    "ExtraCMakeFiles": [
-        "add_opencv"
-    ],
     "Dependencies": {
         "Public": [],
         "Private": [
             "verlet_lib"
         ]
-    }
+    },
+    "CopyDirectoriesAfterBuild": [
+        "content"
+    ]
 }

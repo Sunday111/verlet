@@ -15,6 +15,8 @@ set(module_source_files
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/verlet/emitters/emitter.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/verlet/emitters/emitter.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/verlet/emitters/emitter_type.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/code/public/verlet/emitters/flat_emitter.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/code/public/verlet/emitters/flat_emitter.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/verlet/emitters/radial_emitter.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/verlet/emitters/radial_emitter.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/verlet/gui/app_gui.cpp

@@ -1,0 +1,15 @@
+{
+    "version": 1,
+    "presentation": "offscreen",
+    "framebuffer_size": [2244, 6864],
+    "clock": {"mode": "fixed", "step_ns": 16666667},
+    "video": {
+        "path": "fill_2244x6864.mp4",
+        "encoding": "h264",
+        "compression_level": 0,
+        "include_ui": false,
+        "log_ffmpeg": false
+    },
+    "exit": {"frame": 2700},
+    "application": {"settle_frames": 1980}
+}

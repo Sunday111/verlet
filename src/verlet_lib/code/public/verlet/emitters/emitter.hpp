@@ -2,6 +2,7 @@
 
 #include <memory>
 
+#include "edt/math/matrix.hpp"
 #include "emitter_type.hpp"
 
 namespace verlet

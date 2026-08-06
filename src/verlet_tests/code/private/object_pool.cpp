@@ -84,12 +84,33 @@ TEST(ObjectPoolTest, ReusesAFreedSlot)  // NOLINT
 TEST(ObjectPoolTest, ClearRemovesEverything)  // NOLINT
 {
     verlet::ObjectPool pool;
-    for (size_t i = 0; i != 8; ++i) [[maybe_unused]] const auto entry = pool.Alloc();
+    for (size_t i = 0; i != 8; ++i)
+    {
+        [[maybe_unused]] const auto entry = pool.Alloc();
+    }
 
     pool.Clear();
 
     EXPECT_EQ(pool.ObjectsCount(), 0U);
     EXPECT_TRUE(Identifiers(pool).empty());
+}
+
+// A simulation replayed from the start has to see the identifiers it saw the
+// first time, in the same order, because the order objects are stored in decides
+// the order they are solved in.
+TEST(ObjectPoolTest, ClearedPoolAllocatesLikeANewOne)  // NOLINT
+{
+    verlet::ObjectPool pool;
+    std::vector<verlet::ObjectId> before;
+    for (size_t i = 0; i != 8; ++i) before.push_back(std::get<0>(pool.Alloc()));
+
+    pool.Clear();
+
+    std::vector<verlet::ObjectId> after;
+    for (size_t i = 0; i != 8; ++i) after.push_back(std::get<0>(pool.Alloc()));
+
+    EXPECT_EQ(after, before);
+    EXPECT_EQ(Identifiers(pool), before);
 }
 
 // Clearing a pool with holes in it must not trip over the free slots.

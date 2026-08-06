@@ -11,6 +11,5 @@ void Main(int argc, char** argv)
 
 int main(int argc, char** argv)
 {
-    klvk::ErrorHandling::InvokeAndCatchAll([&] { Main(argc, argv); });
-    return 0;
+    return klvk::ErrorHandling::InvokeAndCatchAll([&] { Main(argc, argv); });
 }
