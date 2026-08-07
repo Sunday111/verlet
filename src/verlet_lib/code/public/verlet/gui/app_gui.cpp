@@ -36,6 +36,14 @@ void AppGUI::Render()
         }
 
         {
+            if (ImGui::Button(app_->IsPaused() ? "Play" : "Pause")) app_->SetPaused(!app_->IsPaused());
+            ImGui::SameLine();
+            if (ImGui::Button("Next frame")) app_->RequestStep();
+            ImGui::SameLine();
+            GuiText("space / right arrow");
+        }
+
+        {
             bool by_saturation = app_->max_objects_saturation_.has_value();
             if (ImGui::Checkbox("Limit by saturation", &by_saturation))
             {

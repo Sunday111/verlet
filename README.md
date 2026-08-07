@@ -70,6 +70,11 @@ picture appears on. It defaults to 3600 and is a separate decision from `exit.fr
 stops: settling earlier than the end holds the finished picture on screen for the remaining frames, and the two are
 equal only when the picture is meant to land on the very last one.
 
+**Pause** stops the simulation while everything else keeps going: the view still renders, the camera still moves and
+the tools still work, so a frozen pile can be looked at and painted into before being let go. **Next frame** runs
+exactly one step and stays paused, which with a fixed timestep is exactly 1/60 s and its eight substeps. Space toggles
+the pause and the right arrow steps, both ignored while a text field has the keyboard.
+
 # World space
 
 Screen size decides how much world there is. One world unit is `kPixelsPerWorldUnit` pixels, so an object covers the

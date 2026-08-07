@@ -46,8 +46,12 @@ void VerletApp::Tick()
     Super::Tick();
     UpdateWorldRange();
     UpdateCamera();
+    UpdateStepping();
     UpdateRenderTransforms();
-    UpdateSimulation();
+    // Tools run whether or not the simulation does, so objects can be painted
+    // into a paused world and then stepped.
+    UpdateTools();
+    if (!paused_ || std::exchange(step_requested_, false)) UpdateSimulation();
     Render();
 }
 
@@ -144,13 +148,20 @@ void VerletApp::UpdateCamera()
     }
 }
 
+void VerletApp::UpdateTools()
+{
+    if (tool_) tool_->Tick();
+}
+
+void VerletApp::UpdateStepping()
+{
+    if (ImGui::GetIO().WantCaptureKeyboard) return;
+    if (ImGui::IsKeyPressed(ImGuiKey_Space, false)) paused_ = !paused_;
+    if (ImGui::IsKeyPressed(ImGuiKey_RightArrow)) RequestStep();
+}
+
 void VerletApp::UpdateSimulation()
 {
-    if (tool_)
-    {
-        tool_->Tick();
-    }
-
     // Update emitters
     {
         // Delete pending kill emitters

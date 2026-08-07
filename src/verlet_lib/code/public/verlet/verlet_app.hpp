@@ -62,8 +62,23 @@ public:
 
     void UpdateWorldRange(float max_extent_change = 0.5f);
     void UpdateCamera();
+    void UpdateTools();
+    void UpdateStepping();
     void UpdateSimulation();
     void Render();
+
+    // Only the simulation pauses. Rendering, the camera and the tools keep
+    // running, so a frozen pile can still be looked at and painted into.
+    [[nodiscard]] bool IsPaused() const noexcept { return paused_; }
+    void SetPaused(bool paused) noexcept { paused_ = paused; }
+
+    // Advances one step and stays paused, which is the only way to ask for a
+    // step: running is what the play button is for.
+    void RequestStep() noexcept
+    {
+        paused_ = true;
+        step_requested_ = true;
+    }
 
     void UpdateRenderTransforms();
     void RenderWorld();
@@ -113,6 +128,8 @@ public:
     // count above, and a preset carrying it survives a change of resolution.
     std::optional<float> max_objects_saturation_;
     size_t time_steps_ = 0;
+    bool paused_ = false;
+    bool step_requested_ = false;
 
     VerletSolver solver{};
     std::unique_ptr<Tool> tool_;
