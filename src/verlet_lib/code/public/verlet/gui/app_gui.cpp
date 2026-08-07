@@ -71,9 +71,10 @@ void AppGUI::Render()
         }
 
         {
-            static constexpr std::array kPresetFilters{klvk::FileDialogFilter{.name = "Preset", .extensions = "json"}};
+            static constexpr std::array kPresetFilters{
+                klvk::FileDialog::Filter{.name = "Preset", .extensions = "json"}};
             static constexpr std::array kPositionsFilters{
-                klvk::FileDialogFilter{.name = "Positions dump", .extensions = "txt"}};
+                klvk::FileDialog::Filter{.name = "Positions dump", .extensions = "txt"}};
 
             if (ImGui::Button("Save Preset"))
             {
