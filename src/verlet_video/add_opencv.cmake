@@ -1,7 +1,0 @@
-find_package(OpenCV QUIET COMPONENTS core videoio highgui)
-if(OpenCV_FOUND)
-    target_link_libraries(verlet_video PRIVATE ${OpenCV_LIBS})
-else()
-    message(STATUS "OpenCV was not found; verlet_video target is excluded from the default build")
-    set_property(TARGET verlet_video PROPERTY EXCLUDE_FROM_ALL TRUE)
-endif()

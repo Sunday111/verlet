@@ -25,9 +25,15 @@ void RadialEmitter::Tick(VerletApp& app)
     if (!enabled) return;
     if (app.solver.objects.ObjectsCount() >= app.max_objects_count_) return;
 
+    const Vec2f origin = app.RelativeToWorld(config.position);
+    const float radius = app.RelativeToWorldLength(config.radius);
+
     const float sector_radians = edt::Math::DegToRad(std::clamp(config.sector_degrees, 0.f, 360.f));
-    const auto num_directions = static_cast<size_t>(
-        sector_radians * (config.radius + VerletObject::GetRadius()) / (2 * VerletObject::GetRadius()));
+    // An emitter small enough to fit fewer than one object across still emits
+    // one, otherwise it silently produces nothing at all.
+    const auto num_directions = std::max(
+        size_t{1},
+        static_cast<size_t>(sector_radians * (radius + VerletObject::GetRadius()) / (2 * VerletObject::GetRadius())));
     const float phase_radians = sector_radians / 2 + edt::Math::DegToRad(state.phase_degrees);
 
     auto color_fn = app.spawn_color_strategy_->GetColorFunction();
@@ -38,9 +44,8 @@ void RadialEmitter::Tick(VerletApp& app)
             phase_radians - (sector_radians * static_cast<float>(i)) / static_cast<float>(num_directions));
         auto v = edt::Math::TransformVector(matrix, Vec2f::AxisY());
 
-        Vec2f old_pos = config.position + config.radius * v;
-        Vec2f new_pos =
-            config.position + (config.radius + config.speed_factor * VerletSolver::kTimeStepDurationSeconds) * v;
+        Vec2f old_pos = origin + radius * v;
+        Vec2f new_pos = origin + (radius + config.speed_factor * VerletSolver::kTimeStepDurationSeconds) * v;
 
         auto [id, object] = app.solver.objects.Alloc();
         object.position = new_pos;

@@ -4,8 +4,8 @@
 #include <fmt/format.h>
 #include <imgui.h>
 
-#include "edt/math/float_range.hpp"
 #include "camera.hpp"
+#include "edt/math/float_range.hpp"
 #include "emitters/emitter.hpp"
 #include "instance_painter.hpp"
 #include "klvk/application.hpp"
@@ -48,7 +48,10 @@ public:
         RenderPerfStats render;
     };
 
-    static constexpr edt::FloatRange<float> kMinSideRange{.begin = -150, .end = 150};
+    // Screen size decides how much world there is: an object covers the same
+    // number of pixels at every resolution, and a bigger window simulates a
+    // bigger world rather than the same world drawn larger.
+    static constexpr float kPixelsPerWorldUnit = 3.6f;
 
     VerletApp();
     ~VerletApp() override;
@@ -59,8 +62,23 @@ public:
 
     void UpdateWorldRange(float max_extent_change = 0.5f);
     void UpdateCamera();
+    void UpdateTools();
+    void UpdateStepping();
     void UpdateSimulation();
     void Render();
+
+    // Only the simulation pauses. Rendering, the camera and the tools keep
+    // running, so a frozen pile can still be looked at and painted into.
+    [[nodiscard]] bool IsPaused() const noexcept { return paused_; }
+    void SetPaused(bool paused) noexcept { paused_ = paused; }
+
+    // Advances one step and stays paused, which is the only way to ask for a
+    // step: running is what the play button is for.
+    void RequestStep() noexcept
+    {
+        paused_ = true;
+        step_requested_ = true;
+    }
 
     void UpdateRenderTransforms();
     void RenderWorld();
@@ -88,8 +106,30 @@ public:
     [[nodiscard]] Vec2f GetMousePositionInWorldCoordinates() const;
     InstancedPainter& GetPainter() { return instance_painter_; }
 
+    // How many objects the world holds when they are packed as tightly as circles
+    // go. The budget can be stated as a share of this instead of as a count, which
+    // is what makes it mean the same thing at any resolution.
+    [[nodiscard]] size_t ObjectsCapacity() const;
+
+    // Emitters are placed in relative coordinates: -1 and 1 are the edges of the
+    // world on each axis and the origin is its centre, so a preset says where a
+    // thing is without knowing how big the world turned out to be.
+    [[nodiscard]] Vec2f RelativeToWorld(const Vec2f& relative) const;
+
+    // A relative length becomes a world one against the shorter half of the
+    // world, so a circle stays a circle whatever the aspect ratio.
+    [[nodiscard]] float RelativeToWorldLength(float relative) const;
+
+    // Effective budget. Recomputed from the saturation whenever the world changes,
+    // so this is the one emitters and the GUI read either way.
     size_t max_objects_count_ = 10000;
+
+    // When set, the budget is this share of ObjectsCapacity() rather than the
+    // count above, and a preset carrying it survives a change of resolution.
+    std::optional<float> max_objects_saturation_;
     size_t time_steps_ = 0;
+    bool paused_ = false;
+    bool step_requested_ = false;
 
     VerletSolver solver{};
     std::unique_ptr<Tool> tool_;
@@ -103,7 +143,7 @@ public:
 private:
     std::unique_ptr<klvk::events::IEventListener> event_listener_;
 
-    edt::FloatRange2D<float> world_range_{.x = kMinSideRange, .y = kMinSideRange};
+    edt::FloatRange2D<float> world_range_{};
 
     std::unique_ptr<klvk::Texture> texture_;
 

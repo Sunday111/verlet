@@ -10,87 +10,6 @@ It is also possible to generate video that results into some predefined image (v
 
 # Building
 
-## OpenCV
-
-All dependencies except OpenCV will be cloned by python script. But OpenCV was too big to include it to my project so I add it as system dependency. You can simply install dev package with your package manager and cmake should me able to find it. On Windows I prefer to build it myself and here is the python script if you are will to do so (simply replace paths to ones you like):
-
-<details>
-  <summary>Build OpenCV on Windows</summary>
-
-```python
-import subprocess
-from pathlib import Path
-
-
-def main():
-    opencv_dir = Path("C:/data/soft/portable/opencv")
-    repo_url = "https://github.com/opencv/opencv"
-    repo_tag = "4.10.0"
-    repo_dir = opencv_dir / "repo"
-    build_dir = opencv_dir / "build"
-    install_dir = opencv_dir / "install"
-
-    # Clone
-    if not repo_dir.exists():
-        subprocess.check_call(
-            args=[
-                "git",
-                "clone",
-                "--depth",
-                "1",
-                "--branch",
-                repo_tag,
-                "--single-branch",
-                repo_url,
-                repo_dir.as_posix(),
-            ]
-        )
-
-    # Generate project file
-    subprocess.check_call(
-        args=[
-            "cmake",
-            *("-G", "Visual Studio 17 2022", "-A", "x64"),
-            *("-S", repo_dir.as_posix()),
-            *("-B", build_dir.as_posix()),
-            "-DBUILD_PERF_TESTS:BOOL=OFF",
-            "-DBUILD_TESTS:BOOL=OFF",
-            "-DBUILD_DOCS:BOOL=OFF",
-            "-DWITH_CUDA:BOOL=OFF",
-            "-DBUILD_EXAMPLES:BOOL=OFF",
-            "-DINSTALL_CREATE_DISTRIB:BOOL=ON",
-            "-DWITH_FFMPEG:BOOL=ON",
-            "-DBUILD_opencv_java:BOOL=OFF",
-            "-DBUILD_opencv_python3:BOOL=OFF",
-            "-DBUILD_WITH_STATIC_CRT=OFF", # <- Change this if you have CRT mismatch link error
-            "-DBUILD_SHARED_LIBS:BOOL=OFF",  # <- opencv libs will be static
-            f"-DCMAKE_INSTALL_PREFIX={install_dir.as_posix()}",
-        ]
-    )
-
-    def build_config(config: str):
-        subprocess.check_call(
-            args=[
-                "cmake",
-                *("--build", build_dir.as_posix()),
-                *("--target", "install"),
-                *("--config", config),
-            ]
-        )
-
-    build_config("debug")
-    build_config("release")
-
-    print(f"install directory: {install_dir.as_posix()}")
-
-
-if __name__ == "__main__":
-    main()
-```
-</details>
-
-## Clone/Generate/Build
-
 ```bash
 git clone https://github.com/Sunday111/yae
 git clone https://github.com/Sunday111/verlet
@@ -98,22 +17,122 @@ cd verlet
 ../yae/yae build
 ```
 
-If `yae` is installed on `PATH`, run `yae build` from the project root instead. You can skip `OpenCV_DIR` if OpenCV is
-discoverable on system level. Otherwise, put machine-specific CMake overrides in ignored `local-config.json` next to
-`yae_project.json`:
+If `yae` is installed on `PATH`, run `yae build` from the project root instead. Machine-specific CMake overrides go in
+an ignored `local-config.json` next to `yae_project.json`.
+
+# verlet_video
+
+`verlet_video` runs the simulation with every object coloured by where it will eventually come to rest, so the settled
+pile reproduces a target image.
+
+The picture is `--image`, and any PNG or JPEG will do:
+
+```bash
+yae run verlet_video -- --image ~/pictures/van.jpg --klvk-diagnostics video.json
+```
+
+It works out the colours itself: on startup it simulates `settle_frames` frames with no rendering, reads back where
+each object ended up, samples the image there, then resets the solver and emitters and runs again with those colours.
+Both passes run single threaded from the same state, so object *i* lands where the first pass said it would, and a run
+is reproducible frame for frame.
+
+| Option | Default | What it is |
+| --- | --- | --- |
+| `--preset` | `VerletAppPreset.json` next to the executable | Window size, object budget, and emitters. Written by the **Save Preset** button. |
+| `--image` | `content/target_image.png` | The picture to reproduce. Sampled at each settled position. |
+| `--positions` | simulate instead | Read settled positions from a dump written by the **Save positions** button rather than simulating them. |
+
+Recording is klvk's, not this project's — pass a diagnostic configuration containing a `video` block:
+
+```bash
+yae run verlet_video -- --klvk-diagnostics video.json
+```
 
 ```json
 {
-    "cmake_definitions": {
-        "OpenCV_DIR": "C:/data/soft/portable/opencv/install"
-    }
+  "version": 1,
+  "presentation": "offscreen",
+  "framebuffer_size": [1920, 1080],
+  "clock": {"mode": "fixed", "step_ns": 16666667},
+  "video": {"path": "verlet.mp4", "encoding": "h264", "compression_level": 3, "include_ui": false},
+  "exit": {"frame": 1800},
+  "application": {"settle_frames": 1800}
 }
 ```
 
-# Compress the resulting video
+Video requires `offscreen` presentation, a fixed clock, and **even** framebuffer dimensions — an odd width or height
+fails at startup rather than producing a broken file. The clock step is the output frame rate, and `exit` decides how
+long the recording runs. Encoding is `av1`, `h264`, or `mpeg4`, on `cpu` or `gpu`; see klvk's readme for the full set
+of options.
 
-Use ffpeg to compress the video because it tends to be way to big. I prefer using av1 (on Windows) because it super fast and works really well with video that have a lot of particles.
+`application.settle_frames` is how long the first pass simulates before reading positions back, so it is the frame the
+picture appears on. It defaults to 3600 and is a separate decision from `exit.frame`, which is where the recording
+stops: settling earlier than the end holds the finished picture on screen for the remaining frames, and the two are
+equal only when the picture is meant to land on the very last one.
 
-```Powershell
-./ffmpeg -i output.mp4 -c:v av1_nvenc -b:v 4M output_av1.mp4
+**Pause** stops the simulation while everything else keeps going: the view still renders, the camera still moves and
+the tools still work, so a frozen pile can be looked at and painted into before being let go. **Next frame** runs
+exactly one step and stays paused, which with a fixed timestep is exactly 1/60 s and its eight substeps. Space toggles
+the pause and the right arrow steps, both ignored while a text field has the keyboard.
+
+# World space
+
+Screen size decides how much world there is. One world unit is `kPixelsPerWorldUnit` pixels, so an object covers the
+same few pixels at every resolution and a bigger window simulates a bigger world rather than the same world drawn
+larger.
+
+Nothing in a preset is written in world units, so none of it has to be recomputed for a different resolution.
+Emitters are placed in **relative coordinates**, where -1 and 1 are the edges of the world on each axis and the origin
+is its centre: `{"X": 0.99, "Y": 0.4}` is a point just inside the right wall, forty percent of the way up. A relative
+length — a radial emitter's radius — is measured against the shorter half of the world, so a ring stays a ring at any
+aspect ratio.
+
+`SpeedFactor` stays in world units on purpose, and a flat emitter's `Spacing` is counted in object diameters: both
+are about objects, and objects are the same size whatever the world.
+
+The object budget is stated one of two ways, and a preset carries exactly one of them:
+
+| Key | Meaning |
+| --- | --- |
+| `MaxObjectsCount` | A literal number of objects. The same preset fills a small window and looks sparse in a large one. |
+| `MaxObjectsSaturation` | A share of what the world holds, from 0 to 1, where 1 is objects packed as tightly as circles go. Means the same thing at any resolution. |
+
+Saturation is converted to a count from the world's area whenever the world changes, so it follows a resize on its
+own. The **Limit by saturation** checkbox switches between the two and carries the current budget across, and the one
+in force is the one written back by **Save Preset**.
+
+A worked example ships in `content/`, with its recording configuration beside it. `fill_2244x6864.json` is a tall
+2244x6864 world lined with three flat emitters, one along each surface bounding the top 30%. They fill it to saturation
+1.0 in 28 seconds, the picture is composed at 33 seconds, and the recording runs on to 38 seconds so the finished image
+holds on screen.
+
+```bash
+yae run verlet_video -- \
+    --klvk-diagnostics src/verlet_video/content/fill_2244x6864_video.json \
+    --preset src/verlet_video/content/fill_2244x6864.json \
+    --image src/verlet_video/content/target_image.png
 ```
+
+A preset's `WindowSize` sizes the window an interactive session opens; a render takes its resolution from the
+configuration's `framebuffer_size` instead. The two agree in the example, but they no longer have to: everything the
+preset places is relative, so the same file renders at any resolution and describes the same picture.
+
+# Emitters
+
+`Radial` spawns outward from a ring, along a sector of it. `Position` is relative and `Radius` is relative to the
+shorter half of the world; `Radius` and `SectorDegrees` together decide how many objects leave per tick, and
+`PhaseDegrees` points the sector, measuring zero as straight up.
+
+`Flat` spawns from a straight surface, all of it moving the same way. It is given as its two ends, `Start` and `End`,
+both relative — which is how a surface says "the whole top edge" without naming a size.
+
+`Direction` is a vector, and `LocalDirection` says how to read it. Read locally, it is in the surface's own frame:
+x runs `Start` to `End` and y is the surface's left normal, so a surface points objects out of itself without
+naming a compass direction. Read globally it is simply a direction in the world, the same for every surface alike.
+
+`Spacing` is the gap between neighbouring objects, in object diameters: `0` packs them touching, `1` leaves a whole
+object's width between them. It is not relative to the world, because it is a distance between objects and objects
+are the same size whatever the world.
+
+A flat emitter fills a rectangle evenly, where a radial one is a point source that builds a cone and spreads only
+through collisions.

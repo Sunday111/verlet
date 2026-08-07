@@ -5,6 +5,7 @@
 #include "klvk/macro/ensure_enum_size.hpp"
 #include "klvk/template/constexpr_string_hash.hpp"
 #include "magic_enum/magic_enum.hpp"
+#include "verlet/emitters/flat_emitter.hpp"
 #include "verlet/emitters/radial_emitter.hpp"
 #include "verlet/json/json_keys.hpp"
 #include "verlet/verlet_app.hpp"
@@ -72,6 +73,21 @@ public:
 
         throw klvk::ErrorHandling::RuntimeErrorWithMessage(
             "json[{}] is not a float! json: \n {}",
+            key,
+            json.dump(4, ' '));
+    }
+
+    template <typename T>
+        requires(std::same_as<T, bool>)
+    static bool GetKey(const nlohmann::json& json, const std::string_view& key)
+    {
+        if (const nlohmann::json& value = JSONHelpers::GetKey(json, key); value.is_boolean())
+        {
+            return value;
+        }
+
+        throw klvk::ErrorHandling::RuntimeErrorWithMessage(
+            "json[{}] is not a boolean! json: \n {}",
             key,
             json.dump(4, ' '));
     }
@@ -171,6 +187,34 @@ RadialEmitterConfig JSONHelpers::RadialEmitterFromJSON(const nlohmann::json& jso
     return e;
 }
 
+nlohmann::json JSONHelpers::FlatEmitterToJSON(const FlatEmitterConfig& emitter)
+{
+    nlohmann::json json;
+
+    json[JSONKeys::kStart] = VectorToJSON(emitter.start);
+    json[JSONKeys::kEnd] = VectorToJSON(emitter.end);
+    json[JSONKeys::kDirection] = VectorToJSON(emitter.direction);
+    json[JSONKeys::kLocalDirection] = emitter.local_direction;
+    json[JSONKeys::kSpacing] = emitter.spacing;
+    json[JSONKeys::kSpeedFactor] = emitter.speed_factor;
+
+    return json;
+}
+
+FlatEmitterConfig JSONHelpers::FlatEmitterFromJSON(const nlohmann::json& json)
+{
+    FlatEmitterConfig e{};
+
+    e.start = Vec2fFromJSON(GetKey(json, JSONKeys::kStart));
+    e.end = Vec2fFromJSON(GetKey(json, JSONKeys::kEnd));
+    e.direction = Vec2fFromJSON(GetKey(json, JSONKeys::kDirection));
+    e.local_direction = Internal::GetKey<bool>(json, JSONKeys::kLocalDirection);
+    e.spacing = Internal::GetKey<float>(json, JSONKeys::kSpacing);
+    e.speed_factor = Internal::GetKey<float>(json, JSONKeys::kSpeedFactor);
+
+    return e;
+}
+
 nlohmann::json JSONHelpers::EmitterToJSON(const Emitter& emitter)
 {
     nlohmann::json json;
@@ -178,11 +222,14 @@ nlohmann::json JSONHelpers::EmitterToJSON(const Emitter& emitter)
     const auto type = emitter.GetType();
     const std::string_view type_str = magic_enum::enum_name(type);
     json[JSONKeys::kType] = type_str;
-    KLVK_ENSURE_ENUM_SIZE(EmitterType, 1);
+    KLVK_ENSURE_ENUM_SIZE(EmitterType, 2);
     switch (type)
     {
     case EmitterType::Radial:
         json[type_str] = RadialEmitterToJSON(static_cast<const RadialEmitter&>(emitter).config);
+        break;
+    case EmitterType::Flat:
+        json[type_str] = FlatEmitterToJSON(static_cast<const FlatEmitter&>(emitter).config);
         break;
     }
 
@@ -195,11 +242,15 @@ std::unique_ptr<Emitter> JSONHelpers::EmitterFromJSON(const nlohmann::json& json
     const EmitterType type = Internal::ParseEnum(Internal::kEmitterTypeParseMap, type_str);
     const nlohmann::json& inner = GetKey(json, type_str);
 
-    KLVK_ENSURE_ENUM_SIZE(EmitterType, 1);
+    KLVK_ENSURE_ENUM_SIZE(EmitterType, 2);
     switch (type)
     {
     case EmitterType::Radial:
         return std::make_unique<RadialEmitter>(RadialEmitterFromJSON(inner));
+        break;
+
+    case EmitterType::Flat:
+        return std::make_unique<FlatEmitter>(FlatEmitterFromJSON(inner));
         break;
 
     default:
@@ -211,7 +262,14 @@ nlohmann::json JSONHelpers::AppStateToJSON(const VerletApp& app)
 {
     nlohmann::json json;
     json[JSONKeys::kWindowSize] = VectorToJSON(app.GetWindow().GetSize().Cast<int>());
-    json[JSONKeys::kMaxObjectsCount] = app.max_objects_count_;
+    if (app.max_objects_saturation_)
+    {
+        json[JSONKeys::kMaxObjectsSaturation] = *app.max_objects_saturation_;
+    }
+    else
+    {
+        json[JSONKeys::kMaxObjectsCount] = app.max_objects_count_;
+    }
     json[JSONKeys::kEmitters] = nlohmann::json::array();
 
     auto& array = json[JSONKeys::kEmitters];

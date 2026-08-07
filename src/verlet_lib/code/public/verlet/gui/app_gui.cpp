@@ -1,7 +1,10 @@
 #include "app_gui.hpp"
 
+#include <algorithm>
+#include <array>
 #include <thread>
 
+#include "klvk/platform/file_dialog.hpp"
 #include "klvk/ui/imgui_helpers.hpp"
 #include "klvk/ui/simple_type_widget.hpp"
 #include "verlet/coloring/spawn_color/spawn_color_strategy.hpp"
@@ -9,6 +12,7 @@
 #include "verlet/coloring/tick_color/tick_color_strategy.hpp"
 #include "verlet/coloring/tick_color/tick_color_strategy_velocity.hpp"
 #include "verlet/emitters/emitter.hpp"
+#include "verlet/emitters/flat_emitter.hpp"
 #include "verlet/emitters/radial_emitter.hpp"
 #include "verlet/tools/delete_objects_tool.hpp"
 #include "verlet/tools/move_objects_tool.hpp"
@@ -31,7 +35,42 @@ void AppGUI::Render()
             }
         }
 
-        klvk::ImGuiHelper::SliderUInt("Max objects", &app_->max_objects_count_, size_t{0}, size_t{150'000});
+        {
+            if (ImGui::Button(app_->IsPaused() ? "Play" : "Pause")) app_->SetPaused(!app_->IsPaused());
+            ImGui::SameLine();
+            if (ImGui::Button("Next frame")) app_->RequestStep();
+            ImGui::SameLine();
+            GuiText("space / right arrow");
+        }
+
+        {
+            bool by_saturation = app_->max_objects_saturation_.has_value();
+            if (ImGui::Checkbox("Limit by saturation", &by_saturation))
+            {
+                // Carry the budget across the switch so the simulation does not
+                // jump when the way of saying it changes.
+                const auto capacity = app_->ObjectsCapacity();
+                if (by_saturation)
+                {
+                    const auto share = static_cast<float>(app_->max_objects_count_) / static_cast<float>(capacity);
+                    app_->max_objects_saturation_ = std::clamp(share, 0.f, 1.f);
+                }
+                else
+                {
+                    app_->max_objects_saturation_.reset();
+                }
+            }
+
+            if (app_->max_objects_saturation_)
+            {
+                ImGui::SliderFloat("Saturation", &*app_->max_objects_saturation_, 0.f, 1.f);
+                GuiText("Max objects: {} of {}", app_->max_objects_count_, app_->ObjectsCapacity());
+            }
+            else
+            {
+                klvk::ImGuiHelper::SliderUInt("Max objects", &app_->max_objects_count_, size_t{0}, size_t{150'000});
+            }
+        }
 
         if (auto window_size_f = app_->GetWindow().GetSize2f(); klvk::SimpleTypeWidget("Window size:", window_size_f))
         {
@@ -39,21 +78,40 @@ void AppGUI::Render()
             app_->GetWindow().SetSize(window_size.x(), window_size.y());
         }
 
-        if (ImGui::Button("Save Preset"))
         {
-            app_->SaveAppState(app_->GetExecutableDir() / kDefaultPresetFileName);
-        }
+            static constexpr std::array kPresetFilters{
+                klvk::FileDialog::Filter{.name = "Preset", .extensions = "json"}};
+            static constexpr std::array kPositionsFilters{
+                klvk::FileDialog::Filter{.name = "Positions dump", .extensions = "txt"}};
 
-        ImGui::SameLine();
+            if (ImGui::Button("Save Preset"))
+            {
+                const auto suggested = app_->GetExecutableDir() / kDefaultPresetFileName;
+                if (auto path = app_->SaveFileDialog("Save preset", kPresetFilters, suggested))
+                {
+                    app_->SaveAppState(*path);
+                }
+            }
 
-        if (ImGui::Button("Load Preset"))
-        {
-            app_->LoadAppState(app_->GetExecutableDir() / kDefaultPresetFileName);
-        }
+            ImGui::SameLine();
 
-        if (ImGui::Button("Save positions"))
-        {
-            app_->SavePositions(app_->GetExecutableDir() / kDefaultPositionsDumpFileName);
+            if (ImGui::Button("Load Preset"))
+            {
+                const auto suggested = app_->GetExecutableDir() / kDefaultPresetFileName;
+                if (auto path = app_->OpenFileDialog("Load preset", kPresetFilters, suggested))
+                {
+                    app_->LoadAppState(*path);
+                }
+            }
+
+            if (ImGui::Button("Save positions"))
+            {
+                const auto suggested = app_->GetExecutableDir() / kDefaultPositionsDumpFileName;
+                if (auto path = app_->SaveFileDialog("Save positions", kPositionsFilters, suggested))
+                {
+                    app_->SavePositions(*path);
+                }
+            }
         }
 
         Camera();
@@ -123,6 +181,13 @@ void AppGUI::Emitters()
         if (ImGui::Button("New Radial"))
         {
             app_->AddEmitter(std::make_unique<RadialEmitter>());
+        }
+
+        ImGui::SameLine();
+
+        if (ImGui::Button("New Flat"))
+        {
+            app_->AddEmitter(std::make_unique<FlatEmitter>());
         }
 
         if (ImGui::Button("Enable All"))

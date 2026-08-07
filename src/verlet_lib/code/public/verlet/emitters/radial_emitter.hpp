@@ -9,8 +9,12 @@ namespace verlet
 class RadialEmitterConfig
 {
 public:
+    // Relative coordinates: -1 and 1 are the edges of the world, the origin is
+    // its centre.
     edt::Vec2f position = {0, 0};
-    float radius = 10.f;
+    // Relative to the shorter half of the world, so the ring stays a ring at any
+    // aspect ratio. This is also what decides how many objects leave per tick.
+    float radius = 0.1f;
     float phase_degrees = 0.f;
     float sector_degrees = 90.f;
     float speed_factor = 10.f;

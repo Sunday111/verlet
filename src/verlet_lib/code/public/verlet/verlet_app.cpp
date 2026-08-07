@@ -1,10 +1,11 @@
 #include "verlet_app.hpp"
 
 #include <nlohmann/json.hpp>
+#include <numbers>
 
-#include "edt/time/measure_time.hpp"
 #include "coloring/spawn_color/spawn_color_strategy_rainbow.hpp"
 #include "coloring/tick_color/tick_color_strategy.hpp"
+#include "edt/time/measure_time.hpp"
 #include "gui/app_gui.hpp"
 #include "klvk/error_handling.hpp"
 #include "klvk/events/event_listener_method.hpp"
@@ -45,8 +46,12 @@ void VerletApp::Tick()
     Super::Tick();
     UpdateWorldRange();
     UpdateCamera();
+    UpdateStepping();
     UpdateRenderTransforms();
-    UpdateSimulation();
+    // Tools run whether or not the simulation does, so objects can be painted
+    // into a paused world and then stepped.
+    UpdateTools();
+    if (!paused_ || std::exchange(step_requested_, false)) UpdateSimulation();
     Render();
 }
 
@@ -71,22 +76,9 @@ void VerletApp::InitializeRendering()
 
 void VerletApp::UpdateWorldRange(float max_extent_change)
 {
-    // Handle aspect ratio here: if some side of viewport becomes bigger than other -
-    // we react by increasing the world coordinate range on that axis
-    const auto [smaller, bigger, ratio] = [&]()
-    {
-        if (auto [width, height] = GetWindow().GetSize2f().Tuple(); width > height)
-        {
-            return std::tuple{&world_range_.y, &world_range_.x, width / height};
-        }
-        else
-        {
-            return std::tuple{&world_range_.x, &world_range_.y, height / width};
-        }
-    }();
-
-    *smaller = kMinSideRange;
-    *bigger = smaller->Enlarged(smaller->Extent() * (ratio - 1.f) * 0.5f);
+    const auto half_extent = GetWindow().GetSize2f() / (2 * kPixelsPerWorldUnit);
+    world_range_.x = {.begin = -half_extent.x(), .end = half_extent.x()};
+    world_range_.y = {.begin = -half_extent.y(), .end = half_extent.y()};
 
     auto adjust_range = [&max_extent_change](const edt::FloatRange<float>& world, edt::FloatRange<float>& sim)
     {
@@ -113,6 +105,31 @@ void VerletApp::UpdateWorldRange(float max_extent_change)
     adjust_range(world_range_.x, sim_area.x);
     adjust_range(world_range_.y, sim_area.y);
     solver.SetSimArea(sim_area);
+
+    if (max_objects_saturation_)
+    {
+        max_objects_count_ = static_cast<size_t>(*max_objects_saturation_ * static_cast<float>(ObjectsCapacity()));
+    }
+}
+
+Vec2f VerletApp::RelativeToWorld(const Vec2f& relative) const
+{
+    return world_range_.Uniform(.5f) + relative * (world_range_.Extent() / 2);
+}
+
+float VerletApp::RelativeToWorldLength(float relative) const
+{
+    const auto half = world_range_.Extent() / 2;
+    return relative * std::min(half.x(), half.y());
+}
+
+size_t VerletApp::ObjectsCapacity() const
+{
+    // Circles of one radius pack in a hexagonal lattice at best, where each takes
+    // up a rhombus of this area.
+    const float per_object = 2 * std::numbers::sqrt3_v<float> * edt::Math::Sqr(VerletObject::GetRadius());
+    const auto area = solver.GetSimArea().Extent();
+    return static_cast<size_t>((area.x() * area.y()) / per_object);
 }
 
 void VerletApp::UpdateCamera()
@@ -131,13 +148,20 @@ void VerletApp::UpdateCamera()
     }
 }
 
+void VerletApp::UpdateTools()
+{
+    if (tool_) tool_->Tick();
+}
+
+void VerletApp::UpdateStepping()
+{
+    if (ImGui::GetIO().WantCaptureKeyboard) return;
+    if (ImGui::IsKeyPressed(ImGuiKey_Space, false)) paused_ = !paused_;
+    if (ImGui::IsKeyPressed(ImGuiKey_RightArrow)) RequestStep();
+}
+
 void VerletApp::UpdateSimulation()
 {
-    if (tool_)
-    {
-        tool_->Tick();
-    }
-
     // Update emitters
     {
         // Delete pending kill emitters
@@ -214,11 +238,39 @@ void VerletApp::LoadAppState(const std::filesystem::path& path)
             const auto json = nlohmann::json::parse(content);
 
             auto window_size = JSONHelpers::Vec2iFromJSON(json[JSONKeys::kWindowSize]).Cast<uint32_t>();
-            max_objects_count_ = json[JSONKeys::kMaxObjectsCount];
+
+            // A preset states the budget one way or the other, never both: they
+            // would disagree the moment the world was a different size.
+            const bool has_count = json.contains(JSONKeys::kMaxObjectsCount);
+            const bool has_saturation = json.contains(JSONKeys::kMaxObjectsSaturation);
+            klvk::ErrorHandling::Ensure(
+                has_count != has_saturation,
+                "A preset must contain exactly one of '{}' and '{}'",
+                JSONKeys::kMaxObjectsCount,
+                JSONKeys::kMaxObjectsSaturation);
+
+            if (has_saturation)
+            {
+                const float saturation = json[JSONKeys::kMaxObjectsSaturation];
+                klvk::ErrorHandling::Ensure(
+                    saturation >= 0.f && saturation <= 1.f,
+                    "{} must be within [0, 1], got {}",
+                    JSONKeys::kMaxObjectsSaturation,
+                    saturation);
+                max_objects_saturation_ = saturation;
+            }
+            else
+            {
+                max_objects_saturation_.reset();
+                max_objects_count_ = json[JSONKeys::kMaxObjectsCount];
+            }
+
             GetWindow().SetSize(window_size.x(), window_size.y());
 
             DeleteAllEmitters();
 
+            // Emitters are stored relative to the world, so a preset needs no
+            // adjusting to load into a world of a different size.
             for (const auto& emitter_json : json[JSONKeys::kEmitters])
             {
                 AddEmitter(JSONHelpers::EmitterFromJSON(emitter_json));
