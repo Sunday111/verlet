@@ -82,8 +82,8 @@ is its centre: `{"X": 0.99, "Y": 0.4}` is a point just inside the right wall, fo
 length — a radial emitter's radius — is measured against the shorter half of the world, so a ring stays a ring at any
 aspect ratio.
 
-Two things stay in world units on purpose, because they are distances between *objects* and objects are the same size
-whatever the world: a flat emitter's `Spacing`, and `SpeedFactor`.
+`SpeedFactor` stays in world units on purpose, and a flat emitter's `Spacing` is counted in object diameters: both
+are about objects, and objects are the same size whatever the world.
 
 The object budget is stated one of two ways, and a preset carries exactly one of them:
 
@@ -122,9 +122,8 @@ shorter half of the world; `Radius` and `SectorDegrees` together decide how many
 both relative — which is how a surface says "the whole top edge" without naming a size.
 
 `Direction` is a vector, and `LocalDirection` says how to read it. Read locally, it is in the surface's own frame:
-x runs `Start` to `End` and y is the surface's left normal. One direction then points the same way out of every
-surface however each one is laid out — the shipped preset gives all three of its walls `{0, -1}` and each emits
-inward. Read globally it is simply a direction in the world, so `{0, -1}` is down for every surface alike.
+x runs `Start` to `End` and y is the surface's left normal, so a surface points objects out of itself without
+naming a compass direction. Read globally it is simply a direction in the world, the same for every surface alike.
 
 `Spacing` is the gap between neighbouring objects, in object diameters: `0` packs them touching, `1` leaves a whole
 object's width between them. It is not relative to the world, because it is a distance between objects and objects

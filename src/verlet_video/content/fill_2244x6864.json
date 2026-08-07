@@ -30,9 +30,9 @@
         {
             "Type": "Flat",
             "Flat": {
-                "Start": {"X": 0.99, "Y": 0.99},
-                "End": {"X": 0.99, "Y": 0.4},
-                "Direction": {"X": 0.0, "Y": -1.0},
+                "Start": {"X": 0.99, "Y": 0.4},
+                "End": {"X": 0.99, "Y": 0.99},
+                "Direction": {"X": 0.0, "Y": 1.0},
                 "LocalDirection": true,
                 "Spacing": 1.13,
                 "SpeedFactor": 50.0
