@@ -78,6 +78,21 @@ public:
     }
 
     template <typename T>
+        requires(std::same_as<T, bool>)
+    static bool GetKey(const nlohmann::json& json, const std::string_view& key)
+    {
+        if (const nlohmann::json& value = JSONHelpers::GetKey(json, key); value.is_boolean())
+        {
+            return value;
+        }
+
+        throw klvk::ErrorHandling::RuntimeErrorWithMessage(
+            "json[{}] is not a boolean! json: \n {}",
+            key,
+            json.dump(4, ' '));
+    }
+
+    template <typename T>
         requires(std::same_as<T, int>)
     static int GetKey(const nlohmann::json& json, const std::string_view& key)
     {
@@ -178,7 +193,8 @@ nlohmann::json JSONHelpers::FlatEmitterToJSON(const FlatEmitterConfig& emitter)
 
     json[JSONKeys::kStart] = VectorToJSON(emitter.start);
     json[JSONKeys::kEnd] = VectorToJSON(emitter.end);
-    json[JSONKeys::kDirectionDegrees] = emitter.direction_degrees;
+    json[JSONKeys::kDirection] = VectorToJSON(emitter.direction);
+    json[JSONKeys::kLocalDirection] = emitter.local_direction;
     json[JSONKeys::kSpacing] = emitter.spacing;
     json[JSONKeys::kSpeedFactor] = emitter.speed_factor;
 
@@ -191,7 +207,8 @@ FlatEmitterConfig JSONHelpers::FlatEmitterFromJSON(const nlohmann::json& json)
 
     e.start = Vec2fFromJSON(GetKey(json, JSONKeys::kStart));
     e.end = Vec2fFromJSON(GetKey(json, JSONKeys::kEnd));
-    e.direction_degrees = Internal::GetKey<float>(json, JSONKeys::kDirectionDegrees);
+    e.direction = Vec2fFromJSON(GetKey(json, JSONKeys::kDirection));
+    e.local_direction = Internal::GetKey<bool>(json, JSONKeys::kLocalDirection);
     e.spacing = Internal::GetKey<float>(json, JSONKeys::kSpacing);
     e.speed_factor = Internal::GetKey<float>(json, JSONKeys::kSpeedFactor);
 

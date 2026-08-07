@@ -17,7 +17,8 @@ public:
     static constexpr std::string_view kStart = "Start";
     static constexpr std::string_view kEnd = "End";
     static constexpr std::string_view kSpacing = "Spacing";
-    static constexpr std::string_view kDirectionDegrees = "DirectionDegrees";
+    static constexpr std::string_view kDirection = "Direction";
+    static constexpr std::string_view kLocalDirection = "LocalDirection";
     static constexpr std::string_view kPhaseDegrees = "PhaseDegrees";
     static constexpr std::string_view kSectorDegrees = "SectorDegrees";
     static constexpr std::string_view kSpeedFactor = "SpeedFactor";

@@ -119,10 +119,16 @@ shorter half of the world; `Radius` and `SectorDegrees` together decide how many
 `PhaseDegrees` points the sector, measuring zero as straight up.
 
 `Flat` spawns from a straight surface, all of it moving the same way. It is given as its two ends, `Start` and `End`,
-both relative — which is how a surface says "the whole top edge" without naming a size. `DirectionDegrees` points the
-emission with the same convention as a sector's phase, and the surface normally lies across it. `Spacing` is the
-world-unit distance between neighbouring spawn points along the surface, so object diameter packs them solid and
-larger values emit proportionally fewer.
+both relative — which is how a surface says "the whole top edge" without naming a size.
+
+`Direction` is a vector, and `LocalDirection` says how to read it. Read locally, it is in the surface's own frame:
+x runs `Start` to `End` and y is the surface's left normal. One direction then points the same way out of every
+surface however each one is laid out — the shipped preset gives all three of its walls `{0, -1}` and each emits
+inward. Read globally it is simply a direction in the world, so `{0, -1}` is down for every surface alike.
+
+`Spacing` is the gap between neighbouring objects, in object diameters: `0` packs them touching, `1` leaves a whole
+object's width between them. It is not relative to the world, because it is a distance between objects and objects
+are the same size whatever the world.
 
 A flat emitter fills a rectangle evenly, where a radial one is a point source that builds a cone and spreads only
 through collisions.

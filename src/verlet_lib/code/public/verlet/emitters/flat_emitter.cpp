@@ -6,6 +6,7 @@
 #include <ranges>
 
 #include "edt/math/math.hpp"
+#include "klvk/error_handling.hpp"
 #include "klvk/ui/simple_type_widget.hpp"
 #include "verlet/coloring/spawn_color/spawn_color_strategy.hpp"
 #include "verlet/object.hpp"
@@ -17,6 +18,20 @@ namespace verlet
 
 FlatEmitter::FlatEmitter(const FlatEmitterConfig& in_config) : config(in_config) {}
 
+Vec2f FlatEmitter::WorldDirection(const Vec2f& span, float length) const
+{
+    klvk::ErrorHandling::Ensure(
+        config.direction.SquaredLength() > 0.f,
+        "A flat emitter needs a direction to send objects in");
+
+    if (!config.local_direction) return config.direction.Normalized();
+
+    klvk::ErrorHandling::Ensure(length > 0.f, "A flat emitter with no length has no local direction to read");
+    const Vec2f along = span / length;
+    const Vec2f normal{-along.y(), along.x()};
+    return (along * config.direction.x() + normal * config.direction.y()).Normalized();
+}
+
 void FlatEmitter::Tick(VerletApp& app)
 {
     if (!enabled) return;
@@ -27,13 +42,15 @@ void FlatEmitter::Tick(VerletApp& app)
     const Vec2f span = end - start;
     const float length = span.Length();
 
-    const float spacing = std::max(config.spacing, 2 * VerletObject::GetRadius());
+    // Spacing is the gap between neighbours in object diameters, so zero puts
+    // them exactly one diameter apart: touching.
+    constexpr float diameter = 2 * VerletObject::GetRadius();
+    const float step_length = diameter * (1.f + std::max(config.spacing, 0.f));
     // A surface too short to hold two objects still emits one, otherwise it would
     // silently produce nothing at all.
-    const auto count = std::max(size_t{1}, static_cast<size_t>(length / spacing));
+    const auto count = std::max(size_t{1}, static_cast<size_t>(length / step_length));
 
-    const auto matrix = edt::Math::RotationMatrix2d(edt::Math::DegToRad(config.direction_degrees));
-    const auto direction = edt::Math::TransformVector(matrix, Vec2f::AxisY());
+    const Vec2f direction = WorldDirection(span, length);
 
     // Spawn points sit at the middle of equal shares of the surface, so they stay
     // symmetric about its centre and none lands on an end.
@@ -66,8 +83,9 @@ void FlatEmitter::GUI()
         bool c = false;
         c |= klvk::SimpleTypeWidget("start", config.start);
         c |= klvk::SimpleTypeWidget("end", config.end);
-        c |= klvk::SimpleTypeWidget("direction degrees", config.direction_degrees);
-        c |= klvk::SimpleTypeWidget("spacing", config.spacing);
+        c |= klvk::SimpleTypeWidget("direction", config.direction);
+        c |= ImGui::Checkbox("direction is local to the surface", &config.local_direction);
+        c |= klvk::SimpleTypeWidget("spacing (object diameters)", config.spacing);
         c |= klvk::SimpleTypeWidget("speed factor", config.speed_factor);
 
         if (c)
