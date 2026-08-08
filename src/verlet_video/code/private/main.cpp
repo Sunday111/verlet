@@ -177,9 +177,8 @@ public:
         UpdateWorldRange(std::numeric_limits<float>::max());
 
         // The solver must see the same state in both passes for object i to land
-        // where the first pass said it would, so the run is single threaded and
-        // the settling loop mirrors what Tick does around UpdateSimulation.
-        solver.SetThreadsCount(1);
+        // where the first pass said it would, so the settling loop mirrors what
+        // Tick does around UpdateSimulation.
         StartEmitting();
 
         const u64 settle_frames = SettleFrames();

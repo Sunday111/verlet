@@ -8,12 +8,38 @@
 
 namespace verlet
 {
+namespace
+{
+constexpr size_t ChunkSize(size_t total_amount, size_t num_chunks, size_t chunk_index)
+{
+    return total_amount / num_chunks + (chunk_index < total_amount % num_chunks ? 1 : 0);
+}
+
+static_assert(ChunkSize(8, 3, 0) == 3);
+static_assert(ChunkSize(8, 3, 1) == 3);
+static_assert(ChunkSize(8, 3, 2) == 2);
+static_assert(ChunkSize(10, 3, 1) == 3);
+static_assert(ChunkSize(2, 8, 5) == 0);
+
+constexpr size_t ChunkBegin(size_t total_amount, size_t num_chunks, size_t chunk_index)
+{
+    const size_t remainder = total_amount % num_chunks;
+    return (total_amount / num_chunks) * chunk_index + std::min(chunk_index, remainder);
+}
+
+static_assert(ChunkBegin(8, 3, 0) == 0);
+static_assert(ChunkBegin(8, 3, 1) == 3);
+static_assert(ChunkBegin(8, 3, 2) == 6);
+static_assert(ChunkBegin(8, 3, 2) + ChunkSize(8, 3, 2) == 8);
+static_assert(ChunkBegin(2, 8, 5) == 2);
+}  // namespace
+
 VerletSolver::VerletSolver()
 {
     SetThreadsCount(std::thread::hardware_concurrency());
 }
 
-void VerletSolver::SolveCollisions(const size_t thread_index, size_t threads_count)
+void VerletSolver::SolveCollisions(size_t pass_offset, size_t thread_index, size_t threads_count)
 {
     constexpr float eps = 0.0001f;
     auto solve_collision_between_object_and_cell =
@@ -39,17 +65,18 @@ void VerletSolver::SolveCollisions(const size_t thread_index, size_t threads_cou
         }
     };
 
-    const size_t columns_pre_thread = (grid_size_.x() / threads_count);
-    size_t begin_x = 1 + columns_pre_thread * thread_index;
-    size_t end_x = begin_x + columns_pre_thread;
-    if (thread_index == threads_count - 1)
-    {
-        end_x = grid_size_.x();
-    }
+    // Columns of one pass are kCollisionPassStride apart, so the three columns any of them
+    // touches are touched by no other column of the same pass, and one column is always
+    // walked by one thread. Columns go to threads in fixed index order, so the outcome does
+    // not depend on the thread count.
+    const size_t num_jobs = ChunkSize(grid_size_.x() - 2, kCollisionPassStride, pass_offset);
+    const size_t first_job = ChunkBegin(num_jobs, threads_count, thread_index);
+    const size_t last_job = first_job + ChunkSize(num_jobs, threads_count, thread_index);
 
     const size_t grid_width = grid_size_.x();
-    for (const size_t cell_x : std::views::iota(begin_x, end_x))
+    for (const size_t job_index : std::views::iota(first_job, last_job))
     {
+        const size_t cell_x = 1 + pass_offset + job_index * kCollisionPassStride;
         for (const size_t cell_y : std::views::iota(size_t{1}, grid_size_.y() - 1))
         {
             const size_t cell_index = cell_y * grid_width + cell_x;
@@ -103,7 +130,14 @@ VerletSolver::UpdateStats VerletSolver::Update()
                 stats.rebuild_grid += edt::MeasureTime(std::bind_front(&VerletSolver::RebuildGrid, this));
                 stats.apply_links += edt::MeasureTime(std::bind_front(&VerletSolver::ApplyLinks, this));
                 stats.solve_collisions += edt::MeasureTime(
-                    [&] { batch_thread_pool_->RunBatch(std::bind_front(&VerletSolver::SolveCollisions, this)); });
+                    [&]
+                    {
+                        for (const size_t pass_offset : std::views::iota(size_t{0}, kCollisionPassStride))
+                        {
+                            batch_thread_pool_->RunBatch(
+                                std::bind_front(&VerletSolver::SolveCollisions, this, pass_offset));
+                        }
+                    });
                 stats.update_positions += edt::MeasureTime(
                     [&] { batch_thread_pool_->RunBatch(std::bind_front(&VerletSolver::UpdatePositions, this)); });
             }
@@ -112,19 +146,15 @@ VerletSolver::UpdateStats VerletSolver::Update()
     return stats;
 }
 
-void VerletSolver::UpdatePositions(const size_t thread_index, const size_t threads_count)
+void VerletSolver::UpdatePositions(size_t thread_index, size_t threads_count)
 {
     constexpr float margin = 2.0f;
     const auto constraint_with_margin = sim_area_.Enlarged(-margin);
     constexpr float dt_2 = edt::Math::Sqr(kTimeSubStepDurationSeconds);
 
-    const size_t columns_pre_thread = (grid_size_.x() / threads_count);
-    size_t begin_x = 1 + columns_pre_thread * thread_index;
-    size_t end_x = begin_x + columns_pre_thread;
-    if (thread_index == threads_count - 1)
-    {
-        end_x = grid_size_.x();
-    }
+    const size_t num_columns = grid_size_.x() - 2;
+    const size_t begin_x = 1 + ChunkBegin(num_columns, threads_count, thread_index);
+    const size_t end_x = begin_x + ChunkSize(num_columns, threads_count, thread_index);
 
     const size_t grid_width = grid_size_.x();
     for (const size_t cell_x : std::views::iota(begin_x, end_x))
