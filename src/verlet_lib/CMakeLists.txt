@@ -31,12 +31,16 @@ set(module_source_files
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/verlet/object_pool.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/verlet/physics/verlet_solver.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/verlet/physics/verlet_solver.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/code/public/verlet/random_objects.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/code/public/verlet/random_objects.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/verlet/tools/delete_objects_tool.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/verlet/tools/delete_objects_tool.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/verlet/tools/move_objects_tool.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/verlet/tools/move_objects_tool.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/verlet/tools/spawn_objects_tool.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/verlet/tools/spawn_objects_tool.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/code/public/verlet/tools/spawn_random_objects_tool.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/code/public/verlet/tools/spawn_random_objects_tool.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/verlet/tools/tool.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/verlet/verlet_app.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/verlet/verlet_app.hpp)

@@ -17,6 +17,7 @@
 #include "verlet/tools/delete_objects_tool.hpp"
 #include "verlet/tools/move_objects_tool.hpp"
 #include "verlet/tools/spawn_objects_tool.hpp"
+#include "verlet/tools/spawn_random_objects_tool.hpp"
 #include "verlet/tools/tool.hpp"
 #include "verlet/verlet_app.hpp"
 
@@ -224,6 +225,9 @@ void AppGUI::Tools()
             case ToolType::DeleteObjects:
                 tool = std::make_unique<DeleteObjectsTool>(*app_);
                 break;
+            case ToolType::SpawnRandomObjects:
+                tool = std::make_unique<SpawnRandomObjectsTool>(*app_);
+                break;
             default:
                 tool = nullptr;
                 break;
@@ -252,6 +256,11 @@ void AppGUI::Tools()
         if (ImGui::BeginTabItem("Delete"))
         {
             use_tool(ToolType::DeleteObjects);
+            ImGui::EndTabItem();
+        }
+        if (ImGui::BeginTabItem("Random"))
+        {
+            use_tool(ToolType::SpawnRandomObjects);
             ImGui::EndTabItem();
         }
 

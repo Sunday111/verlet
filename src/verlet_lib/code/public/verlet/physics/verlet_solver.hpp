@@ -166,6 +166,8 @@ public:
     [[nodiscard]] size_t GetThreadsCount() const;
     void SetThreadsCount(size_t count);
 
+    [[nodiscard]] size_t GetGridCellsCount() const { return cell_heads_.size(); }
+
     [[nodiscard]] const edt::FloatRange2Df& GetSimArea() const { return sim_area_; }
     void SetSimArea(const edt::FloatRange2Df& sim_area);
 

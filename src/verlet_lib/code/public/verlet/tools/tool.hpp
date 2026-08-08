@@ -10,7 +10,8 @@ enum class ToolType : u8
 {
     SpawnObjects,
     MoveObjects,
-    DeleteObjects
+    DeleteObjects,
+    SpawnRandomObjects
 };
 
 class Tool

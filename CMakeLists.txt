@@ -127,6 +127,9 @@ add_subdirectory(${YAE_verlet_lib_SOURCES} yae_modules/src/verlet_lib SYSTEM)
 set(YAE_verlet_SOURCES src/verlet)
 add_subdirectory(${YAE_verlet_SOURCES} yae_modules/src/verlet SYSTEM)
 
+set(YAE_verlet_bench_SOURCES src/verlet_bench)
+add_subdirectory(${YAE_verlet_bench_SOURCES} yae_modules/src/verlet_bench SYSTEM)
+
 # https://github.com/google/googletest v1.15.2
 set(YAE_gtest_main_SOURCES ${YAE_CLONED_REPOSITORIES_DIR}/google/googletest/v1.15.2)
 option(INSTALL_GTEST "" OFF)

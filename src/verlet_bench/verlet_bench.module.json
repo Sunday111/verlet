@@ -1,0 +1,9 @@
+{
+    "ModuleType": "Executable",
+    "Dependencies": {
+        "Public": [],
+        "Private": [
+            "verlet_lib"
+        ]
+    }
+}
