@@ -47,6 +47,7 @@ public:
     static constexpr float kVelocityDampling = 40.f;  // arbitrary, approximating air friction
     static constexpr edt::Vec2f gravity{0.0f, -20.f};
     static constexpr Vec2<size_t> cell_size{1, 1};
+    static constexpr size_t kCollisionPassStride = 3;
     static constexpr float kTimeStepDurationSeconds = 1.f / 60.f;
     static constexpr size_t kNumSubSteps = 8;
     static constexpr float kTimeSubStepDurationSeconds = kTimeStepDurationSeconds / static_cast<float>(kNumSubSteps);
@@ -121,8 +122,8 @@ public:
     UpdateStats Update();
     void ApplyLinks();
     void RebuildGrid();
-    void SolveCollisions(const size_t thread_index, const size_t threads_count);
-    void UpdatePositions(const size_t thread_index, const size_t threads_count);
+    void SolveCollisions(size_t pass_offset, size_t thread_index, size_t threads_count);
+    void UpdatePositions(size_t thread_index, size_t threads_count);
 
     void DeleteObject(ObjectId id);
     void DeleteAll();
