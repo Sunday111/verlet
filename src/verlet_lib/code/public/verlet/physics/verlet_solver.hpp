@@ -38,10 +38,46 @@ public:
         ObjectId other{};
     };
 
-    struct VerletWorldCell
+    // A cell keeps only the first of its objects; each object names the next one, so the
+    // chain is walked rather than indexed.
+    class CellObjects : public std::ranges::view_interface<CellObjects>
     {
-        static constexpr uint8_t kCapacity = 4;
-        std::array<ObjectId, kCapacity> objects;
+    public:
+        class Iterator
+        {
+        public:
+            using value_type = ObjectId;
+            using difference_type = std::ptrdiff_t;
+
+            Iterator() = default;
+            Iterator(const ObjectPool* pool, uint32_t index) : pool_{pool}, index_{index} {}
+
+            [[nodiscard]] ObjectId operator*() const { return ObjectId::FromValue(index_); }
+
+            Iterator& operator++()
+            {
+                index_ = pool_->Get(ObjectId::FromValue(index_)).next_object_in_cell;
+                return *this;
+            }
+
+            void operator++(int) { ++*this; }
+
+            [[nodiscard]] bool operator==(std::default_sentinel_t) const { return index_ == kInvalidObjectIndex; }
+
+        private:
+            const ObjectPool* pool_ = nullptr;
+            uint32_t index_ = kInvalidObjectIndex;
+        };
+
+        CellObjects() = default;
+        CellObjects(const ObjectPool& pool, uint32_t first) : pool_{&pool}, first_{first} {}
+
+        [[nodiscard]] Iterator begin() const { return Iterator{pool_, first_}; }
+        [[nodiscard]] std::default_sentinel_t end() const { return {}; }  // NOLINT
+
+    private:
+        const ObjectPool* pool_ = nullptr;
+        uint32_t first_ = kInvalidObjectIndex;
     };
 
     static constexpr float kVelocityDampling = 40.f;  // arbitrary, approximating air friction
@@ -57,12 +93,9 @@ public:
     VerletSolver(VerletSolver&&) = delete;
     ~VerletSolver();
 
-    [[nodiscard]] auto ForEachObjectInCell(const size_t cell_index) const
+    [[nodiscard]] CellObjects ForEachObjectInCell(const size_t cell_index) const
     {
-        const uint8_t count = cell_obj_counts_[cell_index];
-        const auto& cell = cells_[cell_index];
-        return std::views::iota(uint8_t{0}, count) |
-               std::views::transform([&](const uint8_t i) -> const ObjectId& { return cell.objects[i]; });
+        return CellObjects{objects, cell_heads_[cell_index]};
     }
 
     [[nodiscard]] Vec2<size_t> LocationToCell(const Vec2f& location) const
@@ -149,8 +182,7 @@ private:
     bool update_in_progress_ = false;
     Vec2<size_t> grid_size_;
 
-    std::vector<VerletWorldCell> cells_;
-    std::vector<uint8_t> cell_obj_counts_;
+    std::vector<uint32_t> cell_heads_;
     std::unique_ptr<edt::BatchThreadPool> batch_thread_pool_;
 
     // links

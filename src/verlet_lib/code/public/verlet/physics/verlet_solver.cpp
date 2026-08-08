@@ -105,15 +105,15 @@ void VerletSolver::RebuildGrid()
         sim_area_changed_ = false;
     }
 
-    std::ranges::fill(cell_obj_counts_, uint8_t{0});
+    std::ranges::fill(cell_heads_, kInvalidObjectIndex);
 
-    for (auto [id, object] : objects.IdentifiersAndObjects())
+    // An object joins its cell at the front, so walking the objects backwards leaves every
+    // chain running forwards.
+    for (auto [id, object] : objects.IdentifiersAndObjects() | std::views::reverse)
     {
         const auto cell_index = LocationToCellIndex(object.position);
-        auto& cell = cells_[cell_index];
-        auto& cell_sz = cell_obj_counts_[cell_index];
-        cell.objects[cell_sz % VerletWorldCell::kCapacity] = id;
-        cell_sz = std::min<uint8_t>(cell_sz + 1, VerletWorldCell::kCapacity);
+        object.next_object_in_cell = cell_heads_[cell_index];
+        cell_heads_[cell_index] = static_cast<uint32_t>(id.GetValue());
     }
 }
 
@@ -318,9 +318,7 @@ void VerletSolver::SetSimArea(const edt::FloatRange2Df& sim_area)
 void VerletSolver::UpdateGridSize()
 {
     grid_size_ = Vec2<size_t>{2, 2} + sim_area_.Extent().Cast<size_t>() / cell_size;
-    const size_t cells_count = grid_size_.x() * grid_size_.y();
-    cell_obj_counts_.resize(cells_count);
-    cells_.resize(cells_count);
+    cell_heads_.resize(grid_size_.x() * grid_size_.y());
 }
 
 VerletSolver::~VerletSolver()

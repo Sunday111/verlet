@@ -1,5 +1,7 @@
 #pragma once
 
+#include <limits>
+
 #include "edt/math/matrix.hpp"
 #include "edt/template/tagged_identifier.hpp"
 
@@ -11,6 +13,8 @@ struct ObjectIdTag;
 using ObjectId = edt::TaggedIdentifier<ObjectIdTag, size_t>;
 static constexpr auto kInvalidObjectId = ObjectId{};
 
+static constexpr uint32_t kInvalidObjectIndex = std::numeric_limits<uint32_t>::max();
+
 class VerletObject
 {
 public:
@@ -19,6 +23,12 @@ public:
 
     Vec2f position{};
     Vec2f old_position{};
+
+    // The object a grid cell hands out after this one. A cell holds the first of a chain
+    // rather than a fixed number of slots, so however many objects crowd into one they all
+    // stay in it.
+    uint32_t next_object_in_cell = kInvalidObjectIndex;
+
     Vec4<uint8_t> color{};
     bool movable : 1 {};
 
