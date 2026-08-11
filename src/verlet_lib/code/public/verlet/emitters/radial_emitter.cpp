@@ -6,6 +6,7 @@
 #include <cmath>
 
 #include "edt/math/math.hpp"
+#include "klvk/ui/imgui_helpers.hpp"
 #include "verlet/coloring/spawn_color/spawn_color_strategy.hpp"
 #include "verlet/diagnostics/diagnostic_renderer.hpp"
 #include "verlet/json/json_keys.hpp"
@@ -33,25 +34,26 @@ RadialEmitter::RadialEmitter(const RadialEmitterConfig& in_config) : config(in_c
 
 float RadialEmitter::NormalizeDegrees(float degrees)
 {
-    if (!std::isfinite(degrees)) return 0.f;
+    if (!edt::Math::IsFinite(degrees)) return 0.f;
     return std::remainder(degrees, 360.f);
 }
 
 std::optional<std::string_view> RadialEmitter::ValidateConfig(const RadialEmitterConfig& candidate)
 {
-    if (!candidate.position.IsFinite()) return JSONKeys::kPosition;
-    if (!std::isfinite(candidate.radius) || candidate.radius < 0.f) return JSONKeys::kRadius;
-    if (!std::isfinite(candidate.phase_degrees)) return JSONKeys::kPhaseDegrees;
-    if (!std::isfinite(candidate.sector_degrees) || candidate.sector_degrees < 0.f || candidate.sector_degrees > 360.f)
+    if (!edt::Math::IsFinite(candidate.position)) return JSONKeys::kPosition;
+    if (!edt::Math::IsFinite(candidate.radius) || candidate.radius < 0.f) return JSONKeys::kRadius;
+    if (!edt::Math::IsFinite(candidate.phase_degrees)) return JSONKeys::kPhaseDegrees;
+    if (!edt::Math::IsFinite(candidate.sector_degrees) || candidate.sector_degrees < 0.f ||
+        candidate.sector_degrees > 360.f)
     {
         return JSONKeys::kSectorDegrees;
     }
-    if (!std::isfinite(candidate.speed_factor) || candidate.speed_factor < -kMaxSpeed ||
+    if (!edt::Math::IsFinite(candidate.speed_factor) || candidate.speed_factor < -kMaxSpeed ||
         candidate.speed_factor > kMaxSpeed)
     {
         return JSONKeys::kSpeedFactor;
     }
-    if (!std::isfinite(candidate.rotation_speed)) return JSONKeys::kRotationSpeed;
+    if (!edt::Math::IsFinite(candidate.rotation_speed)) return JSONKeys::kRotationSpeed;
     return std::nullopt;
 }
 
@@ -61,7 +63,7 @@ void RadialEmitter::CollectSpawnPoints(const VerletApp& app, std::vector<Emitter
 
     const Vec2f origin = app.RelativeToWorld(config.position);
     const float radius = app.RelativeToWorldLength(config.radius);
-    if (!std::isfinite(radius) || radius < 0.f) return;
+    if (!edt::Math::IsFinite(radius) || radius < 0.f) return;
 
     const float sector_radians = edt::Math::DegToRad(std::clamp(config.sector_degrees, 0.f, 360.f));
     // An emitter small enough to fit fewer than one object across still emits
@@ -84,7 +86,7 @@ void RadialEmitter::DrawShape(const VerletApp& app, DiagnosticRenderer& renderer
 {
     const Vec2f origin = app.RelativeToWorld(config.position);
     const float radius = app.RelativeToWorldLength(config.radius);
-    if (!std::isfinite(radius) || radius < 0.f) return;
+    if (!edt::Math::IsFinite(radius) || radius < 0.f) return;
 
     renderer.DrawEmitterRing(origin, radius);
 
@@ -126,43 +128,37 @@ void RadialEmitter::GUI()
     ImGui::PushID(this);
     bool changed = false;
 
-    const Vec2f old_position = config.position;
-    changed |= ImGui::DragFloat2("Position", config.position.data(), 0.01f, -1.f, 1.f, "%.2f");
-    if (!config.position.IsFinite()) config.position = old_position;
+    changed |= klvk::ImGuiHelper::FiniteDragFloat2("Position", config.position, 0.01f, -1.f, 1.f, "%.2f");
 
-    const float old_phase = config.phase_degrees;
-    if (ImGui::SliderFloat("Phase", &config.phase_degrees, -180.f, 180.f, "%.0f deg"))
+    if (klvk::ImGuiHelper::FiniteSliderFloat("Phase", config.phase_degrees, -180.f, 180.f, "%.0f deg"))
     {
-        config.phase_degrees = std::isfinite(config.phase_degrees) ? NormalizeDegrees(config.phase_degrees) : old_phase;
+        config.phase_degrees = NormalizeDegrees(config.phase_degrees);
         changed = true;
     }
 
-    const float old_sector = config.sector_degrees;
-    changed |=
-        ImGui::SliderFloat("Sector", &config.sector_degrees, 0.f, 360.f, "%.0f deg", ImGuiSliderFlags_AlwaysClamp);
-    if (!std::isfinite(config.sector_degrees)) config.sector_degrees = old_sector;
+    changed |= klvk::ImGuiHelper::FiniteSliderFloat(
+        "Sector",
+        config.sector_degrees,
+        0.f,
+        360.f,
+        "%.0f deg",
+        ImGuiSliderFlags_AlwaysClamp);
 
-    const float old_radius = config.radius;
-    changed |= ImGui::DragFloat("Radius", &config.radius, 0.01f, 0.f, 1.f, "%.2f");
-    if (!std::isfinite(config.radius)) config.radius = old_radius;
+    changed |= klvk::ImGuiHelper::FiniteDragFloat("Radius", config.radius, 0.01f, 0.f, 1.f, "%.2f");
     config.radius = std::max(config.radius, 0.f);
 
-    const float old_speed = config.speed_factor;
-    changed |= ImGui::DragFloat(
+    changed |= klvk::ImGuiHelper::FiniteDragFloat(
         "Speed",
-        &config.speed_factor,
+        config.speed_factor,
         0.5f,
         -kMaxSpeed,
         kMaxSpeed,
         "%.1f world units/s",
         ImGuiSliderFlags_AlwaysClamp);
-    if (!std::isfinite(config.speed_factor)) config.speed_factor = old_speed;
 
-    const float old_rotation = config.rotation_speed;
-    if (ImGui::DragFloat("Rotation", &config.rotation_speed, 0.1f, -10.f, 10.f, "%.1f deg/tick"))
+    if (klvk::ImGuiHelper::FiniteDragFloat("Rotation", config.rotation_speed, 0.1f, -10.f, 10.f, "%.1f deg/tick"))
     {
-        config.rotation_speed =
-            std::isfinite(config.rotation_speed) ? NormalizeDegrees(config.rotation_speed) : old_rotation;
+        config.rotation_speed = NormalizeDegrees(config.rotation_speed);
         changed = true;
     }
 

@@ -3,11 +3,11 @@
 #include <imgui.h>
 
 #include <algorithm>
-#include <cmath>
 #include <ranges>
 
 #include "edt/math/math.hpp"
 #include "klvk/error_handling.hpp"
+#include "klvk/ui/imgui_helpers.hpp"
 #include "verlet/coloring/spawn_color/spawn_color_strategy.hpp"
 #include "verlet/diagnostics/diagnostic_renderer.hpp"
 #include "verlet/json/json_keys.hpp"
@@ -27,11 +27,11 @@ FlatEmitter::FlatEmitter(const FlatEmitterConfig& in_config) : config(in_config)
 
 std::optional<std::string_view> FlatEmitter::ValidateConfig(const FlatEmitterConfig& candidate)
 {
-    if (!candidate.start.IsFinite()) return JSONKeys::kStart;
-    if (!candidate.end.IsFinite()) return JSONKeys::kEnd;
-    if (!candidate.direction.IsFinite()) return JSONKeys::kDirection;
-    if (!std::isfinite(candidate.spacing) || candidate.spacing < 0.f) return JSONKeys::kSpacing;
-    if (!std::isfinite(candidate.speed_factor) || candidate.speed_factor < -kMaxSpeed ||
+    if (!edt::Math::IsFinite(candidate.start)) return JSONKeys::kStart;
+    if (!edt::Math::IsFinite(candidate.end)) return JSONKeys::kEnd;
+    if (!edt::Math::IsFinite(candidate.direction)) return JSONKeys::kDirection;
+    if (!edt::Math::IsFinite(candidate.spacing) || candidate.spacing < 0.f) return JSONKeys::kSpacing;
+    if (!edt::Math::IsFinite(candidate.speed_factor) || candidate.speed_factor < -kMaxSpeed ||
         candidate.speed_factor > kMaxSpeed)
     {
         return JSONKeys::kSpeedFactor;
@@ -59,7 +59,7 @@ void FlatEmitter::CollectSpawnPoints(const VerletApp& app, std::vector<EmitterSp
     const Vec2f end = app.RelativeToWorld(config.end);
     const Vec2f span = end - start;
     const float length = span.Length();
-    if (!std::isfinite(length) || length <= 0.f) return;
+    if (!edt::Math::IsFinite(length) || length <= 0.f) return;
 
     const auto direction = WorldDirection(span, length);
     if (!direction) return;
@@ -128,35 +128,23 @@ void FlatEmitter::GUI()
     ImGui::PushID(this);
     bool changed = false;
 
-    const Vec2f old_start = config.start;
-    changed |= ImGui::DragFloat2("Start", config.start.data(), 0.01f, -1.f, 1.f, "%.2f");
-    if (!config.start.IsFinite()) config.start = old_start;
-
-    const Vec2f old_end = config.end;
-    changed |= ImGui::DragFloat2("End", config.end.data(), 0.01f, -1.f, 1.f, "%.2f");
-    if (!config.end.IsFinite()) config.end = old_end;
-
-    const Vec2f old_direction = config.direction;
-    changed |= ImGui::DragFloat2("Direction", config.direction.data(), 0.01f, -1.f, 1.f, "%.2f");
-    if (!config.direction.IsFinite()) config.direction = old_direction;
+    changed |= klvk::ImGuiHelper::FiniteDragFloat2("Start", config.start, 0.01f, -1.f, 1.f, "%.2f");
+    changed |= klvk::ImGuiHelper::FiniteDragFloat2("End", config.end, 0.01f, -1.f, 1.f, "%.2f");
+    changed |= klvk::ImGuiHelper::FiniteDragFloat2("Direction", config.direction, 0.01f, -1.f, 1.f, "%.2f");
 
     changed |= ImGui::Checkbox("Local direction", &config.local_direction);
 
-    const float old_spacing = config.spacing;
-    changed |= ImGui::DragFloat("Spacing", &config.spacing, 0.05f, 0.f, 5.f, "%.2f diameters");
-    if (!std::isfinite(config.spacing)) config.spacing = old_spacing;
+    changed |= klvk::ImGuiHelper::FiniteDragFloat("Spacing", config.spacing, 0.05f, 0.f, 5.f, "%.2f diameters");
     config.spacing = std::max(config.spacing, 0.f);
 
-    const float old_speed = config.speed_factor;
-    changed |= ImGui::DragFloat(
+    changed |= klvk::ImGuiHelper::FiniteDragFloat(
         "Speed",
-        &config.speed_factor,
+        config.speed_factor,
         0.5f,
         -kMaxSpeed,
         kMaxSpeed,
         "%.1f world units/s",
         ImGuiSliderFlags_AlwaysClamp);
-    if (!std::isfinite(config.speed_factor)) config.speed_factor = old_speed;
 
     if (changed) ResetConfigurationState();
 
