@@ -10,6 +10,7 @@
 #include <vector>
 
 #include "klvk/platform/file_dialog.hpp"
+#include "klvk/ui/imgui_helpers.hpp"
 #include "verlet/coloring/spawn_color/spawn_color_strategy.hpp"
 #include "verlet/coloring/spawn_color/spawn_color_strategy_rainbow.hpp"
 #include "verlet/coloring/tick_color/tick_color_strategy.hpp"
@@ -193,7 +194,13 @@ void AppGUI::Simulation()
         float percent = *app_->max_objects_saturation_ * 100.f;
         GuiText("Saturation (%)");
         FullWidthItem();
-        if (ImGui::SliderFloat("##saturation", &percent, 0.f, 100.f, "%.0f%%", ImGuiSliderFlags_AlwaysClamp))
+        if (klvk::ImGuiHelper::FiniteSliderFloat(
+                "##saturation",
+                percent,
+                0.f,
+                100.f,
+                "%.0f%%",
+                ImGuiSliderFlags_AlwaysClamp))
         {
             *app_->max_objects_saturation_ = percent / 100.f;
         }

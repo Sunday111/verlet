@@ -1,8 +1,7 @@
 #include "spawn_color_strategy_rainbow.hpp"
 
-#include <cmath>
-
 #include "edt/math/math.hpp"
+#include "klvk/ui/imgui_helpers.hpp"
 #include "verlet/verlet_app.hpp"
 
 namespace verlet
@@ -24,13 +23,8 @@ namespace verlet
 
 void SpawnColorStrategyRainbow::DrawGUI()
 {
-    const float old_phase = phase_degrees_;
-    ImGui::SliderFloat("Phase", &phase_degrees_, 0.f, 180.f, "%.0f deg", ImGuiSliderFlags_AlwaysClamp);
-    if (!std::isfinite(phase_degrees_)) phase_degrees_ = old_phase;
-
-    const float old_frequency = frequency_;
-    ImGui::DragFloat("Frequency", &frequency_, 0.05f, 0.f, 2.f, "%.2f rad/s");
-    if (!std::isfinite(frequency_)) frequency_ = old_frequency;
+    klvk::ImGuiHelper::FiniteSliderFloat("Phase", phase_degrees_, 0.f, 180.f, "%.0f deg", ImGuiSliderFlags_AlwaysClamp);
+    klvk::ImGuiHelper::FiniteDragFloat("Frequency", frequency_, 0.05f, 0.f, 2.f, "%.2f rad/s");
     frequency_ = std::max(frequency_, 0.f);
 }
 }  // namespace verlet

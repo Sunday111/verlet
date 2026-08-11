@@ -3,9 +3,9 @@
 #include <imgui.h>
 
 #include <algorithm>
-#include <cmath>
 #include <cstdint>
 
+#include "klvk/ui/imgui_helpers.hpp"
 #include "verlet/verlet_app.hpp"
 
 namespace verlet
@@ -32,16 +32,14 @@ void SpawnRandomObjectsTool::DrawGUI()
 
     ImGui::InputScalar("Seed", ImGuiDataType_U32, &params_.seed);
 
-    const float old_speed = params_.max_speed;
-    ImGui::DragFloat(
+    klvk::ImGuiHelper::FiniteDragFloat(
         "Max speed",
-        &params_.max_speed,
+        params_.max_speed,
         0.5f,
         0.f,
         240.f,
         "%.1f world units/s",
         ImGuiSliderFlags_AlwaysClamp);
-    if (!std::isfinite(params_.max_speed)) params_.max_speed = old_speed;
     ImGui::Checkbox("Movable", &params_.movable);
 }
 

@@ -1,9 +1,9 @@
 #include "verlet/json/json_helpers.hpp"
 
-#include <cmath>
 #include <limits>
 
 #include "ass/fixed_unordered_map.hpp"
+#include "edt/math/math.hpp"
 #include "klvk/error_handling.hpp"
 #include "klvk/macro/ensure_enum_size.hpp"
 #include "klvk/template/constexpr_string_hash.hpp"
@@ -366,7 +366,7 @@ ParsedAppState JSONHelpers::AppStateFromJSON(const nlohmann::json& json)
         {
             const float saturation = Internal::GetKey<float>(json, JSONKeys::kMaxObjectsSaturation);
             klvk::ErrorHandling::Ensure(
-                std::isfinite(saturation) && saturation >= 0.f && saturation <= 1.f,
+                edt::Math::IsFinite(saturation) && saturation >= 0.f && saturation <= 1.f,
                 "must be finite and within [0, 1], got {}",
                 saturation);
             state.max_objects_saturation = saturation;
