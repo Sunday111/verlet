@@ -5,6 +5,7 @@
 #include <imgui.h>
 
 #include "camera.hpp"
+#include "diagnostics/diagnostic_renderer.hpp"
 #include "edt/math/float_range.hpp"
 #include "emitters/emitter.hpp"
 #include "instance_painter.hpp"
@@ -27,6 +28,7 @@ namespace verlet
 {
 
 class Tool;
+class AppGUI;
 class SpawnColorStrategy;
 class TickColorStrategy;
 class Emitter;
@@ -105,11 +107,13 @@ public:
 
     [[nodiscard]] Vec2f GetMousePositionInWorldCoordinates() const;
     InstancedPainter& GetPainter() { return instance_painter_; }
+    [[nodiscard]] DiagnosticRenderer& GetDiagnosticRenderer() { return diagnostic_renderer_; }
 
     // How many objects the world holds when they are packed as tightly as circles
     // go. The budget can be stated as a share of this instead of as a count, which
     // is what makes it mean the same thing at any resolution.
     [[nodiscard]] size_t ObjectsCapacity() const;
+    [[nodiscard]] size_t RemainingObjectBudget() const;
 
     // Emitters are placed in relative coordinates: -1 and 1 are the edges of the
     // world on each axis and the origin is its centre, so a preset says where a
@@ -136,11 +140,13 @@ public:
     std::unique_ptr<SpawnColorStrategy> spawn_color_strategy_;
     std::unique_ptr<TickColorStrategy> tick_color_strategy_;
 
-    void DeleteAllEmitters();
     void EnableAllEmitters();
     void DisableAllEmitters();
 
 private:
+    void ProcessEmitterActions();
+
+    std::unique_ptr<AppGUI> app_gui_;
     std::unique_ptr<klvk::events::IEventListener> event_listener_;
 
     edt::FloatRange2D<float> world_range_{};
@@ -149,6 +155,7 @@ private:
 
     Camera camera_{};
     InstancedPainter instance_painter_{};
+    DiagnosticRenderer diagnostic_renderer_{};
     std::vector<std::unique_ptr<Emitter>> emitters_{};
     PerfStats perf_stats_{};
     Vec3f background_color_{};

@@ -18,7 +18,6 @@
 #include "tools/move_objects_tool.hpp"
 #include "tools/spawn_objects_tool.hpp"
 #include "verlet/json/json_helpers.hpp"
-#include "verlet/json/json_keys.hpp"
 
 namespace verlet
 {
@@ -37,6 +36,7 @@ VerletApp::~VerletApp()
 void VerletApp::Initialize()
 {
     Super::Initialize();
+    app_gui_ = std::make_unique<AppGUI>(*this);
     spawn_color_strategy_ = std::make_unique<SpawnColorStrategyRainbow>(*this);
     InitializeRendering();
 }
@@ -48,8 +48,7 @@ void VerletApp::Tick()
     UpdateCamera();
     UpdateStepping();
     UpdateRenderTransforms();
-    // Tools run whether or not the simulation does, so objects can be painted
-    // into a paused world and then stepped.
+    ProcessEmitterActions();
     UpdateTools();
     if (!paused_ || std::exchange(step_requested_, false)) UpdateSimulation();
     Render();
@@ -72,6 +71,7 @@ void VerletApp::InitializeRendering()
     }
 
     instance_painter_.Initialize(*this, *texture_);
+    diagnostic_renderer_.Initialize(*this);
 }
 
 void VerletApp::UpdateWorldRange(float max_extent_change)
@@ -132,6 +132,12 @@ size_t VerletApp::ObjectsCapacity() const
     return static_cast<size_t>((area.x() * area.y()) / per_object);
 }
 
+size_t VerletApp::RemainingObjectBudget() const
+{
+    const auto count = solver.objects.ObjectsCount();
+    return max_objects_count_ > count ? max_objects_count_ - count : 0;
+}
+
 void VerletApp::UpdateCamera()
 {
     camera_.Update(world_range_);
@@ -162,39 +168,35 @@ void VerletApp::UpdateStepping()
 
 void VerletApp::UpdateSimulation()
 {
-    // Update emitters
-    {
-        // Delete pending kill emitters
-        {
-            auto r = std::ranges::remove(emitters_, true, &Emitter::pending_kill);
-            emitters_.erase(r.begin(), r.end());
-        }
-
-        // Iterate only through emitters that existed before
-        for (const size_t emitter_index : std::views::iota(size_t{0}, emitters_.size()))
-        {
-            auto& emitter = *emitters_[emitter_index];
-            emitter.Tick(*this);
-
-            if (emitter.clone_requested)
-            {
-                emitter.clone_requested = false;
-                auto cloned = emitter.Clone();
-                cloned->ResetRuntimeState();
-                emitters_.push_back(std::move(cloned));
-            }
-        }
-    }
+    for (auto& emitter : emitters_) emitter->Tick(*this);
 
     perf_stats_.sim_update = solver.Update();
     time_steps_++;
+}
+
+void VerletApp::ProcessEmitterActions()
+{
+    auto removed = std::ranges::remove(emitters_, true, &Emitter::pending_kill);
+    emitters_.erase(removed.begin(), removed.end());
+
+    const auto existing_count = emitters_.size();
+    for (const size_t emitter_index : std::views::iota(size_t{0}, existing_count))
+    {
+        auto& emitter = *emitters_[emitter_index];
+        if (!emitter.clone_requested) continue;
+
+        emitter.clone_requested = false;
+        auto cloned = emitter.Clone();
+        cloned->PrepareClone();
+        emitters_.push_back(std::move(cloned));
+    }
 }
 
 void VerletApp::Render()
 {
     UpdateRenderTransforms();
     RenderWorld();
-    AppGUI{*this}.Render();
+    app_gui_->Render();
 }
 
 void VerletApp::UpdateRenderTransforms()
@@ -237,44 +239,12 @@ void VerletApp::LoadAppState(const std::filesystem::path& path)
 
             const auto json = nlohmann::json::parse(content);
 
-            auto window_size = JSONHelpers::Vec2iFromJSON(json[JSONKeys::kWindowSize]).Cast<uint32_t>();
+            ParsedAppState state = JSONHelpers::AppStateFromJSON(json);
 
-            // A preset states the budget one way or the other, never both: they
-            // would disagree the moment the world was a different size.
-            const bool has_count = json.contains(JSONKeys::kMaxObjectsCount);
-            const bool has_saturation = json.contains(JSONKeys::kMaxObjectsSaturation);
-            klvk::ErrorHandling::Ensure(
-                has_count != has_saturation,
-                "A preset must contain exactly one of '{}' and '{}'",
-                JSONKeys::kMaxObjectsCount,
-                JSONKeys::kMaxObjectsSaturation);
-
-            if (has_saturation)
-            {
-                const float saturation = json[JSONKeys::kMaxObjectsSaturation];
-                klvk::ErrorHandling::Ensure(
-                    saturation >= 0.f && saturation <= 1.f,
-                    "{} must be within [0, 1], got {}",
-                    JSONKeys::kMaxObjectsSaturation,
-                    saturation);
-                max_objects_saturation_ = saturation;
-            }
-            else
-            {
-                max_objects_saturation_.reset();
-                max_objects_count_ = json[JSONKeys::kMaxObjectsCount];
-            }
-
-            GetWindow().SetSize(window_size.x(), window_size.y());
-
-            DeleteAllEmitters();
-
-            // Emitters are stored relative to the world, so a preset needs no
-            // adjusting to load into a world of a different size.
-            for (const auto& emitter_json : json[JSONKeys::kEmitters])
-            {
-                AddEmitter(JSONHelpers::EmitterFromJSON(emitter_json));
-            }
+            GetWindow().SetSize(state.window_size.x(), state.window_size.y());
+            max_objects_saturation_ = state.max_objects_saturation;
+            if (state.max_objects_count) max_objects_count_ = *state.max_objects_count;
+            emitters_ = std::move(state.emitters);
         });
 }
 
@@ -330,6 +300,7 @@ void VerletApp::RenderWorld()
             }
 
             instance_painter_.Render(world_to_view_);
+            diagnostic_renderer_.Render(*this, world_to_view_);
         });
 }
 
@@ -361,17 +332,12 @@ Vec2f VerletApp::GetMousePositionInWorldCoordinates() const
     const ImGuiViewport* viewport = ImGui::GetMainViewport();
     const auto mouse_pos = ImGui::GetMousePos();
 
-    Vec2f screen_position{
-        (mouse_pos.x - viewport->Pos.x) * io.DisplayFramebufferScale.x,
-        (mouse_pos.y - viewport->Pos.y) * io.DisplayFramebufferScale.y};
+    const Vec2f framebuffer_scale{io.DisplayFramebufferScale.x, io.DisplayFramebufferScale.y};
+    const Vec2f viewport_position{viewport->Pos.x, viewport->Pos.y};
+    Vec2f screen_position = (Vec2f{mouse_pos.x, mouse_pos.y} - viewport_position) * framebuffer_scale;
 
     screen_position.y() = screen_size.y() - screen_position.y();
     return edt::Math::TransformPos(screen_to_world_, screen_position);
-}
-
-void VerletApp::DeleteAllEmitters()
-{
-    std::ranges::fill(GetEmitters() | std::views::transform(&Emitter::pending_kill), true);
 }
 
 void VerletApp::EnableAllEmitters()

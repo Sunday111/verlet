@@ -6,87 +6,175 @@
 #include <cmath>
 
 #include "edt/math/math.hpp"
-#include "klvk/ui/simple_type_widget.hpp"
 #include "verlet/coloring/spawn_color/spawn_color_strategy.hpp"
+#include "verlet/diagnostics/diagnostic_renderer.hpp"
+#include "verlet/json/json_keys.hpp"
 #include "verlet/object.hpp"
 #include "verlet/physics/verlet_solver.hpp"
 #include "verlet/verlet_app.hpp"
 
 namespace verlet
 {
+namespace
+{
+constexpr float kArrowLength = 0.08f;
+constexpr float kMaxSpeed = 240.f;
+
+[[nodiscard]] Vec2f BisectorDirection(float phase_degrees)
+{
+    return edt::Math::TransformVector(edt::Math::RotationMatrix2d(edt::Math::DegToRad(phase_degrees)), Vec2f::AxisY());
+}
+}  // namespace
 
 RadialEmitter::RadialEmitter(const RadialEmitterConfig& in_config) : config(in_config)
 {
-    state = {.phase_degrees = in_config.phase_degrees};
+    state = {.phase_degrees = NormalizeDegrees(in_config.phase_degrees)};
 }
 
-void RadialEmitter::Tick(VerletApp& app)
+float RadialEmitter::NormalizeDegrees(float degrees)
 {
-    if (!enabled) return;
-    if (app.solver.objects.ObjectsCount() >= app.max_objects_count_) return;
+    if (!std::isfinite(degrees)) return 0.f;
+    return std::remainder(degrees, 360.f);
+}
+
+std::optional<std::string_view> RadialEmitter::ValidateConfig(const RadialEmitterConfig& candidate)
+{
+    if (!candidate.position.IsFinite()) return JSONKeys::kPosition;
+    if (!std::isfinite(candidate.radius) || candidate.radius < 0.f) return JSONKeys::kRadius;
+    if (!std::isfinite(candidate.phase_degrees)) return JSONKeys::kPhaseDegrees;
+    if (!std::isfinite(candidate.sector_degrees) || candidate.sector_degrees < 0.f || candidate.sector_degrees > 360.f)
+    {
+        return JSONKeys::kSectorDegrees;
+    }
+    if (!std::isfinite(candidate.speed_factor) || candidate.speed_factor < -kMaxSpeed ||
+        candidate.speed_factor > kMaxSpeed)
+    {
+        return JSONKeys::kSpeedFactor;
+    }
+    if (!std::isfinite(candidate.rotation_speed)) return JSONKeys::kRotationSpeed;
+    return std::nullopt;
+}
+
+void RadialEmitter::CollectSpawnPoints(const VerletApp& app, std::vector<EmitterSpawnPoint>& out) const
+{
+    out.clear();
 
     const Vec2f origin = app.RelativeToWorld(config.position);
     const float radius = app.RelativeToWorldLength(config.radius);
+    if (!std::isfinite(radius) || radius < 0.f) return;
 
     const float sector_radians = edt::Math::DegToRad(std::clamp(config.sector_degrees, 0.f, 360.f));
     // An emitter small enough to fit fewer than one object across still emits
     // one, otherwise it silently produces nothing at all.
-    const auto num_directions = std::max(
-        size_t{1},
-        static_cast<size_t>(sector_radians * (radius + VerletObject::GetRadius()) / (2 * VerletObject::GetRadius())));
+    const size_t num_directions =
+        ClampSpawnPointCount(sector_radians * (radius + VerletObject::GetRadius()) / (2 * VerletObject::GetRadius()));
     const float phase_radians = sector_radians / 2 + edt::Math::DegToRad(state.phase_degrees);
 
-    auto color_fn = app.spawn_color_strategy_->GetColorFunction();
-
+    out.reserve(num_directions);
     for (size_t i : std::views::iota(size_t{0}, num_directions))
     {
         auto matrix = edt::Math::RotationMatrix2d(
             phase_radians - (sector_radians * static_cast<float>(i)) / static_cast<float>(num_directions));
         auto v = edt::Math::TransformVector(matrix, Vec2f::AxisY());
+        out.push_back({.position = origin + radius * v, .direction = v});
+    }
+}
 
-        Vec2f old_pos = origin + radius * v;
-        Vec2f new_pos = origin + (radius + config.speed_factor * VerletSolver::kTimeStepDurationSeconds) * v;
+void RadialEmitter::DrawShape(const VerletApp& app, DiagnosticRenderer& renderer) const
+{
+    const Vec2f origin = app.RelativeToWorld(config.position);
+    const float radius = app.RelativeToWorldLength(config.radius);
+    if (!std::isfinite(radius) || radius < 0.f) return;
 
+    renderer.DrawEmitterRing(origin, radius);
+
+    const Vec2f direction = BisectorDirection(state.phase_degrees);
+    renderer.DrawEmitterArrow(origin + direction * radius, direction, app.RelativeToWorldLength(kArrowLength));
+}
+
+void RadialEmitter::Tick(VerletApp& app)
+{
+    if (!enabled)
+    {
+        last_emission_was_truncated_ = false;
+        return;
+    }
+
+    CollectSpawnPoints(app, spawn_points_);
+    const size_t remaining = app.RemainingObjectBudget();
+    const size_t spawn_count = std::min(remaining, spawn_points_.size());
+    last_emission_was_truncated_ = spawn_count < spawn_points_.size();
+
+    auto color_fn = app.spawn_color_strategy_->GetColorFunction();
+    for (const size_t index : std::views::iota(size_t{0}, spawn_count))
+    {
+        const auto& spawn_point = spawn_points_[index];
         auto [id, object] = app.solver.objects.Alloc();
-        object.position = new_pos;
-        object.old_position = old_pos;
+        std::ignore = id;
+        object.old_position = spawn_point.position;
+        object.position = spawn_point.position +
+                          spawn_point.direction * (config.speed_factor * VerletSolver::kTimeStepDurationSeconds);
         object.movable = true;
         object.color = color_fn(object);
     }
 
-    state.phase_degrees += config.rotation_speed;
+    state.phase_degrees = NormalizeDegrees(state.phase_degrees + config.rotation_speed);
 }
 
 void RadialEmitter::GUI()
 {
     ImGui::PushID(this);
-    if (ImGui::CollapsingHeader("Radial"))
+    bool changed = false;
+
+    const Vec2f old_position = config.position;
+    changed |= ImGui::DragFloat2("Position", config.position.data(), 0.01f, -1.f, 1.f, "%.2f");
+    if (!config.position.IsFinite()) config.position = old_position;
+
+    const float old_phase = config.phase_degrees;
+    if (ImGui::SliderFloat("Phase", &config.phase_degrees, -180.f, 180.f, "%.0f deg"))
     {
-        DeleteButton();
-        ImGui::SameLine();
-        CloneButton();
-        EnabledCheckbox();
-
-        bool c = false;
-        c |= klvk::SimpleTypeWidget("location", config.position);
-        c |= klvk::SimpleTypeWidget("phase degrees", config.phase_degrees);
-        c |= klvk::SimpleTypeWidget("sector degrees", config.sector_degrees);
-        c |= klvk::SimpleTypeWidget("radius", config.radius);
-        c |= klvk::SimpleTypeWidget("speed factor", config.speed_factor);
-        c |= klvk::SimpleTypeWidget("rotation speed", config.rotation_speed);
-
-        if (c)
-        {
-            ResetRuntimeState();
-        }
+        config.phase_degrees = std::isfinite(config.phase_degrees) ? NormalizeDegrees(config.phase_degrees) : old_phase;
+        changed = true;
     }
+
+    const float old_sector = config.sector_degrees;
+    changed |=
+        ImGui::SliderFloat("Sector", &config.sector_degrees, 0.f, 360.f, "%.0f deg", ImGuiSliderFlags_AlwaysClamp);
+    if (!std::isfinite(config.sector_degrees)) config.sector_degrees = old_sector;
+
+    const float old_radius = config.radius;
+    changed |= ImGui::DragFloat("Radius", &config.radius, 0.01f, 0.f, 1.f, "%.2f");
+    if (!std::isfinite(config.radius)) config.radius = old_radius;
+    config.radius = std::max(config.radius, 0.f);
+
+    const float old_speed = config.speed_factor;
+    changed |= ImGui::DragFloat(
+        "Speed",
+        &config.speed_factor,
+        0.5f,
+        -kMaxSpeed,
+        kMaxSpeed,
+        "%.1f world units/s",
+        ImGuiSliderFlags_AlwaysClamp);
+    if (!std::isfinite(config.speed_factor)) config.speed_factor = old_speed;
+
+    const float old_rotation = config.rotation_speed;
+    if (ImGui::DragFloat("Rotation", &config.rotation_speed, 0.1f, -10.f, 10.f, "%.1f deg/tick"))
+    {
+        config.rotation_speed =
+            std::isfinite(config.rotation_speed) ? NormalizeDegrees(config.rotation_speed) : old_rotation;
+        changed = true;
+    }
+
+    if (changed) ResetConfigurationState();
+    if (last_emission_was_truncated_) ImGui::TextUnformatted("Output limited by the object budget");
     ImGui::PopID();
 }
 
-void RadialEmitter::ResetRuntimeState()
+void RadialEmitter::ResetConfigurationState()
 {
-    Emitter::ResetRuntimeState();
-    state = {.phase_degrees = config.phase_degrees};
+    Emitter::ResetConfigurationState();
+    state = {.phase_degrees = NormalizeDegrees(config.phase_degrees)};
 }
 
 std::unique_ptr<Emitter> RadialEmitter::Clone() const

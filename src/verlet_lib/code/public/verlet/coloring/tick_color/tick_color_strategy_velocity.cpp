@@ -1,5 +1,7 @@
 #include "tick_color_strategy_velocity.hpp"
 
+#include <cmath>
+
 #include "imgui.h"
 #include "verlet/object.hpp"
 #include "verlet/physics/verlet_solver.hpp"
@@ -19,7 +21,15 @@ ObjectColorFunction TickColorStrategyVelocity ::GetColorFunction()
 
 void TickColorStrategyVelocity::DrawGUI()
 {
-    ImGui::SliderFloat("Red Speed", &red_speed_, 1.f, 20.f);
+    const float old_speed = red_speed_;
+    ImGui::SliderFloat(
+        "Red threshold",
+        &red_speed_,
+        0.1f,
+        240.f,
+        "%.1f world units/s",
+        ImGuiSliderFlags_Logarithmic | ImGuiSliderFlags_AlwaysClamp);
+    if (!std::isfinite(red_speed_)) red_speed_ = old_speed;
 }
 
 edt::Vec4<uint8_t> TickColorStrategyVelocity::Gradient(float fraction)
