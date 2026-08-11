@@ -55,6 +55,15 @@ void AppGUI::Render()
 
     Sidebar();
     if (inspector_open_) InspectorWindow();
+    if (imgui_font_atlas_open_)
+    {
+        const ImFontAtlas& atlas = *ImGui::GetIO().Fonts;
+        imgui_font_atlas_viewer_.Draw(
+            atlas.TexID,
+            edt::Vec2<uint32_t>{static_cast<uint32_t>(atlas.TexWidth), static_cast<uint32_t>(atlas.TexHeight)},
+            {},
+            &imgui_font_atlas_open_);
+    }
 }
 
 void AppGUI::Sidebar()
@@ -393,6 +402,8 @@ void AppGUI::Appearance()
 
 void AppGUI::Diagnostics()
 {
+    ImGui::Checkbox("Dear ImGui font atlas", &imgui_font_atlas_open_);
+    ImGui::SeparatorText("World overlays");
     auto& options = app_->GetDiagnosticRenderer().options;
     ImGui::Checkbox("Enabled", &options.enabled);
     ImGui::BeginDisabled(!options.enabled);
