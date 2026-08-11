@@ -1,15 +1,29 @@
 #pragma once
 
+#include <cstddef>
+#include <cstdint>
+#include <memory>
 #include <nlohmann/json.hpp>
+#include <optional>
+#include <string_view>
+#include <vector>
 
 #include "edt/math/matrix.hpp"
+#include "verlet/emitters/emitter.hpp"
 
 namespace verlet
 {
 class VerletApp;
-class Emitter;
 class RadialEmitterConfig;
 class FlatEmitterConfig;
+
+struct ParsedAppState
+{
+    edt::Vec2<uint32_t> window_size;
+    std::optional<size_t> max_objects_count;
+    std::optional<float> max_objects_saturation;
+    std::vector<std::unique_ptr<Emitter>> emitters;
+};
 
 class JSONHelpers
 {
@@ -33,5 +47,6 @@ public:
     static std::unique_ptr<Emitter> EmitterFromJSON(const nlohmann::json& json);
 
     static nlohmann::json AppStateToJSON(const VerletApp& app);
+    static ParsedAppState AppStateFromJSON(const nlohmann::json& json);
 };
 }  // namespace verlet

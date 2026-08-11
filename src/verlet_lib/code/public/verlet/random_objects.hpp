@@ -25,6 +25,7 @@ public:
 };
 
 // Scatters objects over the solver's simulation area, each moving in a random direction.
+[[nodiscard]] size_t SpawnRandomObjects(VerletSolver& solver, const RandomObjectsParams& params, size_t maximum_count);
 void SpawnRandomObjects(VerletSolver& solver, const RandomObjectsParams& params);
 
 }  // namespace verlet

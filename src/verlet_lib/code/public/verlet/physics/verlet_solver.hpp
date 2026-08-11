@@ -158,6 +158,15 @@ public:
     void SolveCollisions(size_t pass_offset, size_t thread_index, size_t threads_count);
     void UpdatePositions(size_t thread_index, size_t threads_count);
 
+    template <typename Visitor>
+    void ForEachLink(Visitor&& visit) const
+    {
+        for (const auto& [object_id, links] : linked_to)
+        {
+            for (const auto& link : links) visit(object_id, link.other, link.target_distance);
+        }
+    }
+
     void DeleteObject(ObjectId id);
     void DeleteAll();
     void StabilizeChain(ObjectId first);

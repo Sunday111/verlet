@@ -11,6 +11,7 @@ void SpawnObjectsTool::Tick()
 {
     if (ImGui::IsMouseClicked(ImGuiMouseButton_Left) && !ImGui::GetIO().WantCaptureMouse)
     {
+        if (app_.RemainingObjectBudget() == 0) return;
         const auto mouse_position = app_.GetMousePositionInWorldCoordinates();
 
         auto rgb = edt::Math::GetRainbowColors(app_.GetTimeSeconds());

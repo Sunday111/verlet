@@ -36,7 +36,7 @@ static_assert(ChunkBegin(2, 8, 5) == 2);
 
 VerletSolver::VerletSolver()
 {
-    SetThreadsCount(std::thread::hardware_concurrency());
+    SetThreadsCount(std::max(1u, std::thread::hardware_concurrency()));
 }
 
 void VerletSolver::SolveCollisions(size_t pass_offset, size_t thread_index, size_t threads_count)
@@ -299,6 +299,7 @@ size_t VerletSolver::GetThreadsCount() const
 
 void VerletSolver::SetThreadsCount(size_t count)
 {
+    count = std::max(size_t{1}, count);
     if (!batch_thread_pool_ || count != GetThreadsCount())
     {
         batch_thread_pool_ = std::make_unique<edt::BatchThreadPool>(count);

@@ -2,6 +2,9 @@
 
 #include <imgui.h>
 
+#include <algorithm>
+#include <cmath>
+
 #include "fmt/ranges.h"  // IWYU pragma: keep
 #include "verlet/verlet_app.hpp"
 
@@ -43,10 +46,9 @@ void DeleteObjectsTool::DrawInWorld()
 void DeleteObjectsTool::DrawGUI()
 {
     ImGui::Text("Left click to delete objects");  // NOLINT
-    ImGui::SliderFloat("Delete radius", &delete_radius_, 0.1f, 100.f);
-    if (ImGui::Button("Delete all"))
-    {
-        app_.solver.DeleteAll();
-    }
+    const float old_radius = delete_radius_;
+    ImGui::DragFloat("Delete radius", &delete_radius_, 0.1f, 0.f, 0.f, "%.1f world units");
+    if (!std::isfinite(delete_radius_)) delete_radius_ = old_radius;
+    delete_radius_ = std::max(delete_radius_, 0.f);
 }
 }  // namespace verlet

@@ -1,5 +1,8 @@
 #include "verlet/json/json_helpers.hpp"
 
+#include <cmath>
+#include <limits>
+
 #include "ass/fixed_unordered_map.hpp"
 #include "klvk/error_handling.hpp"
 #include "klvk/macro/ensure_enum_size.hpp"
@@ -66,7 +69,7 @@ public:
         requires(std::same_as<T, float>)
     static float GetKey(const nlohmann::json& json, const std::string_view& key)
     {
-        if (const nlohmann::json& value = JSONHelpers::GetKey(json, key); value.is_number_float())
+        if (const nlohmann::json& value = JSONHelpers::GetKey(json, key); value.is_number())
         {
             return value;
         }
@@ -107,6 +110,29 @@ public:
             json.dump(4, ' '));
     }
 };
+
+namespace
+{
+[[nodiscard]] size_t ObjectCountFromJSON(const nlohmann::json& json)
+{
+    if (json.is_number_unsigned())
+    {
+        const uint64_t value = json.get<uint64_t>();
+        if (value > std::numeric_limits<size_t>::max())
+        {
+            throw klvk::ErrorHandling::RuntimeErrorWithMessage("is too large");
+        }
+        return static_cast<size_t>(value);
+    }
+    if (json.is_number_integer())
+    {
+        const int64_t value = json.get<int64_t>();
+        if (value < 0) throw klvk::ErrorHandling::RuntimeErrorWithMessage("must be nonnegative");
+        return static_cast<size_t>(value);
+    }
+    throw klvk::ErrorHandling::RuntimeErrorWithMessage("must be a nonnegative integer");
+}
+}  // namespace
 
 const nlohmann::json& JSONHelpers::GetKey(const nlohmann::json& json, const std::string_view& key)
 {
@@ -246,12 +272,24 @@ std::unique_ptr<Emitter> JSONHelpers::EmitterFromJSON(const nlohmann::json& json
     switch (type)
     {
     case EmitterType::Radial:
-        return std::make_unique<RadialEmitter>(RadialEmitterFromJSON(inner));
-        break;
+    {
+        const RadialEmitterConfig config = RadialEmitterFromJSON(inner);
+        if (const auto invalid = RadialEmitter::ValidateConfig(config))
+        {
+            throw klvk::ErrorHandling::RuntimeErrorWithMessage("{}.{} is invalid", type_str, *invalid);
+        }
+        return std::make_unique<RadialEmitter>(config);
+    }
 
     case EmitterType::Flat:
-        return std::make_unique<FlatEmitter>(FlatEmitterFromJSON(inner));
-        break;
+    {
+        const FlatEmitterConfig config = FlatEmitterFromJSON(inner);
+        if (const auto invalid = FlatEmitter::ValidateConfig(config))
+        {
+            throw klvk::ErrorHandling::RuntimeErrorWithMessage("{}.{} is invalid", type_str, *invalid);
+        }
+        return std::make_unique<FlatEmitter>(config);
+    }
 
     default:
         throw klvk::ErrorHandling::RuntimeErrorWithMessage("Unhandled type of emitter: {}", type_str);
@@ -280,6 +318,96 @@ nlohmann::json JSONHelpers::AppStateToJSON(const VerletApp& app)
     }
 
     return json;
+}
+
+ParsedAppState JSONHelpers::AppStateFromJSON(const nlohmann::json& json)
+{
+    ParsedAppState state;
+
+    try
+    {
+        const edt::Vec2i window_size = Vec2iFromJSON(GetKey(json, JSONKeys::kWindowSize));
+        constexpr int minimum_window_extent = 100;
+        constexpr int maximum_window_extent = 5000;
+        klvk::ErrorHandling::Ensure(
+            window_size.x() >= minimum_window_extent && window_size.x() <= maximum_window_extent,
+            "{}.{} must be within [{}, {}], got {}",
+            JSONKeys::kWindowSize,
+            JSONKeys::kX,
+            minimum_window_extent,
+            maximum_window_extent,
+            window_size.x());
+        klvk::ErrorHandling::Ensure(
+            window_size.y() >= minimum_window_extent && window_size.y() <= maximum_window_extent,
+            "{}.{} must be within [{}, {}], got {}",
+            JSONKeys::kWindowSize,
+            JSONKeys::kY,
+            minimum_window_extent,
+            maximum_window_extent,
+            window_size.y());
+        state.window_size = window_size.Cast<uint32_t>();
+    }
+    catch (const std::exception& error)
+    {
+        throw klvk::ErrorHandling::RuntimeErrorWithMessage("{}: {}", JSONKeys::kWindowSize, error.what());
+    }
+
+    const bool has_count = json.contains(JSONKeys::kMaxObjectsCount);
+    const bool has_saturation = json.contains(JSONKeys::kMaxObjectsSaturation);
+    klvk::ErrorHandling::Ensure(
+        has_count != has_saturation,
+        "A preset must contain exactly one of '{}' and '{}'",
+        JSONKeys::kMaxObjectsCount,
+        JSONKeys::kMaxObjectsSaturation);
+
+    if (has_saturation)
+    {
+        try
+        {
+            const float saturation = Internal::GetKey<float>(json, JSONKeys::kMaxObjectsSaturation);
+            klvk::ErrorHandling::Ensure(
+                std::isfinite(saturation) && saturation >= 0.f && saturation <= 1.f,
+                "must be finite and within [0, 1], got {}",
+                saturation);
+            state.max_objects_saturation = saturation;
+        }
+        catch (const std::exception& error)
+        {
+            throw klvk::ErrorHandling::RuntimeErrorWithMessage("{}: {}", JSONKeys::kMaxObjectsSaturation, error.what());
+        }
+    }
+    else
+    {
+        try
+        {
+            state.max_objects_count = ObjectCountFromJSON(GetKey(json, JSONKeys::kMaxObjectsCount));
+        }
+        catch (const std::exception& error)
+        {
+            throw klvk::ErrorHandling::RuntimeErrorWithMessage("{}: {}", JSONKeys::kMaxObjectsCount, error.what());
+        }
+    }
+
+    const auto& emitters = GetKey(json, JSONKeys::kEmitters);
+    klvk::ErrorHandling::Ensure(emitters.is_array(), "{} must be an array", JSONKeys::kEmitters);
+    state.emitters.reserve(emitters.size());
+    for (size_t emitter_index = 0; emitter_index != emitters.size(); ++emitter_index)
+    {
+        try
+        {
+            state.emitters.push_back(EmitterFromJSON(emitters[emitter_index]));
+        }
+        catch (const std::exception& error)
+        {
+            throw klvk::ErrorHandling::RuntimeErrorWithMessage(
+                "{}[{}]: {}",
+                JSONKeys::kEmitters,
+                emitter_index,
+                error.what());
+        }
+    }
+
+    return state;
 }
 
 }  // namespace verlet

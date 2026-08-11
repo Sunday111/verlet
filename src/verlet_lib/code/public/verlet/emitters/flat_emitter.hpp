@@ -1,5 +1,8 @@
 #pragma once
 
+#include <optional>
+#include <string_view>
+
 #include "edt/math/matrix.hpp"
 #include "emitter.hpp"
 
@@ -36,15 +39,19 @@ public:
     explicit FlatEmitter(const FlatEmitterConfig& in_config);
 
     void Tick(VerletApp& app) override;
+    void CollectSpawnPoints(const VerletApp& app, std::vector<EmitterSpawnPoint>& out) const override;
+    void DrawShape(const VerletApp& app, DiagnosticRenderer& renderer) const override;
     void GUI() override;
     [[nodiscard]] std::unique_ptr<Emitter> Clone() const override;
     [[nodiscard]] constexpr EmitterType GetType() const override { return EmitterType::Flat; }
+
+    [[nodiscard]] static std::optional<std::string_view> ValidateConfig(const FlatEmitterConfig& config);
 
     FlatEmitterConfig config{};
 
 private:
     // The configured direction resolved into the world, whichever frame it was
     // written in.
-    [[nodiscard]] edt::Vec2f WorldDirection(const edt::Vec2f& span, float length) const;
+    [[nodiscard]] std::optional<edt::Vec2f> WorldDirection(const edt::Vec2f& span, float length) const;
 };
 }  // namespace verlet

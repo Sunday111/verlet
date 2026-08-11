@@ -1,5 +1,8 @@
 #pragma once
 
+#include <optional>
+#include <string_view>
+
 #include "edt/math/matrix.hpp"
 #include "emitter.hpp"
 
@@ -36,10 +39,15 @@ public:
     explicit RadialEmitter(const RadialEmitterConfig& in_config);
 
     void Tick(VerletApp& app) override;
+    void CollectSpawnPoints(const VerletApp& app, std::vector<EmitterSpawnPoint>& out) const override;
+    void DrawShape(const VerletApp& app, DiagnosticRenderer& renderer) const override;
     void GUI() override;
     [[nodiscard]] std::unique_ptr<Emitter> Clone() const override;
     [[nodiscard]] constexpr EmitterType GetType() const override { return EmitterType::Radial; }
-    void ResetRuntimeState() override;
+    void ResetConfigurationState() override;
+
+    [[nodiscard]] static std::optional<std::string_view> ValidateConfig(const RadialEmitterConfig& config);
+    [[nodiscard]] static float NormalizeDegrees(float degrees);
 
     RadialEmitterConfig config{};
     RadialEmitterState state{};

@@ -3,8 +3,9 @@
 #include <imgui.h>
 
 #include <algorithm>
+#include <cmath>
+#include <cstdint>
 
-#include "klvk/ui/imgui_helpers.hpp"
 #include "verlet/verlet_app.hpp"
 
 namespace verlet
@@ -12,28 +13,47 @@ namespace verlet
 
 void SpawnRandomObjectsTool::DrawGUI()
 {
-    ImGui::Text("Fills the world with objects going in random directions");  // NOLINT
+    ImGui::TextUnformatted("Fills the world with objects moving in random directions");
 
-    klvk::ImGuiHelper::SliderUInt("Count", &params_.count, size_t{1}, size_t{200'000});
+    uint64_t count = params_.count;
+    constexpr uint64_t min_count = 0;
+    const uint64_t max_count = std::max<uint64_t>(app_.max_objects_count_, count);
+    if (ImGui::SliderScalar(
+            "Count",
+            ImGuiDataType_U64,
+            &count,
+            &min_count,
+            &max_count,
+            "%llu",
+            ImGuiSliderFlags_Logarithmic | ImGuiSliderFlags_AlwaysClamp))
+    {
+        params_.count = static_cast<size_t>(count);
+    }
 
-    int seed = static_cast<int>(params_.seed);
-    if (ImGui::InputInt("Seed", &seed)) params_.seed = static_cast<uint32_t>(std::max(0, seed));
+    ImGui::InputScalar("Seed", ImGuiDataType_U32, &params_.seed);
 
-    ImGui::SliderFloat("Max speed", &params_.max_speed, 0.f, 100.f);
+    const float old_speed = params_.max_speed;
+    ImGui::DragFloat(
+        "Max speed",
+        &params_.max_speed,
+        0.5f,
+        0.f,
+        240.f,
+        "%.1f world units/s",
+        ImGuiSliderFlags_AlwaysClamp);
+    if (!std::isfinite(params_.max_speed)) params_.max_speed = old_speed;
     ImGui::Checkbox("Movable", &params_.movable);
+}
 
-    if (ImGui::Button("Spawn"))
-    {
-        SpawnRandomObjects(app_.solver, params_);
-    }
+size_t SpawnRandomObjectsTool::Spawn()
+{
+    return SpawnRandomObjects(app_.solver, params_, app_.RemainingObjectBudget());
+}
 
-    ImGui::SameLine();
-
-    if (ImGui::Button("Replace all"))
-    {
-        app_.solver.DeleteAll();
-        SpawnRandomObjects(app_.solver, params_);
-    }
+size_t SpawnRandomObjectsTool::ReplaceAll()
+{
+    app_.solver.DeleteAll();
+    return SpawnRandomObjects(app_.solver, params_, app_.max_objects_count_);
 }
 
 }  // namespace verlet

@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 3.20)
 include(set_compiler_options)
 set(module_source_files
+    ${CMAKE_CURRENT_SOURCE_DIR}/code/private/emitter_and_spawn_behavior.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/object_pool.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/verlet_solver.cpp)
 add_executable(verlet_tests ${module_source_files})

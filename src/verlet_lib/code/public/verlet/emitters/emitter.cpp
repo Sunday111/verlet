@@ -1,34 +1,38 @@
 #include "emitter.hpp"
 
-#include <imgui.h>
+#include "verlet/diagnostics/diagnostic_renderer.hpp"
 
 namespace verlet
 {
-void Emitter::DeleteButton()
+void Emitter::DrawDiagnostics(const VerletApp& app, DiagnosticRenderer& renderer) const
 {
-    if (!pending_kill && ImGui::Button("Delete"))
+    DrawShape(app, renderer);
+
+    CollectSpawnPoints(app, spawn_points_);
+    for (const auto& spawn_point : spawn_points_)
     {
-        pending_kill = true;
-    }
-}
-void Emitter::CloneButton()
-{
-    if (!clone_requested && ImGui::Button("Clone"))
-    {
-        clone_requested = true;
+        renderer.DrawSpawnPoint(spawn_point.position);
     }
 }
 
-void Emitter::EnabledCheckbox()
+void Emitter::ResetConfigurationState()
 {
-    ImGui::Checkbox("Enabled", &enabled);
+    last_emission_was_truncated_ = false;
 }
 
 void Emitter::ResetRuntimeState()
 {
     pending_kill = false;
     clone_requested = false;
+    ResetConfigurationState();
+}
+
+void Emitter::PrepareClone()
+{
+    pending_kill = false;
+    clone_requested = false;
     enabled = false;
+    ResetConfigurationState();
 }
 
 }  // namespace verlet

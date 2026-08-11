@@ -31,7 +31,7 @@ private:
 };
 }  // namespace
 
-void SpawnRandomObjects(VerletSolver& solver, const RandomObjectsParams& params)
+size_t SpawnRandomObjects(VerletSolver& solver, const RandomObjectsParams& params, size_t maximum_count)
 {
     // What UpdatePositions clamps to, less the radius, so a spawned object starts inside the
     // area it will be held in rather than being pulled to the edge on its first step.
@@ -42,7 +42,8 @@ void SpawnRandomObjects(VerletSolver& solver, const RandomObjectsParams& params)
     const float max_speed = std::clamp(params.max_speed, 0.f, kMaxResolvableSpeed);
 
     Random random{params.seed};
-    for ([[maybe_unused]] const size_t index : std::views::iota(size_t{0}, params.count))
+    const size_t count = std::min(params.count, maximum_count);
+    for ([[maybe_unused]] const size_t index : std::views::iota(size_t{0}, count))
     {
         const Vec2f position{random.Between(area.x.begin, area.x.end), random.Between(area.y.begin, area.y.end)};
 
@@ -59,6 +60,13 @@ void SpawnRandomObjects(VerletSolver& solver, const RandomObjectsParams& params)
         const auto rgb = edt::Math::GetRainbowColors(random.UnitInterval());
         object.color = {rgb.x(), rgb.y(), rgb.z(), 255};
     }
+
+    return count;
+}
+
+void SpawnRandomObjects(VerletSolver& solver, const RandomObjectsParams& params)
+{
+    std::ignore = SpawnRandomObjects(solver, params, params.count);
 }
 
 }  // namespace verlet
