@@ -79,7 +79,7 @@ private:
     bool thread_count_initialized_ = false;
     edt::Vec2i window_size_{};
     int thread_count_ = 1;
-    klvk::ImGuiTextureViewer imgui_font_atlas_viewer_{"Dear ImGui font atlas"};
-    bool imgui_font_atlas_open_ = false;
+    klvk::ImGuiTextureViewer particle_texture_viewer_{"Particle texture"};
+    bool particle_texture_open_ = false;
 };
 }  // namespace verlet
