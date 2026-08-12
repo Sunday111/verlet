@@ -208,6 +208,9 @@ add_subdirectory(${YAE_klvk_post_processing_example_SOURCES} yae_modules/Sunday1
 set(YAE_klvk_render_to_texture_example_SOURCES ${YAE_CLONED_REPOSITORIES_DIR}/Sunday111/klvk/main/examples/render_to_texture)
 add_subdirectory(${YAE_klvk_render_to_texture_example_SOURCES} yae_modules/Sunday111/klvk/main/examples/render_to_texture SYSTEM)
 
+set(YAE_klvk_sampler_enums_test_SOURCES ${YAE_CLONED_REPOSITORIES_DIR}/Sunday111/klvk/main/tests/sampler_enums)
+add_subdirectory(${YAE_klvk_sampler_enums_test_SOURCES} yae_modules/Sunday111/klvk/main/tests/sampler_enums SYSTEM)
+
 set(YAE_klvk_shader_cache_test_SOURCES ${YAE_CLONED_REPOSITORIES_DIR}/Sunday111/klvk/main/tests/shader_cache)
 add_subdirectory(${YAE_klvk_shader_cache_test_SOURCES} yae_modules/Sunday111/klvk/main/tests/shader_cache SYSTEM)
 

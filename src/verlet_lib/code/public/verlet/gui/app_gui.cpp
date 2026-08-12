@@ -11,6 +11,7 @@
 
 #include "klvk/platform/file_dialog.hpp"
 #include "klvk/ui/imgui_helpers.hpp"
+#include "klvk/vulkan/texture.hpp"
 #include "verlet/coloring/spawn_color/spawn_color_strategy.hpp"
 #include "verlet/coloring/spawn_color/spawn_color_strategy_rainbow.hpp"
 #include "verlet/coloring/tick_color/tick_color_strategy.hpp"
@@ -55,6 +56,16 @@ void AppGUI::Render()
 
     Sidebar();
     if (inspector_open_) InspectorWindow();
+    if (particle_texture_open_)
+    {
+        const klvk::Texture& texture = app_->GetParticleTexture();
+        particle_texture_viewer_.Draw(
+            app_->GetDeviceContext(),
+            texture.GetView(),
+            texture.GetSize(),
+            "Circle mask",
+            &particle_texture_open_);
+    }
 }
 
 void AppGUI::Sidebar()
@@ -393,6 +404,8 @@ void AppGUI::Appearance()
 
 void AppGUI::Diagnostics()
 {
+    ImGui::Checkbox("Particle texture", &particle_texture_open_);
+    ImGui::SeparatorText("World overlays");
     auto& options = app_->GetDiagnosticRenderer().options;
     ImGui::Checkbox("Enabled", &options.enabled);
     ImGui::BeginDisabled(!options.enabled);

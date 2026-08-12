@@ -102,6 +102,7 @@ public:
     [[nodiscard]] const edt::FloatRange2Df& GetWorldRange() const { return world_range_; }
     [[nodiscard]] const edt::Vec3f& GetBackgroundColor() const { return background_color_; }
     [[nodiscard]] const Mat3f& GetWorldToViewTransform() const { return world_to_view_; }
+    [[nodiscard]] const klvk::Texture& GetParticleTexture() const { return *texture_; }
     void SetBackgroundColor(const Vec3f& background_color);
     void AddEmitter(std::unique_ptr<Emitter> emitter);
 
