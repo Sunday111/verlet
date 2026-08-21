@@ -24,14 +24,11 @@ namespace verlet
 
 VerletApp::VerletApp()
 {
-    event_listener_ = klvk::events::EventListenerMethodCallbacks<&VerletApp::OnMouseScroll>::CreatePtr(this);
-    GetEventManager().AddEventListener(*event_listener_);
+    event_subscription_ = GetEventManager().AddEventListener(
+        klvk::events::EventListenerMethodCallbacks<&VerletApp::OnMouseScroll>::CreatePtr(this));
 }
 
-VerletApp::~VerletApp()
-{
-    GetEventManager().RemoveListener(event_listener_.get());
-}
+VerletApp::~VerletApp() = default;
 
 void VerletApp::Initialize()
 {

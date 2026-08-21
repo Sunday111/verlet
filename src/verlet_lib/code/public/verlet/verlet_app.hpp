@@ -10,6 +10,7 @@
 #include "emitters/emitter.hpp"
 #include "instance_painter.hpp"
 #include "klvk/application.hpp"
+#include "klvk/events/event_manager.hpp"
 #include "klvk/window.hpp"
 #include "physics/verlet_solver.hpp"
 
@@ -20,7 +21,6 @@ class Texture;
 
 namespace klvk::events
 {
-class IEventListener;
 class OnMouseScroll;
 };  // namespace klvk::events
 
@@ -148,7 +148,6 @@ private:
     void ProcessEmitterActions();
 
     std::unique_ptr<AppGUI> app_gui_;
-    std::unique_ptr<klvk::events::IEventListener> event_listener_;
 
     edt::FloatRange2D<float> world_range_{};
 
@@ -165,6 +164,7 @@ private:
     Mat3f world_to_view_;
 
     Mat3f screen_to_world_;
+    klvk::events::EventSubscription event_subscription_;
 };
 
 }  // namespace verlet
