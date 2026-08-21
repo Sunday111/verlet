@@ -247,20 +247,16 @@ void VerletApp::LoadAppState(const std::filesystem::path& path)
 
 void VerletApp::SavePositions(const std::filesystem::path& path) const
 {
-    klvk::ErrorHandling::InvokeAndCatchAll(
-        [&]
-        {
-            std::string buffer;
-            auto inserter = std::back_inserter(buffer);
+    std::string buffer;
+    auto inserter = std::back_inserter(buffer);
 
-            fmt::format_to(inserter, "{}\n", solver.objects.ObjectsCount());
-            for (const auto& object : solver.objects.Objects())
-            {
-                fmt::format_to(inserter, "{} {}\n", object.position.x(), object.position.y());
-            }
+    fmt::format_to(inserter, "{}\n", solver.objects.ObjectsCount());
+    for (const auto& object : solver.objects.Objects())
+    {
+        fmt::format_to(inserter, "{} {}\n", object.position.x(), object.position.y());
+    }
 
-            klvk::Filesystem::WriteFile(path, buffer);
-        });
+    klvk::Filesystem::WriteFile(path, buffer);
 }
 
 void VerletApp::RenderWorld()

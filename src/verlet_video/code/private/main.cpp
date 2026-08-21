@@ -12,6 +12,8 @@
 #include "fmt/core.h"
 #include "fmt/std.h"  // IWYU pragma: keep
 #include "klvk/error_handling.hpp"
+#include "klvk/events/application_events.hpp"
+#include "klvk/events/event_manager.hpp"
 #include "klvk/filesystem/filesystem.hpp"
 #include "klvk/image/image_decoder.hpp"
 #include "klvk/platform/os/os.hpp"
@@ -28,9 +30,8 @@ struct Inputs
 {
     std::filesystem::path preset;
     std::filesystem::path image;
-    // Nothing means the settled positions are simulated rather than read back
-    // from a dump an interactive session wrote.
     std::optional<std::filesystem::path> positions;
+    std::optional<std::filesystem::path> output_positions;
 };
 
 // A run can go for many minutes without printing anything, which looks exactly
@@ -184,9 +185,17 @@ public:
         const u64 settle_frames = SettleFrames();
         progress_.emplace(started_, settle_frames, GetDiagnosticExitFrame());
 
+        const std::vector<edt::Vec2f> settled_positions = SettledPositions(settle_frames);
+        if (inputs_.output_positions)
+        {
+            SavePositions(*inputs_.output_positions);
+            fmt::println("Wrote {} settled positions to {}", settled_positions.size(), *inputs_.output_positions);
+            GetEventManager().Emit(klvk::events::OnApplicationQuitRequested{});
+            return;
+        }
+
         auto color_strategy = std::make_unique<SpawnColorStrategyArray>(*this);
-        color_strategy->colors =
-            SampleColors(ReadImage(inputs_.image), SettledPositions(settle_frames), solver.GetSimArea());
+        color_strategy->colors = SampleColors(ReadImage(inputs_.image), settled_positions, solver.GetSimArea());
 
         solver.DeleteAll();
         for (auto& emitter : GetEmitters()) emitter.ResetRuntimeState();
@@ -271,6 +280,12 @@ void Main(int argc, char** argv)
     };
 
     const auto executable_dir = klvk::os::GetExecutableDir();
+    const auto positions = option("--positions").transform([](auto v) { return std::filesystem::path{v}; });
+    const auto output_positions = option("--save-positions").transform([](auto v) { return std::filesystem::path{v}; });
+    klvk::ErrorHandling::Ensure(
+        !positions.has_value() || !output_positions.has_value(),
+        "--positions and --save-positions cannot be used together");
+
     verlet::VerletVideoApp app{{
         .preset = option("--preset")
                       .transform([](auto v) { return std::filesystem::path{v}; })
@@ -278,7 +293,8 @@ void Main(int argc, char** argv)
         .image = option("--image")
                      .transform([](auto v) { return std::filesystem::path{v}; })
                      .value_or(executable_dir / "content" / "target_image.png"),
-        .positions = option("--positions").transform([](auto v) { return std::filesystem::path{v}; }),
+        .positions = positions,
+        .output_positions = output_positions,
     }};
 
     app.RunWithArguments(argc, argv);

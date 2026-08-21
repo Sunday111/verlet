@@ -205,15 +205,21 @@ TEST(AppStateJSONTest, ParsesCompletePresetBeforeCommit)  // NOLINT
     EXPECT_EQ(committed.emitters.size(), 2U);
 }
 
-TEST(AppStateJSONTest, RejectsNegativeAndOversizedWindowFields)  // NOLINT
+TEST(AppStateJSONTest, ValidatesWindowFieldBounds)  // NOLINT
 {
     auto json = ValidAppStateJSON();
+    json[verlet::JSONKeys::kWindowSize][verlet::JSONKeys::kX] = 8192;
+    json[verlet::JSONKeys::kWindowSize][verlet::JSONKeys::kY] = 8192;
+    const auto maximum = verlet::JSONHelpers::AppStateFromJSON(json);
+    EXPECT_EQ(maximum.window_size, (edt::Vec2<uint32_t>{8192, 8192}));
+
+    json = ValidAppStateJSON();
     json[verlet::JSONKeys::kWindowSize][verlet::JSONKeys::kX] = -1;
     std::string message = ExceptionMessage([&] { std::ignore = verlet::JSONHelpers::AppStateFromJSON(json); });
     EXPECT_NE(message.find("WindowSize.X"), std::string::npos);
 
     json = ValidAppStateJSON();
-    json[verlet::JSONKeys::kWindowSize][verlet::JSONKeys::kY] = 5001;
+    json[verlet::JSONKeys::kWindowSize][verlet::JSONKeys::kY] = 8193;
     message = ExceptionMessage([&] { std::ignore = verlet::JSONHelpers::AppStateFromJSON(json); });
     EXPECT_NE(message.find("WindowSize.Y"), std::string::npos);
 }

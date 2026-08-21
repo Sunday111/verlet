@@ -12,6 +12,7 @@
 #include "verlet/emitters/radial_emitter.hpp"
 #include "verlet/json/json_keys.hpp"
 #include "verlet/verlet_app.hpp"
+#include "window_size_limits.hpp"
 
 namespace verlet
 {
@@ -327,23 +328,21 @@ ParsedAppState JSONHelpers::AppStateFromJSON(const nlohmann::json& json)
     try
     {
         const edt::Vec2i window_size = Vec2iFromJSON(GetKey(json, JSONKeys::kWindowSize));
-        constexpr int minimum_window_extent = 100;
-        constexpr int maximum_window_extent = 5000;
         klvk::ErrorHandling::Ensure(
-            window_size.x() >= minimum_window_extent && window_size.x() <= maximum_window_extent,
+            window_size.x() >= WindowSizeLimits::kMinimumExtent && window_size.x() <= WindowSizeLimits::kMaximumExtent,
             "{}.{} must be within [{}, {}], got {}",
             JSONKeys::kWindowSize,
             JSONKeys::kX,
-            minimum_window_extent,
-            maximum_window_extent,
+            WindowSizeLimits::kMinimumExtent,
+            WindowSizeLimits::kMaximumExtent,
             window_size.x());
         klvk::ErrorHandling::Ensure(
-            window_size.y() >= minimum_window_extent && window_size.y() <= maximum_window_extent,
+            window_size.y() >= WindowSizeLimits::kMinimumExtent && window_size.y() <= WindowSizeLimits::kMaximumExtent,
             "{}.{} must be within [{}, {}], got {}",
             JSONKeys::kWindowSize,
             JSONKeys::kY,
-            minimum_window_extent,
-            maximum_window_extent,
+            WindowSizeLimits::kMinimumExtent,
+            WindowSizeLimits::kMaximumExtent,
             window_size.y());
         state.window_size = window_size.Cast<uint32_t>();
     }
