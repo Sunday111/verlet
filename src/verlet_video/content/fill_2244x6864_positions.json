@@ -1,0 +1,8 @@
+{
+    "version": 1,
+    "presentation": "offscreen",
+    "framebuffer_size": [2244, 6864],
+    "clock": {"mode": "fixed", "step_ns": 16666667},
+    "exit": {"frame": 1},
+    "application": {"settle_frames": 1980}
+}

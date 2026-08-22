@@ -3,6 +3,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <iterator>
+#include <string>
 #include <string_view>
 
 #include "edt/math/matrix.hpp"
@@ -69,6 +70,7 @@ private:
 
     VerletApp* app_;
     std::string temp_string_for_formatting_{};
+    std::string positions_save_error_;
     Inspector active_inspector_ = Inspector::Simulation;
     bool inspector_open_ = true;
     size_t selected_emitter_ = 0;

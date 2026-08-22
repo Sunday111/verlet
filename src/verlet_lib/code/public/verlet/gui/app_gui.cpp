@@ -5,6 +5,7 @@
 #include <cfloat>
 #include <cmath>
 #include <cstdint>
+#include <exception>
 #include <limits>
 #include <thread>
 #include <vector>
@@ -25,6 +26,7 @@
 #include "verlet/tools/spawn_random_objects_tool.hpp"
 #include "verlet/tools/tool.hpp"
 #include "verlet/verlet_app.hpp"
+#include "window_size_limits.hpp"
 
 namespace verlet
 {
@@ -245,7 +247,14 @@ void AppGUI::Simulation()
     }
     GuiText("Window size (px)");
     FullWidthItem();
-    ImGui::DragInt2("##window size", window_size_.data(), 1.f, 100, 5000, "%d", ImGuiSliderFlags_AlwaysClamp);
+    ImGui::DragInt2(
+        "##window size",
+        window_size_.data(),
+        1.f,
+        WindowSizeLimits::kMinimumExtent,
+        WindowSizeLimits::kMaximumExtent,
+        "%d",
+        ImGuiSliderFlags_AlwaysClamp);
     if (ImGui::IsItemDeactivatedAfterEdit())
     {
         app_->GetWindow().SetSize(static_cast<size_t>(window_size_.x()), static_cast<size_t>(window_size_.y()));
@@ -284,9 +293,18 @@ void AppGUI::Simulation()
         const auto suggested = app_->GetExecutableDir() / kDefaultPositionsDumpFileName;
         if (auto path = app_->SaveFileDialog("Save positions", positions_filters, suggested))
         {
-            app_->SavePositions(*path);
+            positions_save_error_.clear();
+            try
+            {
+                app_->SavePositions(*path);
+            }
+            catch (const std::exception& error)
+            {
+                positions_save_error_ = error.what();
+            }
         }
     }
+    if (!positions_save_error_.empty()) GuiText("Could not save positions: {}", positions_save_error_);
 
     ImGui::SeparatorText("Objects");
     if (ImGui::Button("Delete all objects")) delete_objects_popup_requested_ = true;

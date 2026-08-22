@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 3.20)
 include(set_compiler_options)
 set(module_source_files
+    ${CMAKE_CURRENT_SOURCE_DIR}/code/private/window_size_limits.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/verlet/camera.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/verlet/camera.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/public/verlet/coloring/object_color_function.hpp
