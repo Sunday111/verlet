@@ -302,7 +302,7 @@ void VerletSolver::SetThreadsCount(size_t count)
     count = std::max(size_t{1}, count);
     if (!batch_thread_pool_ || count != GetThreadsCount())
     {
-        batch_thread_pool_ = std::make_unique<edt::BatchThreadPool>(count);
+        batch_thread_pool_ = std::make_unique<edt::BatchThreadPool>(count, "verlet_phys_");
     }
 }
 

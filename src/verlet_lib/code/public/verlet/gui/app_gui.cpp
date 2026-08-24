@@ -94,9 +94,6 @@ void AppGUI::Sidebar()
         ImGui::Separator();
 
         GuiText("Tool: {}", ActiveToolName());
-        ImGui::BeginDisabled(!app_->tool_);
-        if (ImGui::Button("Stop tool", {-FLT_MIN, 0.f})) app_->tool_.reset();
-        ImGui::EndDisabled();
         ImGui::Separator();
 
         constexpr std::array navigation{
