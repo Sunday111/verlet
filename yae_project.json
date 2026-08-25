@@ -9,6 +9,7 @@
         "run_target": "verlet",
         "yae-toolchain": {
             "compiler": "clang",
+            "linker": "mold",
             "cpplib": "llvm-static"
         },
         "cmake_definitions": {
