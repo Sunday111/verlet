@@ -32,6 +32,8 @@ set(YAE_PROJECT_ROOT "${CMAKE_CURRENT_SOURCE_DIR}")
 set(CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH};${YAE_SUPPORT_ROOT}/cmake")
 
 
+include(yae_cxxlib)
+configure_required_cxxlib(llvm-static)
 include(yae_lto)
 enable_lto_globally()
 
@@ -44,15 +46,47 @@ add_subdirectory(${YAE_ass_SOURCES} yae_modules/Sunday111/ass/main/modules/ass S
 set(YAE_edt_SOURCES ${YAE_CLONED_REPOSITORIES_DIR}/Sunday111/edt/main/modules/edt)
 add_subdirectory(${YAE_edt_SOURCES} yae_modules/Sunday111/edt/main/modules/edt SYSTEM)
 
-# https://github.com/fmtlib/fmt 11.1.1
-set(YAE_fmtlib_SOURCES ${YAE_CLONED_REPOSITORIES_DIR}/fmtlib/fmt/11.1.1)
-add_subdirectory(${YAE_fmtlib_SOURCES} yae_modules/fmtlib/fmt/11.1.1 SYSTEM)
+# https://github.com/fmtlib/fmt 12.2.0
+set(YAE_fmtlib_SOURCES ${YAE_CLONED_REPOSITORIES_DIR}/fmtlib/fmt/12.2.0)
+add_subdirectory(${YAE_fmtlib_SOURCES} yae_modules/fmtlib/fmt/12.2.0 SYSTEM)
 
 set(YAE_refl_SOURCES ${YAE_CLONED_REPOSITORIES_DIR}/Sunday111/refl/main/modules/refl)
 add_subdirectory(${YAE_refl_SOURCES} yae_modules/Sunday111/refl/main/modules/refl SYSTEM)
 
+# https://github.com/madler/zlib v1.3.2
+set(YAE_zlib_SOURCES ${YAE_CLONED_REPOSITORIES_DIR}/madler/zlib/v1.3.2)
+option(ZLIB_BUILD_SHARED "" OFF)
+option(ZLIB_BUILD_STATIC "" ON)
+option(ZLIB_BUILD_TESTING "" OFF)
+option(ZLIB_INSTALL "" OFF)
+add_subdirectory(${YAE_zlib_SOURCES} yae_modules/madler/zlib/v1.3.2 SYSTEM)
+
+include(${YAE_CLONED_REPOSITORIES_DIR}/Sunday111/klvk/main/dependencies/zlib_target.cmake)
+# https://github.com/facebook/zstd v1.5.7
+set(YAE_zstd_SOURCES ${YAE_CLONED_REPOSITORIES_DIR}/facebook/zstd/v1.5.7)
+option(ZSTD_BUILD_PROGRAMS "" OFF)
+option(ZSTD_BUILD_CONTRIB "" OFF)
+option(ZSTD_BUILD_TESTS "" OFF)
+option(ZSTD_BUILD_STATIC "" ON)
+option(ZSTD_BUILD_SHARED "" OFF)
+option(ZSTD_LEGACY_SUPPORT "" OFF)
+add_subdirectory(${YAE_zstd_SOURCES}/build/cmake yae_modules/facebook/zstd/v1.5.7 SYSTEM)
+
+# https://github.com/davea42/libdwarf-code v2.1.0
+set(YAE_libdwarf_SOURCES ${YAE_CLONED_REPOSITORIES_DIR}/davea42/libdwarf-code/v2.1.0)
+option(BUILD_NON_SHARED "" ON)
+option(BUILD_SHARED "" OFF)
+option(BUILD_DWARFDUMP "" OFF)
+option(BUILD_DWARFGEN "" OFF)
+option(BUILD_DWARFEXAMPLE "" OFF)
+option(DO_TESTING "" OFF)
+option(PIC_ALWAYS "" ON)
+add_subdirectory(${YAE_libdwarf_SOURCES} yae_modules/davea42/libdwarf-code/v2.1.0 SYSTEM)
+
+include(${YAE_CLONED_REPOSITORIES_DIR}/Sunday111/klvk/main/dependencies/Findlibdwarf.cmake)
 # https://github.com/jeremy-rifkin/cpptrace main
 set(YAE_cpptrace_SOURCES ${YAE_CLONED_REPOSITORIES_DIR}/jeremy-rifkin/cpptrace/main)
+option(CPPTRACE_USE_EXTERNAL_LIBDWARF "" ON)
 add_subdirectory(${YAE_cpptrace_SOURCES} yae_modules/jeremy-rifkin/cpptrace/main SYSTEM)
 
 # https://github.com/Neargye/magic_enum v0.9.7
@@ -269,5 +303,44 @@ add_subdirectory(${YAE_edt_tests_SOURCES} yae_modules/Sunday111/edt/main/modules
 set(YAE_AssTests_SOURCES ${YAE_CLONED_REPOSITORIES_DIR}/Sunday111/ass/main/modules/AssTests)
 add_subdirectory(${YAE_AssTests_SOURCES} yae_modules/Sunday111/ass/main/modules/AssTests SYSTEM)
 
+
+link_required_cxxlib(verlet)
+link_required_cxxlib(verlet_bench)
+link_required_cxxlib(verlet_tests)
+link_required_cxxlib(verlet_video)
+link_required_cxxlib(yae_example_benchmark)
+link_required_cxxlib(yae_example_benchmark_main)
+link_required_cxxlib(yae_example_executable)
+link_required_cxxlib(yae_example_tests)
+link_required_cxxlib(yae_example_tests_main)
+link_required_cxxlib(klvk_application_frame_pacing_test)
+link_required_cxxlib(klvk_compute_shader_example)
+link_required_cxxlib(klvk_curve_example)
+link_required_cxxlib(klvk_curve_fractal_example)
+link_required_cxxlib(klvk_diagnostic_config_test)
+link_required_cxxlib(klvk_diagnostic_replay_test)
+link_required_cxxlib(klvk_event_manager_test)
+link_required_cxxlib(klvk_falling_sand_example)
+link_required_cxxlib(klvk_fractal_example)
+link_required_cxxlib(klvk_geometry_shader_example)
+link_required_cxxlib(klvk_minimal_cube_example)
+link_required_cxxlib(klvk_minimal_quad_example)
+link_required_cxxlib(klvk_painter2d_example)
+link_required_cxxlib(klvk_pendulum_example)
+link_required_cxxlib(klvk_perf_recorder_test)
+link_required_cxxlib(klvk_post_processing_example)
+link_required_cxxlib(klvk_render_to_texture_example)
+link_required_cxxlib(klvk_shader_cache_test)
+link_required_cxxlib(klvk_simple_lit_cube_example)
+link_required_cxxlib(klvk_stencil_example)
+link_required_cxxlib(klvk_tetris_example)
+link_required_cxxlib(klvk_text_example)
+link_required_cxxlib(klvk_textured_quad_example)
+link_required_cxxlib(klvk_timer_manager_test)
+link_required_cxxlib(klvk_two_textures_example)
+link_required_cxxlib(klvk_vulkan_hpp_test)
+link_required_cxxlib(refl_tests)
+link_required_cxxlib(edt_tests)
+link_required_cxxlib(AssTests)
 
 enable_testing()
