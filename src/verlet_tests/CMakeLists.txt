@@ -1,5 +1,6 @@
 cmake_minimum_required(VERSION 3.20)
 include(set_compiler_options)
+include(yae_debug_info_compression)
 set(module_source_files
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/emitter_and_spawn_behavior.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/object_pool.cpp
@@ -10,6 +11,7 @@ target_link_libraries(verlet_tests PRIVATE verlet_lib
                                            gtest_main)
 target_include_directories(verlet_tests PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/code/public)
 target_include_directories(verlet_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/code/private)
+enable_debug_info_compression_for(verlet_tests)
 enable_testing()
 include(GoogleTest)
 gtest_discover_tests(verlet_tests)

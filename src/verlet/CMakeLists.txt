@@ -1,5 +1,6 @@
 cmake_minimum_required(VERSION 3.20)
 include(set_compiler_options)
+include(yae_debug_info_compression)
 set(module_source_files
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/main.cpp)
 add_executable(verlet ${module_source_files})
@@ -7,3 +8,4 @@ set_generic_compiler_options(verlet PRIVATE)
 target_link_libraries(verlet PRIVATE verlet_lib)
 target_include_directories(verlet PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/code/public)
 target_include_directories(verlet PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/code/private)
+enable_debug_info_compression_for(verlet)
