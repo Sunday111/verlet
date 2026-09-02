@@ -15,8 +15,7 @@
         "cmake_definitions": {
             "CMAKE_BUILD_TYPE": "Release",
             "CMAKE_C_COMPILER_LAUNCHER": "ccache",
-            "CMAKE_CXX_COMPILER_LAUNCHER": "ccache",
-            "CPPTRACE_DISABLE_CXX_20_MODULES": "ON"
+            "CMAKE_CXX_COMPILER_LAUNCHER": "ccache"
         }
     },
     "cpp": {
