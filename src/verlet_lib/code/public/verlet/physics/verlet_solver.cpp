@@ -281,7 +281,7 @@ void VerletSolver::ApplyLinks()
 
             Vec2f axis = a.position - b.position;
             const float distance = std::sqrt(axis.SquaredLength());
-            axis /= distance;
+            axis = distance > 0.f ? axis / distance : Vec2f{1.f, 0.f};
             const float min_distance = a.GetRadius() + b.GetRadius();
             const float delta = std::max(min_distance, link.target_distance) - distance;
 
