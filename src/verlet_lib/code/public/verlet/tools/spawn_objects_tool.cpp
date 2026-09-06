@@ -16,6 +16,8 @@ void SpawnObjectsTool::Tick()
 
         auto rgb = edt::Math::GetRainbowColors(app_.GetTimeSeconds());
 
+        if (!app_.solver.objects.Contains(previous_spawned_)) ClearObjectReferences();
+
         auto [spawned_object_id, new_object] = app_.solver.objects.Alloc();
         new_object.position = mouse_position;
         new_object.old_position = mouse_position;

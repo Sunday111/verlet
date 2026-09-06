@@ -9,6 +9,7 @@ public:
     using Tool::Tool;
     void Tick() override;
     void DrawGUI() override;
+    void ClearObjectReferences() override { previous_spawned_ = kInvalidObjectId; }
     [[nodiscard]] ToolType GetToolType() const override { return ToolType::SpawnObjects; }
 
 private:

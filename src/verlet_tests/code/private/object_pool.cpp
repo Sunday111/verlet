@@ -128,3 +128,20 @@ TEST(ObjectPoolTest, ClearsAPoolWithHoles)  // NOLINT
     EXPECT_EQ(pool.ObjectsCount(), 0U);
     EXPECT_TRUE(Identifiers(pool).empty());
 }
+
+TEST(ObjectPoolTest, ContainsChecksLiveSlotsAndBounds)  // NOLINT
+{
+    verlet::ObjectPool pool;
+    EXPECT_FALSE(pool.Contains(verlet::kInvalidObjectId));
+    EXPECT_FALSE(pool.Contains(verlet::ObjectId::FromValue(0)));
+    const auto id = std::get<0>(pool.Alloc());
+    EXPECT_TRUE(pool.Contains(id));
+    EXPECT_FALSE(pool.Contains(verlet::ObjectId::FromValue(1)));
+    pool.Free(id);
+    EXPECT_FALSE(pool.Contains(id));
+    const auto reused = std::get<0>(pool.Alloc());
+    EXPECT_EQ(id, reused);
+    EXPECT_TRUE(pool.Contains(reused));
+    pool.Clear();
+    EXPECT_FALSE(pool.Contains(reused));
+}

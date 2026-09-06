@@ -50,7 +50,7 @@ size_t SpawnRandomObjectsTool::Spawn()
 
 size_t SpawnRandomObjectsTool::ReplaceAll()
 {
-    app_.solver.DeleteAll();
+    app_.DeleteAllObjects();
     return SpawnRandomObjects(app_.solver, params_, app_.max_objects_count_);
 }
 
