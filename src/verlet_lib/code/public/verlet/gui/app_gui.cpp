@@ -77,8 +77,8 @@ void AppGUI::Sidebar()
     ImGui::SetNextWindowPos(viewport->WorkPos, ImGuiCond_Always);
     ImGui::SetNextWindowSizeConstraints({sidebar_width, 0.f}, {sidebar_width, FLT_MAX});
 
-    constexpr auto flags = ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse |
-                           ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize;
+    constexpr auto flags = ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoSavedSettings |
+                           ImGuiWindowFlags_AlwaysAutoResize;
     if (ImGui::Begin("Verlet", nullptr, flags))
     {
         if (ImGui::Button(app_->IsPaused() ? "Play" : "Pause", {74.f, 0.f}))
