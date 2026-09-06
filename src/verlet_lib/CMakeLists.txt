@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.20)
+cmake_minimum_required(VERSION 3.29)
 include(set_compiler_options)
 set(module_source_files
     ${CMAKE_CURRENT_SOURCE_DIR}/code/private/window_size_limits.hpp
