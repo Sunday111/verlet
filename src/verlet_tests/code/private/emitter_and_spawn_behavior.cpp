@@ -9,6 +9,9 @@
 #include "verlet/json/json_keys.hpp"
 #include "verlet/physics/verlet_solver.hpp"
 #include "verlet/random_objects.hpp"
+#include "verlet/tools/spawn_random_objects_tool.hpp"
+#include "verlet/tools/tool.hpp"
+#include "verlet/verlet_app.hpp"
 
 namespace
 {
@@ -274,3 +277,48 @@ TEST(VerletSolverTest, ZeroThreadsUsesOneWorker)  // NOLINT
     EXPECT_EQ(solver.GetThreadsCount(), 1U);
 }
 }  // namespace
+
+TEST(VerletAppTest, ClearingObjectsNotifiesTheActiveToolBeforeReusingIdentifiers)  // NOLINT
+{
+    class ReferencingTool : public verlet::Tool
+    {
+    public:
+        using Tool::Tool;
+        verlet::ObjectId referenced;
+        bool cleared_while_live = false;
+        void ClearObjectReferences() override
+        {
+            cleared_while_live = app_.solver.objects.Contains(referenced);
+            referenced = verlet::kInvalidObjectId;
+        }
+        [[nodiscard]] verlet::ToolType GetToolType() const override { return verlet::ToolType::SpawnObjects; }
+    };
+
+    for (size_t count : {size_t{1}, size_t{8}})
+    {
+        verlet::VerletApp app;
+        auto tool = std::make_unique<ReferencingTool>(app);
+        auto& active_tool = *tool;
+        app.tool_ = std::move(tool);
+        for (size_t i = 0; i != count; ++i) active_tool.referenced = std::get<0>(app.solver.objects.Alloc());
+
+        app.DeleteAllObjects();
+
+        EXPECT_TRUE(active_tool.cleared_while_live);
+        EXPECT_FALSE(active_tool.referenced.IsValid());
+        EXPECT_EQ(app.solver.objects.ObjectsCount(), 0U);
+        EXPECT_EQ(app.tool_.get(), &active_tool);
+        const auto reused = std::get<0>(app.solver.objects.Alloc());
+        EXPECT_EQ(reused, verlet::ObjectId::FromValue(0));
+        EXPECT_FALSE(active_tool.referenced.IsValid());
+
+        active_tool.referenced = reused;
+        active_tool.cleared_while_live = false;
+        verlet::SpawnRandomObjectsTool random_tool(app);
+        random_tool.GetParams().count = 3;
+        EXPECT_EQ(random_tool.ReplaceAll(), 3U);
+        EXPECT_TRUE(active_tool.cleared_while_live);
+        EXPECT_FALSE(active_tool.referenced.IsValid());
+        EXPECT_EQ(app.solver.objects.ObjectsCount(), 3U);
+    }
+}

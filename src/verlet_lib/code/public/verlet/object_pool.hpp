@@ -1,7 +1,7 @@
 #pragma once
 
-#include <edt/concepts/callable.hpp>
 #include <cassert>
+#include <edt/concepts/callable.hpp>
 #include <ranges>
 #include <vector>
 
@@ -56,6 +56,11 @@ public:
     {
         assert(valid_ones_.contains(id));
         return GetSlot(id).AsObject();
+    }
+
+    [[nodiscard]] bool Contains(ObjectId id) const
+    {
+        return id.IsValid() && id.GetValue() < entries_.size() && entries_[id.GetValue()].data_.back() != 0;
     }
 
     [[nodiscard]] auto Identifiers() const

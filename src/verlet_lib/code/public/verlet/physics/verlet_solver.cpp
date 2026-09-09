@@ -330,6 +330,8 @@ VerletSolver::~VerletSolver()
 
 void VerletSolver::CreateLink(ObjectId from, ObjectId to, float target_distance)
 {
+    klvk::ErrorHandling::Ensure(from != to, "Cannot link an object to itself");
+    klvk::ErrorHandling::Ensure(objects.Contains(from) && objects.Contains(to), "Cannot link missing objects");
     linked_to[from].push_back({
         .target_distance = target_distance,
         .other = to,

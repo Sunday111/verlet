@@ -21,6 +21,11 @@ public:
     ~MoveObjectsTool() override;
     void Tick() override;
     void DrawGUI() override;
+    void ClearObjectReferences() override
+    {
+        held_object_.reset();
+        lmb_hold = false;
+    }
     [[nodiscard]] ToolType GetToolType() const override { return ToolType::MoveObjects; }
 
 private:

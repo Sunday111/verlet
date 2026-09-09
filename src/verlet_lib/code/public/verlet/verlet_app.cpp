@@ -30,6 +30,12 @@ VerletApp::VerletApp()
 
 VerletApp::~VerletApp() = default;
 
+void VerletApp::DeleteAllObjects()
+{
+    if (tool_) tool_->ClearObjectReferences();
+    solver.DeleteAll();
+}
+
 void VerletApp::Initialize()
 {
     Super::Initialize();

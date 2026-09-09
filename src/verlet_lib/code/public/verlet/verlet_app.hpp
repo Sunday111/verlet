@@ -65,6 +65,7 @@ public:
     void UpdateWorldRange(float max_extent_change = 0.5f);
     void UpdateCamera();
     void UpdateTools();
+    void DeleteAllObjects();
     void UpdateStepping();
     void UpdateSimulation();
     void Render();

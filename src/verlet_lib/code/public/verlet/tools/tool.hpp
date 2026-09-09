@@ -22,6 +22,7 @@ public:
     virtual void Tick() {}
     virtual void DrawInWorld() {}
     virtual void DrawGUI() {}
+    virtual void ClearObjectReferences() {}
     [[nodiscard]] virtual ToolType GetToolType() const = 0;
 
 protected:

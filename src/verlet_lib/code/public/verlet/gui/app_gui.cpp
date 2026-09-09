@@ -505,7 +505,7 @@ void AppGUI::DestructiveActionPopups()
         ImGui::SameLine();
         if (ImGui::Button(FormatTemp("Delete {} objects", app_->solver.objects.ObjectsCount()).data()))
         {
-            app_->solver.DeleteAll();
+            app_->DeleteAllObjects();
             ImGui::CloseCurrentPopup();
         }
         ImGui::EndPopup();

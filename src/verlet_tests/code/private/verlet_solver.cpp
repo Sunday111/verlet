@@ -49,6 +49,21 @@ void ExpectSamePositions(const std::vector<edt::Vec2f>& expected, const std::vec
 }
 }  // namespace
 
+TEST(VerletSolverTest, RejectsSelfLinksAndMissingEndpoints)  // NOLINT
+{
+    verlet::VerletSolver solver;
+    const auto a = std::get<0>(solver.objects.Alloc());
+    const auto b = std::get<0>(solver.objects.Alloc());
+    EXPECT_ANY_THROW(solver.CreateLink(a, a, 1.f));
+    EXPECT_ANY_THROW(solver.CreateLink(a, verlet::kInvalidObjectId, 1.f));
+    solver.DeleteObject(b);
+    EXPECT_ANY_THROW(solver.CreateLink(a, b, 1.f));
+    EXPECT_ANY_THROW(solver.CreateLink(b, a, 1.f));
+    size_t links = 0;
+    solver.ForEachLink([&](auto, auto, float) { ++links; });
+    EXPECT_EQ(links, 0U);
+}
+
 // Gravity is straight down and every object is identical, so an object only ever leaves its
 // starting column by being pushed out of one, and the whole grid only spreads wider than it
 // started through collisions. Both are what the passes have to reproduce.
