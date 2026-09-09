@@ -109,10 +109,8 @@ TEST(VerletSolverTest, CoincidentLinksStayFiniteAndRespectMobility)  // NOLINT
 
                 solver.ApplyLinks();
 
-                EXPECT_TRUE(std::isfinite(a.position.x()));
-                EXPECT_TRUE(std::isfinite(a.position.y()));
-                EXPECT_TRUE(std::isfinite(b.position.x()));
-                EXPECT_TRUE(std::isfinite(b.position.y()));
+                EXPECT_TRUE(a.position.IsFinite());
+                EXPECT_TRUE(b.position.IsFinite());
                 if (!movable_a) EXPECT_EQ(a.position, (edt::Vec2f{separation, 0.f}));
                 if (!movable_b) EXPECT_EQ(b.position, edt::Vec2f{});
                 if (movable_a || movable_b)
