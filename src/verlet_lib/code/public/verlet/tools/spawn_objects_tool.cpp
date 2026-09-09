@@ -37,7 +37,8 @@ void SpawnObjectsTool::Tick()
             {
                 const Vec2f displacement = new_object.position - previous_object.position;
                 const float distance = std::sqrt(displacement.SquaredLength());
-                const Vec2f dir = distance > 0.f ? displacement / distance : Vec2f{1.f, 0.f};
+                const float zero_distance = static_cast<float>(distance == 0.f);
+                const Vec2f dir = (displacement + Vec2f{zero_distance, 0.f}) / (distance + zero_distance);
                 new_object.position = previous_object.position + dir * target_distance * 1.001f;
                 new_object.old_position = new_object.position;
             }
