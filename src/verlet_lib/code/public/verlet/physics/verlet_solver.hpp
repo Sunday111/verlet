@@ -9,13 +9,9 @@
 #include "edt/math/math.hpp"
 #include "edt/math/matrix.hpp"
 #include "edt/template/overload.hpp"
+#include "edt/threading/batch_thread_pool.hpp"
 #include "klvk/template/tagged_id_hash.hpp"
 #include "verlet/object_pool.hpp"
-
-namespace edt
-{
-class BatchThreadPool;
-}
 
 namespace verlet
 {

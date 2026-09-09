@@ -85,3 +85,40 @@ TEST(VerletSolverTest, ResultIsThreadCountIndependent)  // NOLINT
         ExpectSamePositions(single_threaded, Simulate(threads_count, kSteps));
     }
 }
+
+TEST(VerletSolverTest, CoincidentLinksStayFiniteAndRespectMobility)  // NOLINT
+{
+    for (bool movable_a : {false, true})
+    {
+        for (bool movable_b : {false, true})
+        {
+            for (float separation : {0.f, 1e-30f, 0.25f})
+            {
+                SCOPED_TRACE(movable_a);
+                SCOPED_TRACE(movable_b);
+                SCOPED_TRACE(separation);
+                verlet::VerletSolver solver;
+                const auto a_id = std::get<0>(solver.objects.Alloc());
+                const auto b_id = std::get<0>(solver.objects.Alloc());
+                auto& a = solver.objects.Get(a_id);
+                auto& b = solver.objects.Get(b_id);
+                a.movable = movable_a;
+                b.movable = movable_b;
+                a.position = {separation, 0.f};
+                solver.CreateLink(a_id, b_id, 2.f);
+
+                solver.ApplyLinks();
+
+                EXPECT_TRUE(a.position.IsFinite());
+                EXPECT_TRUE(b.position.IsFinite());
+                if (!movable_a) EXPECT_EQ(a.position, (edt::Vec2f{separation, 0.f}));
+                if (!movable_b) EXPECT_EQ(b.position, edt::Vec2f{});
+                if (movable_a || movable_b)
+                {
+                    EXPECT_FLOAT_EQ((a.position - b.position).Length(), 2.f);
+                    EXPECT_GT(a.position.x(), b.position.x());
+                }
+            }
+        }
+    }
+}

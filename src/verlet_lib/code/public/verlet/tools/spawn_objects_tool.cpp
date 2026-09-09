@@ -35,7 +35,10 @@ void SpawnObjectsTool::Tick()
             // if spawned object is movable spawn it nearby the object it links to
             if (new_object.movable)
             {
-                auto dir = (new_object.position - previous_object.position).Normalized();
+                const Vec2f displacement = new_object.position - previous_object.position;
+                const float distance = std::sqrt(displacement.SquaredLength());
+                const float zero_distance = static_cast<float>(distance == 0.f);
+                const Vec2f dir = (displacement + Vec2f{zero_distance, 0.f}) / (distance + zero_distance);
                 new_object.position = previous_object.position + dir * target_distance * 1.001f;
                 new_object.old_position = new_object.position;
             }
