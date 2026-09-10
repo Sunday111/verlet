@@ -137,3 +137,32 @@ TEST(VerletSolverTest, CoincidentLinksStayFiniteAndRespectMobility)  // NOLINT
         }
     }
 }
+
+TEST(VerletSolverTest, DeepOverlapsSeparateAndRespectMobility)
+{
+    for (float separation : {0.f, 1e-30f, 0.005f})
+    {
+        for (bool movable_a : {false, true})
+        {
+            for (bool movable_b : {false, true})
+            {
+                verlet::VerletSolver solver;
+                solver.SetThreadsCount(1);
+                const auto a_id = std::get<0>(solver.objects.Alloc());
+                const auto b_id = std::get<0>(solver.objects.Alloc());
+                auto& a = solver.objects.Get(a_id);
+                auto& b = solver.objects.Get(b_id);
+                a.position = a.old_position = {separation, 0.f};
+                b.position = b.old_position = {};
+                a.movable = movable_a;
+                b.movable = movable_b;
+                std::ignore = solver.Update();
+                EXPECT_TRUE(a.position.IsFinite());
+                EXPECT_TRUE(b.position.IsFinite());
+                if (!movable_a) EXPECT_EQ(a.position, (edt::Vec2f{separation, 0.f}));
+                if (!movable_b) EXPECT_EQ(b.position, edt::Vec2f{});
+                if (movable_a || movable_b) EXPECT_GT((a.position - b.position).Length(), 0.5f);
+            }
+        }
+    }
+}
