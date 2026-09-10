@@ -3,6 +3,7 @@
 #include <functional>
 #include <limits>
 
+#include "verlet/coloring/spawn_color/spawn_color_strategy_rainbow.hpp"
 #include "verlet/emitters/flat_emitter.hpp"
 #include "verlet/emitters/radial_emitter.hpp"
 #include "verlet/json/json_helpers.hpp"
@@ -321,4 +322,38 @@ TEST(VerletAppTest, ClearingObjectsNotifiesTheActiveToolBeforeReusingIdentifiers
         EXPECT_FALSE(active_tool.referenced.IsValid());
         EXPECT_EQ(app.solver.objects.ObjectsCount(), 3U);
     }
+}
+
+TEST(EmitterTest, LaunchDisplacementMatchesConfiguredSpeed)
+{
+    const auto verify = []<typename Emitter>()
+    {
+        class FixedSpawnEmitter : public Emitter
+        {
+        public:
+            void CollectSpawnPoints(const verlet::VerletApp&, std::vector<verlet::EmitterSpawnPoint>& points)
+                const override
+            {
+                points = {{{0.f, 0.f}, {0.6f, 0.8f}}};
+            }
+        };
+        for (float speed : {-240.f, -10.f, 0.f, 10.f, 240.f})
+        {
+            verlet::VerletApp app;
+            app.solver.SetThreadsCount(1);
+            app.spawn_color_strategy_ = std::make_unique<verlet::SpawnColorStrategyRainbow>(app);
+            FixedSpawnEmitter emitter;
+            emitter.config.speed_factor = speed;
+            emitter.enabled = true;
+            emitter.Tick(app);
+            ASSERT_EQ(app.solver.objects.ObjectsCount(), 1U);
+            const auto& object = *app.solver.objects.Objects().begin();
+            const auto velocity =
+                (object.position - object.old_position) / verlet::VerletSolver::kTimeSubStepDurationSeconds;
+            EXPECT_NEAR(velocity.x(), 0.6f * speed, 0.001f);
+            EXPECT_NEAR(velocity.y(), 0.8f * speed, 0.001f);
+        }
+    };
+    verify.operator()<verlet::FlatEmitter>();
+    verify.operator()<verlet::RadialEmitter>();
 }
