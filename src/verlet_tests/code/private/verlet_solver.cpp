@@ -137,3 +137,102 @@ TEST(VerletSolverTest, CoincidentLinksStayFiniteAndRespectMobility)  // NOLINT
         }
     }
 }
+
+TEST(VerletSolverTest, BoundaryParticlesAlwaysReceivePhysicsUpdates)
+{
+    for (size_t threads : {size_t{1}, size_t{4}})
+    {
+        for (const edt::Vec2f position :
+             {edt::Vec2f{-101.f, 0.f},
+              {-100.f, 0.f},
+              {-99.5f, 0.f},
+              {101.f, 0.f},
+              {100.f, 0.f},
+              {0.f, -101.f},
+              {0.f, -100.f},
+              {0.f, -99.5f},
+              {0.f, 101.f},
+              {0.f, 100.f}})
+        {
+            verlet::VerletSolver solver;
+            solver.SetThreadsCount(threads);
+            auto [id, object] = solver.objects.Alloc();
+            std::ignore = id;
+            object.position = object.old_position = position;
+            object.movable = true;
+            solver.RebuildGrid();
+            for (size_t thread = 0; thread != threads; ++thread) solver.UpdatePositions(thread, threads);
+            const auto expected = solver.GetSimArea().Enlarged(-2.f).Clamp(
+                position + solver.gravity * edt::Math::Sqr(solver.kTimeSubStepDurationSeconds));
+            EXPECT_EQ(object.position, expected);
+            EXPECT_EQ(object.old_position, position);
+        }
+    }
+}
+
+TEST(VerletSolverTest, GridPaddingContainsBoundaryCoordinates)
+{
+    for (float extent : {0.f, 0.5f, 1.f, 3.5f, 200.f})
+    {
+        verlet::VerletSolver solver;
+        solver.SetThreadsCount(1);
+        solver.SetSimArea({.x = {.begin = 0.f, .end = extent}, .y = {.begin = 0.f, .end = extent}});
+        solver.RebuildGrid();
+        const size_t last = std::max(size_t{1}, static_cast<size_t>(extent));
+        EXPECT_EQ(solver.LocationToCell({-1.f, -1.f}), (edt::Vec2<size_t>{1, 1}));
+        EXPECT_EQ(solver.LocationToCell({0.f, 0.f}), (edt::Vec2<size_t>{1, 1}));
+        EXPECT_EQ(solver.LocationToCell({extent, extent}), (edt::Vec2<size_t>{last, last}));
+        EXPECT_EQ(solver.LocationToCell({extent + 1.f, extent + 1.f}), (edt::Vec2<size_t>{last, last}));
+        EXPECT_EQ(solver.GetGridCellsCount(), (last + 2) * (last + 2));
+    }
+}
+
+TEST(VerletSolverTest, InteriorCellIdentifiersRemainStable)
+{
+    verlet::VerletSolver solver;
+    solver.SetThreadsCount(1);
+    EXPECT_EQ(solver.LocationToCell({-98.f, -97.f}), (edt::Vec2<size_t>{2, 3}));
+    EXPECT_EQ(solver.LocationToCell({0.f, 0.f}), (edt::Vec2<size_t>{100, 100}));
+    EXPECT_EQ(solver.LocationToCell({99.5f, 99.5f}), (edt::Vec2<size_t>{199, 199}));
+    EXPECT_EQ(solver.LocationToCell({100.f, 100.f}), (edt::Vec2<size_t>{200, 200}));
+
+    for (const edt::Vec2f minimum : {edt::Vec2f{0.3f, -0.3f}, {-20.75f, 10.25f}, {1'000'000.f, -1'000'000.f}})
+    {
+        const auto area = edt::FloatRange2Df::FromMinMax(minimum, minimum + edt::Vec2f{16.f, 32.f});
+        solver.SetSimArea(area);
+        for (size_t x = 1; x < 16; ++x)
+        {
+            for (size_t y = 1; y < 32; ++y)
+            {
+                const auto position =
+                    minimum + edt::Vec2f{static_cast<float>(x) + 0.25f, static_cast<float>(y) + 0.25f};
+                EXPECT_EQ(solver.LocationToCell(position), (edt::Vec2<size_t>{x, y}));
+            }
+        }
+    }
+}
+
+TEST(VerletSolverTest, AreaChangesImmediatelyRefreshCellMapping)
+{
+    verlet::VerletSolver solver;
+    solver.SetThreadsCount(1);
+    solver.RebuildGrid();
+    solver.SetSimArea(edt::FloatRange2Df::FromMinMax({0.3f, 0.3f}, {10.8f, 10.8f}));
+    EXPECT_EQ(solver.LocationToCell({-100.f, -100.f}), (edt::Vec2<size_t>{1, 1}));
+    EXPECT_EQ(solver.LocationToCell({1.3f, 1.3f}), (edt::Vec2<size_t>{1, 1}));
+    EXPECT_EQ(solver.LocationToCell({5.3f, 5.3f}), (edt::Vec2<size_t>{5, 5}));
+    EXPECT_EQ(solver.LocationToCell({100.f, 100.f}), (edt::Vec2<size_t>{10, 10}));
+
+    const auto resized = edt::FloatRange2Df::FromMinMax({20.3f, -40.25f}, {27.8f, -30.5f});
+    solver.SetSimArea(resized);
+    EXPECT_EQ(solver.LocationToCell(resized.Min()), (edt::Vec2<size_t>{1, 1}));
+    EXPECT_EQ(solver.LocationToCell(resized.Min() + edt::Vec2f{3.5f, 4.5f}), (edt::Vec2<size_t>{3, 4}));
+    EXPECT_EQ(solver.LocationToCell(resized.Max()), (edt::Vec2<size_t>{7, 9}));
+    solver.RebuildGrid();
+    EXPECT_EQ(solver.GetGridCellsCount(), 9U * 11U);
+
+    solver.SetSimArea(resized);
+    EXPECT_EQ(solver.LocationToCell(resized.Max()), (edt::Vec2<size_t>{7, 9}));
+    solver.SetSimArea(edt::FloatRange2Df::FromMinMax({-100.f, -100.f}, {100.f, 100.f}));
+    EXPECT_EQ(solver.LocationToCell({0.f, 0.f}), (edt::Vec2<size_t>{100, 100}));
+}
