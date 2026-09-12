@@ -117,7 +117,7 @@ void FlatEmitter::Tick(VerletApp& app)
         std::ignore = id;
         object.old_position = spawn_point.position;
         object.position = spawn_point.position +
-                          spawn_point.direction * (config.speed_factor * VerletSolver::kTimeStepDurationSeconds);
+                          spawn_point.direction * (config.speed_factor * VerletSolver::kTimeSubStepDurationSeconds);
         object.movable = true;
         object.color = color_fn(object);
     }

@@ -55,9 +55,8 @@ void VerletSolver::SolveCollisions(size_t pass_offset, size_t thread_index, size
                 {
                     const float dist = std::sqrt(dist_sq);
                     const float delta = 0.5f - dist / 2;
-                    const Vec2f direction =
-                        dist > 0.f ? axis / dist : Vec2f{object_id < another_object_id ? 1.f : -1.f, 0.f};
-                    const Vec2f col_vec = direction * delta;
+                    const Vec2f col_vec =
+                        dist > 0.f ? axis * (delta / dist) : Vec2f{object_id < another_object_id ? delta : -delta, 0.f};
                     const auto [ac, bc] = MassCoefficients(object, another_object);
                     object.position += ac * col_vec;
                     another_object.position -= bc * col_vec;
@@ -314,13 +313,15 @@ void VerletSolver::SetSimArea(const edt::FloatRange2Df& sim_area)
     if (sim_area.Min() != sim_area_.Min() || sim_area.Max() != sim_area_.Max())
     {
         sim_area_ = sim_area;
+        const auto extent = sim_area_.Extent();
+        grid_extent_ = Vec2f{std::max(float(cell_size.x()), extent.x()), std::max(float(cell_size.y()), extent.y())};
         sim_area_changed_ = true;
     }
 }
 
 void VerletSolver::UpdateGridSize()
 {
-    grid_size_ = Vec2<size_t>{2, 2} + sim_area_.Extent().Cast<size_t>() / cell_size;
+    grid_size_ = Vec2<size_t>{2, 2} + grid_extent_.Cast<size_t>() / cell_size;
     cell_heads_.resize(grid_size_.x() * grid_size_.y());
 }
 
