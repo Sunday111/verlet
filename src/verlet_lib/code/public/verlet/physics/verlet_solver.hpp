@@ -96,7 +96,10 @@ public:
 
     [[nodiscard]] Vec2<size_t> LocationToCell(const Vec2f& location) const
     {
-        return ((sim_area_.Clamp(location) - sim_area_.Min()).Cast<size_t>() / cell_size);
+        return edt::FloatRange2Df::FromMinMax(cell_size.Cast<float>(), grid_extent_)
+                   .Clamp(location - sim_area_.Min())
+                   .Cast<size_t>() /
+               cell_size;
     }
 
     [[nodiscard]] size_t LocationToCellIndex(const Vec2f& location) const
@@ -184,6 +187,7 @@ private:
 
 private:
     edt::FloatRange2Df sim_area_ = {.x = {.begin = -100, .end = 100}, .y = {.begin = -100, .end = 100}};
+    Vec2f grid_extent_ = sim_area_.Extent();
     bool sim_area_changed_ = true;
 
     bool update_in_progress_ = false;
