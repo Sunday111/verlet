@@ -236,3 +236,40 @@ TEST(VerletSolverTest, AreaChangesImmediatelyRefreshCellMapping)
     solver.SetSimArea(edt::FloatRange2Df::FromMinMax({-100.f, -100.f}, {100.f, 100.f}));
     EXPECT_EQ(solver.LocationToCell({0.f, 0.f}), (edt::Vec2<size_t>{100, 100}));
 }
+
+TEST(VerletSolverTest, DeepOverlapsSeparateAndRespectMobility)
+{
+    for (size_t threads : {size_t{1}, size_t{4}})
+    {
+        for (const edt::Vec2f offset : {edt::Vec2f{}, {1e-30f, 0.f}, {1e-20f, 0.f}, {0.005f, 0.f}, {0.f, -0.005f}})
+        {
+            for (bool movable_a : {false, true})
+            {
+                for (bool movable_b : {false, true})
+                {
+                    SCOPED_TRACE(threads);
+                    SCOPED_TRACE(offset.x());
+                    SCOPED_TRACE(offset.y());
+                    SCOPED_TRACE(movable_a);
+                    SCOPED_TRACE(movable_b);
+                    verlet::VerletSolver solver;
+                    solver.SetThreadsCount(threads);
+                    const auto a_id = std::get<0>(solver.objects.Alloc());
+                    const auto b_id = std::get<0>(solver.objects.Alloc());
+                    auto& a = solver.objects.Get(a_id);
+                    auto& b = solver.objects.Get(b_id);
+                    a.position = a.old_position = offset;
+                    b.position = b.old_position = {};
+                    a.movable = movable_a;
+                    b.movable = movable_b;
+                    std::ignore = solver.Update();
+                    EXPECT_TRUE(a.position.IsFinite());
+                    EXPECT_TRUE(b.position.IsFinite());
+                    if (!movable_a) EXPECT_EQ(a.position, offset);
+                    if (!movable_b) EXPECT_EQ(b.position, edt::Vec2f{});
+                    if (movable_a || movable_b) EXPECT_GT((a.position - b.position).Length(), 0.5f);
+                }
+            }
+        }
+    }
+}
