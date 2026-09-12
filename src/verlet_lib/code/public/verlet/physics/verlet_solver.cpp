@@ -54,17 +54,15 @@ void VerletSolver::SolveCollisions(size_t pass_offset, size_t thread_index, size
                 const float dist_sq = axis.SquaredLength();
                 if (dist_sq < 1.0f)
                 {
+                    const float dist = std::sqrt(dist_sq);
+                    const float delta = 0.5f - dist / 2;
                     const Vec2f col_vec = [&]
                     {
                         if (dist_sq > eps) [[likely]]
                         {
-                            const float dist = std::sqrt(dist_sq);
-                            const float delta = 0.5f - dist / 2;
                             return axis * (delta / dist);
                         }
 
-                        const float dist = std::sqrt(dist_sq);
-                        const float delta = 0.5f - dist / 2;
                         return dist > 0.f ? axis * (delta / dist)
                                           : Vec2f{object_id < another_object_id ? delta : -delta, 0.f};
                     }();
