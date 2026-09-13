@@ -209,7 +209,6 @@ add_subdirectory(${YAE_stb_SOURCES} yae_modules/Sunday111/klvk/main/stb SYSTEM)
 set(YAE_klvk_SOURCES ${YAE_CLONED_REPOSITORIES_DIR}/Sunday111/klvk/main/klvk)
 add_subdirectory(${YAE_klvk_SOURCES} yae_modules/Sunday111/klvk/main/klvk SYSTEM)
 
-include(${YAE_CLONED_REPOSITORIES_DIR}/Sunday111/klvk/main/klvk/ffmpeg.cmake)
 set(YAE_verlet_lib_SOURCES src/verlet_lib)
 add_subdirectory(${YAE_verlet_lib_SOURCES} yae_modules/src/verlet_lib SYSTEM)
 
@@ -275,8 +274,6 @@ add_subdirectory(${YAE_klvk_diagnostic_config_test_SOURCES} yae_modules/Sunday11
 set(YAE_klvk_diagnostic_replay_test_SOURCES ${YAE_CLONED_REPOSITORIES_DIR}/Sunday111/klvk/main/tests/diagnostic_replay)
 add_subdirectory(${YAE_klvk_diagnostic_replay_test_SOURCES} yae_modules/Sunday111/klvk/main/tests/diagnostic_replay SYSTEM)
 
-include(${YAE_CLONED_REPOSITORIES_DIR}/Sunday111/klvk/main/tests/diagnostic_replay/ffmpeg.cmake)
-include(${YAE_CLONED_REPOSITORIES_DIR}/Sunday111/klvk/main/tests/diagnostic_replay/private_headers.cmake)
 set(YAE_klvk_event_manager_test_SOURCES ${YAE_CLONED_REPOSITORIES_DIR}/Sunday111/klvk/main/tests/event_manager)
 add_subdirectory(${YAE_klvk_event_manager_test_SOURCES} yae_modules/Sunday111/klvk/main/tests/event_manager SYSTEM)
 
@@ -313,7 +310,6 @@ add_subdirectory(${YAE_klvk_render_to_texture_example_SOURCES} yae_modules/Sunda
 set(YAE_klvk_shader_cache_test_SOURCES ${YAE_CLONED_REPOSITORIES_DIR}/Sunday111/klvk/main/tests/shader_cache)
 add_subdirectory(${YAE_klvk_shader_cache_test_SOURCES} yae_modules/Sunday111/klvk/main/tests/shader_cache SYSTEM)
 
-include(${YAE_CLONED_REPOSITORIES_DIR}/Sunday111/klvk/main/tests/shader_cache/private_headers.cmake)
 set(YAE_klvk_simple_lit_cube_example_SOURCES ${YAE_CLONED_REPOSITORIES_DIR}/Sunday111/klvk/main/examples/simple_lit_cube)
 add_subdirectory(${YAE_klvk_simple_lit_cube_example_SOURCES} yae_modules/Sunday111/klvk/main/examples/simple_lit_cube SYSTEM)
 
