@@ -177,6 +177,7 @@ public:
     [[nodiscard]] size_t GetGridCellsCount() const { return cell_heads_.size(); }
 
     [[nodiscard]] const edt::FloatRange2Df& GetSimArea() const { return sim_area_; }
+    [[nodiscard]] edt::FloatRange2Df GetObjectBounds() const { return sim_area_.Enlarged(-2.f); }
     void SetSimArea(const edt::FloatRange2Df& sim_area);
 
     ObjectPool objects;
