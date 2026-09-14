@@ -157,8 +157,7 @@ VerletSolver::UpdateStats VerletSolver::Update()
 
 void VerletSolver::UpdatePositions(size_t thread_index, size_t threads_count)
 {
-    constexpr float margin = 2.0f;
-    const auto constraint_with_margin = sim_area_.Enlarged(-margin);
+    const auto constraint_with_margin = GetObjectBounds();
     constexpr float dt_2 = edt::Math::Sqr(kTimeSubStepDurationSeconds);
 
     const size_t num_columns = grid_size_.x() - 2;

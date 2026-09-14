@@ -29,7 +29,7 @@ public:
     // relative to the world, because it is a distance between objects and
     // objects are the same size whatever the world.
     float spacing = 0.f;
-    float speed_factor = 10.f;
+    float speed_factor = 80.f;
 };
 
 class FlatEmitter : public Emitter

@@ -55,8 +55,9 @@ void FlatEmitter::CollectSpawnPoints(const VerletApp& app, std::vector<EmitterSp
 {
     out.clear();
 
-    const Vec2f start = app.RelativeToWorld(config.start);
-    const Vec2f end = app.RelativeToWorld(config.end);
+    const auto bounds = app.solver.GetObjectBounds();
+    const Vec2f start = bounds.Clamp(app.RelativeToWorld(config.start));
+    const Vec2f end = bounds.Clamp(app.RelativeToWorld(config.end));
     const Vec2f span = end - start;
     const float length = span.Length();
     if (!edt::Math::IsFinite(length) || length <= 0.f) return;
@@ -85,8 +86,9 @@ void FlatEmitter::CollectSpawnPoints(const VerletApp& app, std::vector<EmitterSp
 
 void FlatEmitter::DrawShape(const VerletApp& app, DiagnosticRenderer& renderer) const
 {
-    const Vec2f start = app.RelativeToWorld(config.start);
-    const Vec2f end = app.RelativeToWorld(config.end);
+    const auto bounds = app.solver.GetObjectBounds();
+    const Vec2f start = bounds.Clamp(app.RelativeToWorld(config.start));
+    const Vec2f end = bounds.Clamp(app.RelativeToWorld(config.end));
     renderer.DrawEmitterLine(start, end);
 
     const Vec2f span = end - start;
