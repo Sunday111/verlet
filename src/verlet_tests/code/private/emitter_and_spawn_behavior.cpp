@@ -4,6 +4,7 @@
 #include <limits>
 
 #include "verlet/coloring/spawn_color/spawn_color_strategy_rainbow.hpp"
+#include "verlet/emitters/burst_emitter.hpp"
 #include "verlet/emitters/flat_emitter.hpp"
 #include "verlet/emitters/radial_emitter.hpp"
 #include "verlet/json/json_helpers.hpp"
@@ -356,4 +357,34 @@ TEST(EmitterTest, LaunchDisplacementMatchesConfiguredSpeed)
     };
     verify.operator()<verlet::FlatEmitter>();
     verify.operator()<verlet::RadialEmitter>();
+}
+
+TEST(BurstEmitterTest, BudgetOneShotResetAndSerialization)
+{
+    verlet::VerletApp app;
+    app.solver.SetThreadsCount(1);
+    app.max_objects_count_ = 37;
+    app.spawn_color_strategy_ = std::make_unique<verlet::SpawnColorStrategyRainbow>(app);
+    verlet::BurstEmitter emitter;
+    emitter.Tick(app);
+    EXPECT_EQ(app.solver.objects.ObjectsCount(), 0U);
+    emitter.enabled = true;
+    emitter.Tick(app);
+    ASSERT_EQ(app.solver.objects.ObjectsCount(), 37U);
+    for (const auto& object : app.solver.objects.Objects())
+    {
+        EXPECT_EQ(object.position, object.old_position);
+        EXPECT_EQ(app.solver.GetObjectBounds().Clamp(object.position), object.position);
+    }
+    app.solver.DeleteAll();
+    emitter.Tick(app);
+    EXPECT_EQ(app.solver.objects.ObjectsCount(), 0U);
+    emitter.ResetRuntimeState();
+    emitter.Tick(app);
+    EXPECT_EQ(app.solver.objects.ObjectsCount(), 37U);
+    auto clone = emitter.Clone();
+    clone->PrepareClone();
+    EXPECT_FALSE(clone->enabled);
+    auto restored = verlet::JSONHelpers::EmitterFromJSON(verlet::JSONHelpers::EmitterToJSON(emitter));
+    EXPECT_EQ(restored->GetType(), verlet::EmitterType::Burst);
 }

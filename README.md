@@ -136,3 +136,34 @@ are the same size whatever the world.
 
 A flat emitter fills a rectangle evenly, where a radial one is a point source that builds a cone and spreads only
 through collisions.
+
+`Burst` fills the remaining object budget in one tick, placing stationary particles on an even grid across the
+object bounds. It emits once per reset; **Rearm** allows another burst. A preset entry is `{"Type":"Burst","Burst":{}}`.
+Choose a world large enough for the requested count if initial overlaps are unwanted.
+
+# CPU benchmark
+
+The headless Google Benchmark target measures `VerletSolver::Update()` from `verlet_lib`. The library's Burst
+emitter creates 100,000 stationary particles in a 400 × 300 world before timing starts. Each benchmark runs 300
+consecutive frames, with eight physics substeps per frame, using 1, 8, or 32 solver workers. Reported real time is
+elapsed time per frame, including worker execution. Each repetition starts with a fresh simulation.
+
+The benchmark is opt-in and is not run by the normal build or test suite:
+
+```bash
+yae build verlet_bench
+yae run verlet_bench -- --benchmark_repetitions=3
+```
+
+Use Google Benchmark's `--benchmark_filter='BurstSimulation/8/'` to select eight workers, or
+`--benchmark_out=benchmark.json --benchmark_out_format=json` to save results. Spawning and teardown are excluded;
+all 300 simulation frames are timed, including the initial fall and collisions.
+
+For native CPU tuning, put this machine-specific override in `local-config.json`, then rebuild:
+
+```json
+{"cmake_definitions":{"CMAKE_CXX_FLAGS_RELEASE":"-O3 -DNDEBUG -march=native"}}
+```
+
+Such binaries target the build machine's CPU. For comparisons, use identical compiler settings, particle counts,
+world dimensions, frame counts, and worker counts, and run repeated measurements without concurrent builds.

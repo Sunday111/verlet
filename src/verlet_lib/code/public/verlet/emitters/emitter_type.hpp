@@ -7,6 +7,7 @@ namespace verlet
 enum class EmitterType : u8
 {
     Radial,
+    Burst,
     Flat
 };
 }
