@@ -118,8 +118,11 @@ void VerletSolver::RebuildGrid()
 
     // An object joins its cell at the front, so walking the objects backwards leaves every
     // chain running forwards.
-    for (auto [id, object] : objects.IdentifiersAndObjects() | std::views::reverse)
+    for (size_t index = objects.SlotsCount(); index != 0;)
     {
+        const auto id = ObjectId::FromValue(--index);
+        if (!objects.Contains(id)) continue;
+        auto& object = objects.Get(id);
         const auto cell_index = LocationToCellIndex(object.position);
         object.next_object_in_cell = cell_heads_[cell_index];
         cell_heads_[cell_index] = static_cast<uint32_t>(id.GetValue());
@@ -160,31 +163,16 @@ void VerletSolver::UpdatePositions(size_t thread_index, size_t threads_count)
     const auto constraint_with_margin = GetObjectBounds();
     constexpr float dt_2 = edt::Math::Sqr(kTimeSubStepDurationSeconds);
 
-    const size_t num_columns = grid_size_.x() - 2;
-    const size_t begin_x = 1 + ChunkBegin(num_columns, threads_count, thread_index);
-    const size_t end_x = begin_x + ChunkSize(num_columns, threads_count, thread_index);
-
-    const size_t grid_width = grid_size_.x();
-    for (const size_t cell_x : std::views::iota(begin_x, end_x))
+    const size_t begin = ChunkBegin(objects.SlotsCount(), threads_count, thread_index);
+    const size_t end = begin + ChunkSize(objects.SlotsCount(), threads_count, thread_index);
+    for (const auto id : objects.Identifiers(begin, end))
     {
-        for (const size_t cell_y : std::views::iota(size_t{1}, grid_size_.y() - 1))
-        {
-            const size_t cell_index = cell_y * grid_width + cell_x;
-            for (auto& object :
-                 ForEachObjectInCell(cell_index) | ObjectTransforms::IdToObject(*this) | ObjectFilters::IsMovable())
-            {
-                const auto last_update_move = object.position - object.old_position;
-
-                // Save current position
-                object.old_position = object.position;
-
-                // Perform Verlet integration
-                object.position += last_update_move + (gravity - last_update_move * kVelocityDampling) * dt_2;
-
-                // Constraint
-                object.position = constraint_with_margin.Clamp(object.position);
-            }
-        }
+        auto& object = objects.Get(id);
+        if (!object.IsMovable()) continue;
+        const auto last_update_move = object.position - object.old_position;
+        object.old_position = object.position;
+        object.position += last_update_move + (gravity - last_update_move * kVelocityDampling) * dt_2;
+        object.position = constraint_with_margin.Clamp(object.position);
     }
 }
 

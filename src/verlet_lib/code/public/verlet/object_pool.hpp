@@ -63,12 +63,16 @@ public:
         return id.IsValid() && id.GetValue() < entries_.size() && entries_[id.GetValue()].data_.back() != 0;
     }
 
-    [[nodiscard]] auto Identifiers() const
+    [[nodiscard]] size_t SlotsCount() const { return entries_.size(); }
+
+    [[nodiscard]] auto Identifiers(size_t begin, size_t end) const
     {
-        return std::views::iota(size_t{0}, entries_.size()) |
+        return std::views::iota(begin, end) |
                std::views::filter([&](const size_t index) -> bool { return entries_[index].data_.back(); }) |
                std::views::transform([&](const size_t index) { return ObjectId::FromValue(index); });
     }
+
+    [[nodiscard]] auto Identifiers() const { return Identifiers(0, SlotsCount()); }
 
     [[nodiscard]] auto IdentifiersAndObjects()
     {

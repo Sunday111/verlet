@@ -273,3 +273,26 @@ TEST(VerletSolverTest, DeepOverlapsSeparateAndRespectMobility)
         }
     }
 }
+
+TEST(VerletSolverTest, IntegrationSkipsFreedAndImmovableSlots)
+{
+    verlet::VerletSolver solver;
+    solver.SetThreadsCount(1);
+    std::vector<verlet::ObjectId> ids;
+    for (size_t index = 0; index < 17; ++index)
+    {
+        auto [id, object] = solver.objects.Alloc();
+        ids.push_back(id);
+        object.position = object.old_position = {static_cast<float>(index), 0.f};
+        object.movable = index % 2 == 0;
+    }
+    for (size_t index = 1; index < ids.size(); index += 3) solver.DeleteObject(ids[index]);
+    for (size_t thread = 0; thread < 5; ++thread) solver.UpdatePositions(thread, 5);
+    for (const auto& object : solver.objects.Objects())
+    {
+        const auto expected =
+            object.old_position +
+            (object.IsMovable() ? solver.gravity * edt::Math::Sqr(solver.kTimeSubStepDurationSeconds) : edt::Vec2f{});
+        EXPECT_EQ(object.position, expected);
+    }
+}

@@ -17,6 +17,7 @@
 #include "verlet/coloring/spawn_color/spawn_color_strategy_rainbow.hpp"
 #include "verlet/coloring/tick_color/tick_color_strategy.hpp"
 #include "verlet/coloring/tick_color/tick_color_strategy_velocity.hpp"
+#include "verlet/emitters/burst_emitter.hpp"
 #include "verlet/emitters/emitter.hpp"
 #include "verlet/emitters/flat_emitter.hpp"
 #include "verlet/emitters/radial_emitter.hpp"
@@ -316,6 +317,12 @@ void AppGUI::Emitters()
         selected_emitter_ = emitter_count;
     }
     ImGui::SameLine();
+    if (ImGui::Button("+ Burst"))
+    {
+        app_->AddEmitter(std::make_unique<BurstEmitter>());
+        selected_emitter_ = emitter_count;
+    }
+    ImGui::SameLine();
     if (ImGui::Button("+ Flat"))
     {
         app_->AddEmitter(std::make_unique<FlatEmitter>());
@@ -343,7 +350,9 @@ void AppGUI::Emitters()
         ImGui::PushID(static_cast<int>(index));
         ImGui::Checkbox("##enabled", &emitter.enabled);
         ImGui::SameLine();
-        const auto kind = emitter.GetType() == EmitterType::Radial ? "Radial" : "Flat";
+        const auto kind = emitter.GetType() == EmitterType::Radial  ? "Radial"
+                          : emitter.GetType() == EmitterType::Burst ? "Burst"
+                                                                    : "Flat";
         if (ImGui::Selectable(FormatTemp("{} {}", index + 1, kind).data(), selected_emitter_ == index))
         {
             selected_emitter_ = index;

@@ -136,3 +136,30 @@ are the same size whatever the world.
 
 A flat emitter fills a rectangle evenly, where a radial one is a point source that builds a cone and spreads only
 through collisions.
+
+`Burst` fills the remaining object budget in one tick, placing stationary particles on an even grid across the
+object bounds. It emits once per reset; **Rearm** allows another burst. A preset entry is `{"Type":"Burst","Burst":{}}`.
+Choose a world large enough for the requested count if initial overlaps are unwanted.
+
+# CPU benchmark
+
+The headless benchmark spawns 100,000 particles immediately in a 400 × 300 world and measures the solver without
+rendering. It is opt-in and is not run by the normal build or test suite:
+
+```bash
+yae build verlet_bench
+yae run verlet_bench -- --burst --threads 8 --window 300
+```
+
+In burst mode, `--threads` and `--window` set worker count and frame count (defaults: 1 and 300). Each frame contains eight physics substeps.
+Output gives spawning time, mean frame time, the grid/collision/integration breakdown, and a position checksum.
+Timings include the initial fall and collisions from the first frame; there is no excluded warm-up period.
+
+For native CPU tuning, put this machine-specific override in `local-config.json`, then rebuild:
+
+```json
+{"cmake_definitions":{"CMAKE_CXX_FLAGS_RELEASE":"-O3 -DNDEBUG -march=native"}}
+```
+
+Such binaries target the build machine's CPU. For comparisons, use identical compiler settings, particle counts,
+world dimensions, frame counts, and worker counts, and run repeated measurements without concurrent builds.

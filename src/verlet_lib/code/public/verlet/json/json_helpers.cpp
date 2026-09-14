@@ -8,6 +8,7 @@
 #include "klvk/macro/ensure_enum_size.hpp"
 #include "klvk/template/constexpr_string_hash.hpp"
 #include "magic_enum/magic_enum.hpp"
+#include "verlet/emitters/burst_emitter.hpp"
 #include "verlet/emitters/flat_emitter.hpp"
 #include "verlet/emitters/radial_emitter.hpp"
 #include "verlet/json/json_keys.hpp"
@@ -249,9 +250,12 @@ nlohmann::json JSONHelpers::EmitterToJSON(const Emitter& emitter)
     const auto type = emitter.GetType();
     const std::string_view type_str = magic_enum::enum_name(type);
     json[JSONKeys::kType] = type_str;
-    KLVK_ENSURE_ENUM_SIZE(EmitterType, 2);
+    KLVK_ENSURE_ENUM_SIZE(EmitterType, 3);
     switch (type)
     {
+    case EmitterType::Burst:
+        json[type_str] = nlohmann::json::object();
+        break;
     case EmitterType::Radial:
         json[type_str] = RadialEmitterToJSON(static_cast<const RadialEmitter&>(emitter).config);
         break;
@@ -269,9 +273,11 @@ std::unique_ptr<Emitter> JSONHelpers::EmitterFromJSON(const nlohmann::json& json
     const EmitterType type = Internal::ParseEnum(Internal::kEmitterTypeParseMap, type_str);
     const nlohmann::json& inner = GetKey(json, type_str);
 
-    KLVK_ENSURE_ENUM_SIZE(EmitterType, 2);
+    KLVK_ENSURE_ENUM_SIZE(EmitterType, 3);
     switch (type)
     {
+    case EmitterType::Burst:
+        return std::make_unique<BurstEmitter>();
     case EmitterType::Radial:
     {
         const RadialEmitterConfig config = RadialEmitterFromJSON(inner);
