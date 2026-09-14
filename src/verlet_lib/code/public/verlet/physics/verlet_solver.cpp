@@ -1,5 +1,7 @@
 #include "verlet_solver.hpp"
 
+#include <utility>
+
 #include "edt/functional/on_scope_leave.hpp"
 #include "edt/math/math.hpp"
 #include "edt/threading/batch_thread_pool.hpp"
@@ -170,9 +172,10 @@ void VerletSolver::UpdatePositions(size_t thread_index, size_t threads_count)
         auto& object = objects.Get(id);
         if (!object.IsMovable()) continue;
         const auto last_update_move = object.position - object.old_position;
-        object.old_position = object.position;
-        object.position += last_update_move + (gravity - last_update_move * kVelocityDampling) * dt_2;
-        object.position = constraint_with_margin.Clamp(object.position);
+        object.old_position = std::exchange(
+            object.position,
+            constraint_with_margin.Clamp(
+                object.position + (last_update_move + (gravity - last_update_move * kVelocityDampling) * dt_2)));
     }
 }
 
