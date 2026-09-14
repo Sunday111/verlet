@@ -143,17 +143,21 @@ Choose a world large enough for the requested count if initial overlaps are unwa
 
 # CPU benchmark
 
-The headless benchmark spawns 100,000 particles immediately in a 400 × 300 world and measures the solver without
-rendering. It is opt-in and is not run by the normal build or test suite:
+The headless Google Benchmark target measures `VerletSolver::Update()` from `verlet_lib`. The library's Burst
+emitter creates 100,000 stationary particles in a 400 × 300 world before timing starts. Each benchmark runs 300
+consecutive frames, with eight physics substeps per frame, using 1, 8, or 32 solver workers. Reported real time is
+elapsed time per frame, including worker execution. Each repetition starts with a fresh simulation.
+
+The benchmark is opt-in and is not run by the normal build or test suite:
 
 ```bash
 yae build verlet_bench
-yae run verlet_bench -- --burst --threads 8 --window 300
+yae run verlet_bench -- --benchmark_repetitions=3
 ```
 
-In burst mode, `--threads` and `--window` set worker count and frame count (defaults: 1 and 300). Each frame contains eight physics substeps.
-Output gives spawning time, mean frame time, the grid/collision/integration breakdown, and a position checksum.
-Timings include the initial fall and collisions from the first frame; there is no excluded warm-up period.
+Use Google Benchmark's `--benchmark_filter='BurstSimulation/8/'` to select eight workers, or
+`--benchmark_out=benchmark.json --benchmark_out_format=json` to save results. Spawning and teardown are excluded;
+all 300 simulation frames are timed, including the initial fall and collisions.
 
 For native CPU tuning, put this machine-specific override in `local-config.json`, then rebuild:
 

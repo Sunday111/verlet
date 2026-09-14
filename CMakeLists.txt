@@ -215,6 +215,11 @@ add_subdirectory(${YAE_verlet_lib_SOURCES} yae_modules/src/verlet_lib SYSTEM)
 set(YAE_verlet_SOURCES src/verlet)
 add_subdirectory(${YAE_verlet_SOURCES} yae_modules/src/verlet SYSTEM)
 
+# https://github.com/google/benchmark v1.9.5
+set(YAE_gbench_main_SOURCES ${YAE_CLONED_REPOSITORIES_DIR}/google/benchmark/v1.9.5)
+option(BENCHMARK_ENABLE_TESTING "" OFF)
+add_subdirectory(${YAE_gbench_main_SOURCES} yae_modules/google/benchmark/v1.9.5 SYSTEM)
+
 set(YAE_verlet_bench_SOURCES src/verlet_bench)
 add_subdirectory(${YAE_verlet_bench_SOURCES} yae_modules/src/verlet_bench SYSTEM)
 
@@ -229,11 +234,6 @@ add_subdirectory(${YAE_verlet_tests_SOURCES} yae_modules/src/verlet_tests SYSTEM
 
 set(YAE_verlet_video_SOURCES src/verlet_video)
 add_subdirectory(${YAE_verlet_video_SOURCES} yae_modules/src/verlet_video SYSTEM)
-
-# https://github.com/google/benchmark v1.9.5
-set(YAE_gbench_SOURCES ${YAE_CLONED_REPOSITORIES_DIR}/google/benchmark/v1.9.5)
-option(BENCHMARK_ENABLE_TESTING "" OFF)
-add_subdirectory(${YAE_gbench_SOURCES} yae_modules/google/benchmark/v1.9.5 SYSTEM)
 
 set(YAE_yae_example_benchmark_SOURCES ${YAE_CLONED_REPOSITORIES_DIR}/Sunday111/yae-support/main/modules/examples/yae_example_benchmark)
 add_subdirectory(${YAE_yae_example_benchmark_SOURCES} yae_modules/Sunday111/yae-support/main/modules/examples/yae_example_benchmark SYSTEM)

@@ -3,7 +3,8 @@
     "Dependencies": {
         "Public": [],
         "Private": [
-            "verlet_lib"
+            "verlet_lib",
+            "gbench_main"
         ]
     }
 }
